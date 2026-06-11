@@ -2,7 +2,7 @@ const http = require('http');
 const https = require('https');
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
-const SUPABASE_URL = 'https://TU_PROYECTO.supabase.co'; // cambiar después
+const SUPABASE_URL = 'https://evjlfnkabqicqngmwtzo.supabase.co';
 const SUPABASE_SECRET = process.env.SUPABASE_SECRET_KEY;
 
 const FUENTES = [
