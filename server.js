@@ -329,9 +329,10 @@ TÍTULO ORIGINAL: "${titulo}"
 
 REGLAS ESTRICTAS:
 1. El titular debe ser corto, viral y emocional. Máximo 8 palabras en total.
-2. Dividir en DOS partes:
+2. Dividir en TRES partes:
    - "titular": 4 a 6 palabras descriptivas en mayúsculas. Va arriba, fuente pequeña.
-   - "hero": 1 a 3 palabras impactantes en mayúsculas. Va abajo, fuente ENORME. Debe ser la palabra que más impacta emocionalmente.
+   - "gancho": 2 a 3 frases emocionales en minúsculas, estilo Vogue. Máximo 120 caracteres. Sofisticado, evocador, con actitud. No mencionar la fuente original.
+   - "hero": 1 a 3 palabras impactantes en mayúsculas. Va abajo, fuente ENORME. El nombre de la persona, marca o concepto más poderoso.
 3. El "hero" debe ser el nombre de la persona, marca o concepto más poderoso del titular.
 4. Nunca uses artículos (el, la, los, las, un, una) en el hero.
 5. El resultado debe verse como portada de Vogue, nunca como título de nota de blog.
@@ -339,22 +340,25 @@ REGLAS ESTRICTAS:
 Ejemplos correctos:
 - Titulo: "Shakira deslumbra en la inauguración del Mundial 2026 con look verde"
   titular: "EL LOOK QUE CONQUISTÓ"
-  hero: "EL MUNDIAL"
+  gancho: "Una elección que detuvo el mundo y redefinió lo que significa vestirse para la historia."
+  hero: "SHAKIRA"
 
 - Titulo: "Zara lanza colección de vestidos blancos que todas quieren"
   titular: "LA COLECCIÓN QUE"
+  gancho: "Blanco puro, corte perfecto. La prenda que todas buscan y pocas logran encontrar."
   hero: "AGOTÓ ZARA"
 
 - Titulo: "Belinda redefine la elegancia en los Latin Grammy 2026"
-  titular: "ELEGANCIA EN LOS"
-  hero: "LATIN GRAMMY"
+  titular: "ELEGANCIA REDEFINIDA"
+  gancho: "Cuando Belinda entra a una sala, el resto del mundo deja de existir. Esta noche no fue diferente."
+  hero: "BELINDA"
 
 Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
-{"titular": "TEXTO AQUÍ", "hero": "TEXTO AQUÍ"}`;
+{"titular": "TEXTO AQUÍ", "gancho": "texto aquí en minúsculas", "hero": "TEXTO AQUÍ"}`;
 
     const payload = JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 150,
+      max_tokens: 300,
       messages: [{ role: 'user', content: prompt }],
     });
 
