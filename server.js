@@ -312,7 +312,86 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
+// POST /titulo-editorial — genera titular viral + hero para portada
+if (req.method === 'POST' && req.url === '/titulo-editorial') {
+  let body = '';
+  req.on('data', chunk => { body += chunk; });
+  req.on('end', () => {
+    let titulo = '';
+    try { titulo = JSON.parse(body).titulo; }
+    catch(e) { res.writeHead(400); res.end(JSON.stringify({ error: 'JSON invalido' })); return; }
 
+    const prompt = `Eres director de arte editorial de la revista PASARELA™, inspirada en Vogue, Harper's Bazaar y Elle.
+
+Tu tarea: transformar este título de noticia en un titular editorial premium para portada de revista.
+
+TÍTULO ORIGINAL: "${titulo}"
+
+REGLAS ESTRICTAS:
+1. El titular debe ser corto, viral y emocional. Máximo 8 palabras en total.
+2. Dividir en DOS partes:
+   - "titular": 4 a 6 palabras descriptivas en mayúsculas. Va arriba, fuente pequeña.
+   - "hero": 1 a 3 palabras impactantes en mayúsculas. Va abajo, fuente ENORME. Debe ser la palabra que más impacta emocionalmente.
+3. El "hero" debe ser el nombre de la persona, marca o concepto más poderoso del titular.
+4. Nunca uses artículos (el, la, los, las, un, una) en el hero.
+5. El resultado debe verse como portada de Vogue, nunca como título de nota de blog.
+
+Ejemplos correctos:
+- Titulo: "Shakira deslumbra en la inauguración del Mundial 2026 con look verde"
+  titular: "EL LOOK QUE CONQUISTÓ"
+  hero: "EL MUNDIAL"
+
+- Titulo: "Zara lanza colección de vestidos blancos que todas quieren"
+  titular: "LA COLECCIÓN QUE"
+  hero: "AGOTÓ ZARA"
+
+- Titulo: "Belinda redefine la elegancia en los Latin Grammy 2026"
+  titular: "ELEGANCIA EN LOS"
+  hero: "LATIN GRAMMY"
+
+Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
+{"titular": "TEXTO AQUÍ", "hero": "TEXTO AQUÍ"}`;
+
+    const payload = JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 150,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const options = {
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    };
+
+    const apiReq = https.request(options, apiRes => {
+      let data = '';
+      apiRes.on('data', chunk => { data += chunk; });
+      apiRes.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          const texto = parsed.content?.[0]?.text || '{}';
+          const resultado = JSON.parse(texto.trim());
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(resultado));
+        } catch(e) {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ titular: titulo.toUpperCase().substring(0, 40), hero: 'EXCLUSIVA' }));
+        }
+      });
+    });
+    apiReq.on('error', err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
+    apiReq.write(payload);
+    apiReq.end();
+  });
+  return;
+}
   res.writeHead(404);
   res.end();
 });
