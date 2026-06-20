@@ -396,9 +396,7 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
   });
   return;
 }
-  res.writeHead(404);
-  res.end();
-});
+  
 // POST /api/materialize — PASARELA AI ENGINE
   if (req.method === 'POST' && req.url === '/api/materialize') {
     let body = '';
@@ -479,6 +477,9 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
     });
     return;
   }
+  res.writeHead(404);
+  res.end();
+});
 server.listen(3000, '0.0.0.0', () => {
   console.log('Servidor Pasarela Studio corriendo en http://0.0.0.0:3000');
 });
