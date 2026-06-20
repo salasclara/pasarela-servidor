@@ -399,7 +399,86 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
   res.writeHead(404);
   res.end();
 });
+// POST /api/materialize — PASARELA AI ENGINE
+  if (req.method === 'POST' && req.url === '/api/materialize') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      let idea = '';
+      try {
+        const parsed = JSON.parse(body);
+        idea = (parsed.idea || '').trim();
+      } catch(e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'INVALID_JSON', message: 'Body no es JSON válido' }));
+        return;
+      }
 
+      if (!idea) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'IDEA_REQUIRED', message: 'El campo idea es obligatorio' }));
+        return;
+      }
+
+      const systemPrompt = `Eres el motor editorial de PASARELA, revista de moda y talento latina con 37 años en Dallas, Texas. Devuelves ÚNICAMENTE JSON puro, sin markdown, sin texto adicional. La categoría DEBE ser exactamente una de: MODA, BELLEZA, TALENTO, EVENTOS, LIFESTYLE, EXCLUSIVAS. Titular en MAYÚSCULAS máx 8 palabras. Gancho: 2-3 líneas emocionales separadas por \\n, estilo fashion magazine, en minúscula. Hero: UNA palabra en MAYÚSCULAS. Formato exacto: {"categoria":"MODA","titular":"...","gancho":"...","hero":"..."}`;
+
+      const payload = JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `Idea: "${idea.slice(0, 500)}"` }],
+      });
+
+      const options = {
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+      };
+
+      const apiReq = https.request(options, apiRes => {
+        let data = '';
+        apiRes.on('data', chunk => { data += chunk; });
+        apiRes.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) {
+              res.writeHead(502, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: 'ANTHROPIC_ERROR', message: parsed.error.message }));
+              return;
+            }
+            const raw = (parsed.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+            const editorial = JSON.parse(raw);
+            const valid = ['MODA','BELLEZA','TALENTO','EVENTOS','LIFESTYLE','EXCLUSIVAS'];
+            const categoria = valid.includes((editorial.categoria || '').toUpperCase()) ? editorial.categoria.toUpperCase() : 'EXCLUSIVAS';
+            const n = new Date();
+            const pdpId = `PDP-${String(n.getFullYear()).slice(2)}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}-${String(Math.floor(Math.random()*9000)+1000)}`;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              success: true,
+              data: { categoria, titular: editorial.titular || 'PASARELA', gancho: editorial.gancho || 'El estilo es una declaración.', hero: editorial.hero || 'PODER', pdpId }
+            }));
+          } catch(e) {
+            console.error('MATERIALIZE_ERROR:', e);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'MATERIALIZE_FAILED', message: e.message }));
+          }
+        });
+      });
+      apiReq.on('error', err => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'NETWORK_ERROR', message: err.message }));
+      });
+      apiReq.write(payload);
+      apiReq.end();
+    });
+    return;
+  }
 server.listen(3000, '0.0.0.0', () => {
   console.log('Servidor Pasarela Studio corriendo en http://0.0.0.0:3000');
 });
