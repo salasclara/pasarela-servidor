@@ -418,14 +418,56 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
         return;
       }
 
-      const systemPrompt = `Eres el motor editorial de PASARELA, revista de moda y talento latina con 37 años en Dallas, Texas. Devuelves ÚNICAMENTE JSON puro, sin markdown, sin texto adicional. La categoría DEBE ser exactamente una de: MODA, BELLEZA, TALENTO, EVENTOS, LIFESTYLE, EXCLUSIVAS. Titular en MAYÚSCULAS máx 8 palabras. Gancho: 2-3 líneas emocionales separadas por \\n, estilo fashion magazine, en minúscula. Hero: UNA palabra en MAYÚSCULAS. Formato exacto: {"categoria":"MODA","titular":"...","gancho":"...","hero":"..."}`;
-
-      const payload = JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 512,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: `Idea: "${idea.slice(0, 500)}"` }],
-      });
+      /**
+ * PATCH — Integración ThinkingEngine en server.js
+ * 
+ * En server.js, dentro del bloque POST /api/materialize,
+ * REEMPLAZA el bloque donde se construye el systemPrompt y el payload
+ * con este código.
+ *
+ * BUSCA esta sección (aproximadamente línea 416-430):
+ *
+ *   const systemPrompt = `Eres el motor editorial...`;
+ *   const payload = JSON.stringify({ model: ..., system: systemPrompt, messages: [...] });
+ *
+ * REEMPLAZA con lo siguiente:
+ */
+ 
+// ── PASO 1: ThinkingEngine analiza la idea ──
+const { ThinkingEngine } = require('./src/services/ThinkingEngine');
+const engine = new ThinkingEngine();
+const brief  = engine.analyze(idea);
+ 
+console.log('[ThinkingEngine] Brief generado:', JSON.stringify(brief));
+ 
+// ── PASO 2: Construir prompt enriquecido con el Editorial Brief ──
+const systemPrompt = `Eres el motor editorial de PASARELA, revista de moda y talento latina con 37 años en Dallas, Texas.
+Devuelves ÚNICAMENTE JSON puro, sin markdown, sin texto adicional.
+La categoría DEBE ser exactamente una de: MODA, BELLEZA, TALENTO, EVENTOS, LIFESTYLE, EXCLUSIVAS.
+Titular en MAYÚSCULAS máx 8 palabras. 
+Gancho: 2-3 líneas emocionales separadas por \\n, estilo fashion magazine, en minúscula.
+Hero: UNA palabra en MAYÚSCULAS.
+Formato exacto: {"categoria":"MODA","titular":"...","gancho":"...\\n...\\n...","hero":"..."}`;
+ 
+const userMessage = `Editorial Brief generado por PASARELA ThinkingEngine:
+- Idea original: "${brief.originalIdea}"
+- Tema: ${brief.topic}
+- Intención: ${brief.intent}
+- Audiencia: ${brief.audience}
+- Categoría sugerida: ${brief.category}
+- Emoción clave: ${brief.emotion}
+- Estilo editorial: ${brief.editorialStyle}
+- Dirección visual: ${brief.visualDirection}
+ 
+Usa este brief como guía para generar el JSON editorial PASARELA.
+La categoría DEBE ser: ${brief.category}`;
+ 
+const payload = JSON.stringify({
+  model: 'claude-sonnet-4-6',
+  max_tokens: 512,
+  system: systemPrompt,
+  messages: [{ role: 'user', content: userMessage }],
+});
 
       const options = {
         hostname: 'api.anthropic.com',
