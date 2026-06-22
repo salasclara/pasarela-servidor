@@ -449,6 +449,13 @@ Gancho: 2-3 líneas emocionales separadas por \\n, estilo fashion magazine, en m
 Hero: UNA palabra en MAYÚSCULAS.
 Formato exacto: {"categoria":"MODA","titular":"...","gancho":"...\\n...\\n...","hero":"..."}`;
  
+/**
+ * PATCH — Integración Hero en userMessage de /api/materialize
+ *
+ * En server.js, dentro del bloque POST /api/materialize,
+ * REEMPLAZA el userMessage actual con este:
+ */
+
 const userMessage = `Editorial Brief generado por PASARELA ThinkingEngine:
 - Idea original: "${brief.originalIdea}"
 - Tema: ${brief.topic}
@@ -458,9 +465,13 @@ const userMessage = `Editorial Brief generado por PASARELA ThinkingEngine:
 - Emoción clave: ${brief.emotion}
 - Estilo editorial: ${brief.editorialStyle}
 - Dirección visual: ${brief.visualDirection}
- 
-Usa este brief como guía para generar el JSON editorial PASARELA.
-La categoría DEBE ser: ${brief.category}`;
+- Hero sugerido por Hero Detector™: "${brief.hero.text}" (prioridad: ${brief.hero.priority}/100, razón: ${brief.hero.reason})
+
+Instrucciones:
+1. La categoría DEBE ser: ${brief.category}
+2. El hero DEBE ser exactamente: "${brief.hero.text}"
+3. Usa el estilo editorial y la emoción para construir el titular y el gancho.
+4. Genera el JSON editorial PASARELA.`;
  
 const payload = JSON.stringify({
   model: 'claude-sonnet-4-6',
