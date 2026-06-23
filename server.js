@@ -1,5 +1,13 @@
 const http = require('http');
 const https = require('https');
+try {
+  const { ThinkingEngine } = require('./src/services/ThinkingEngine');
+  const t = new ThinkingEngine();
+  const test = t.analyze('test idea pasarela');
+  console.log('[ThinkingEngine] OK — hero:', test.hero.text);
+} catch(e) {
+  console.error('[ThinkingEngine] FALLO AL CARGAR:', e.message);
+}
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 const SUPABASE_URL = 'https://evjlfnkabqicqngmwtzo.supabase.co';
