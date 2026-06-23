@@ -434,7 +434,9 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
  */
  
 // ── PASO 1: ThinkingEngine analiza la idea ──
+console.log('[materialize] iniciando request');
 const { ThinkingEngine } = require('./src/services/ThinkingEngine');
+console.log('[materialize] ThinkingEngine cargado');
 const engine = new ThinkingEngine();
 const brief  = engine.analyze(idea);
  
