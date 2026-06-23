@@ -471,43 +471,25 @@ Formato exacto: {"categoria":"MODA","titular":"...","gancho":"...\\n...\\n...","
  * REEMPLAZA el userMessage actual con este:
  */
 
-const userMessage = `Editorial Brief generado por PASARELA ThinkingEngine:
-- Idea original: "${brief.originalIdea}"
-- Tema: ${brief.topic}
-- Intención: ${brief.intent}
-- Audiencia: ${brief.audience}
+const userMessage = `Editorial Brief — PASARELA ThinkingEngine:
+- Idea: "${brief.originalIdea}"
 - Categoría: ${brief.category}
-- Estilo editorial: ${brief.editorialStyle}
- 
-Hero Detector™:
-- Hero: "${brief.hero.text}" (tipo: ${brief.hero.type}, score: ${brief.hero.score})
-- Razón: ${brief.hero.reason}
- 
-Emotion Engine™:
-- Emoción primaria: ${brief.emotionProfile.primaryEmotion}
-- Emoción secundaria: ${brief.emotionProfile.secondaryEmotion}
-- Intensidad: ${brief.emotionProfile.intensity}/100
+- Estilo: ${brief.editorialStyle}
+- Hero: "${brief.hero.text}" [${brief.hero.type}]
+- Emoción: ${brief.emotionProfile.primaryEmotion} / ${brief.emotionProfile.secondaryEmotion}
 - Tono: ${brief.emotionProfile.tone}
  
-Visual Direction Engine™:
-- Escena: ${brief.visualDirection.scene}
-- Mood: ${brief.visualDirection.mood}
-- Iluminación: ${brief.visualDirection.lighting}
-- Paleta: ${brief.visualDirection.colorPalette}
-- Atmósfera: ${brief.visualDirection.atmosphere}
-- Keywords visuales: ${brief.visualDirection.keywords.join(', ')}
+VISUAL PROMPT DOMINANCE:
+${brief.promptDominance.positiveTerms.join('\n')}
  
-Strength Visual Constraints™:
-- Elementos REQUERIDOS: ${brief.visualDirection.requiredElements.join(', ')}
-- Elementos PROHIBIDOS: ${brief.visualDirection.forbiddenElements.join(', ')}
+${brief.promptDominance.negativeTerms.join('\n')}
  
-Instrucciones:
-1. La categoría DEBE ser: ${brief.category}
-2. El hero DEBE ser exactamente: "${brief.hero.text}"
-3. El titular debe reflejar la emoción: ${brief.emotionProfile.primaryEmotion}
-4. El gancho debe sonar: ${brief.emotionProfile.tone}
-5. El estilo visual es: ${brief.visualDirection.scene}
-6. El gancho NO debe evocar: ${brief.visualDirection.forbiddenElements.slice(0,3).join(', ')}`;
+INSTRUCCIONES:
+1. Categoría DEBE ser: ${brief.category}
+2. Hero DEBE ser exactamente: "${brief.hero.text}"
+3. Titular debe reflejar: ${brief.emotionProfile.primaryEmotion}
+4. Gancho debe sonar: ${brief.emotionProfile.tone}
+5. El gancho NO debe evocar: ${brief.promptDominance.negativeTerms.slice(0,3).join(', ')}`;
 const payload = JSON.stringify({
   model: 'claude-sonnet-4-6',
   max_tokens: 512,

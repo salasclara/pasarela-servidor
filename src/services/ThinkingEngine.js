@@ -286,8 +286,48 @@ class ThinkingEngine {
     const {hero,heroCandidates}                       = detectHero(idea,category);
     const emotionProfile                              = detectEmotion(idea,category);
     const visualDirection                             = generateVisualDirection(category,hero.text,emotionProfile.primaryEmotion,hero.type);
-    return {originalIdea:idea.trim(),topic,intent,audience,category,editorialStyle,baseVisualDirection,hero,heroCandidates,emotionProfile,visualDirection};
+    const promptDominance                             = generatePromptDominance(emotionProfile.primaryEmotion,hero.type,hero.text,category);
+    return {originalIdea:idea.trim(),topic,intent,audience,category,editorialStyle,baseVisualDirection,hero,heroCandidates,emotionProfile,visualDirection,promptDominance};
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// PROMPT DOMINANCE ENGINE™ — TASK-VI-001.2
+// ═══════════════════════════════════════════════════════════════════════
+
+const DOMINANCE_PROFILES = {
+  emotions: {
+    urgencia:      { pos:['NEWS PHOTOJOURNALISM','HURRICANE THREAT','STORM APPROACHING','COASTAL DANGER','EMERGENCY ALERT','DRAMATIC SKY'], neg:['NO FASHION','NO MODEL','NO GLAMOUR','NO STUDIO','NO BEAUTY PORTRAIT'] },
+    solidaridad:   { pos:['COMMUNITY SUPPORT','REAL PEOPLE','HUMAN CONNECTION','VOLUNTEERS','FAMILY HELPING FAMILY'], neg:['NO FASHION SHOOT','NO MODEL POSE','NO STUDIO PORTRAIT','NO SOLO PERSON','NO GLAMOUR'] },
+    aspiración:    { pos:['HIGH FASHION','EDITORIAL','LUXURY','RUNWAY','DESIGNER','GLAMOUR'], neg:['NO DISASTER','NO NEWS EVENT','NO COMMUNITY SCENE','NO CROWD CHAOS'] },
+    celebración:   { pos:['CELEBRATION','JOY','FESTIVE ATMOSPHERE','WARM LIGHT','PEOPLE TOGETHER'], neg:['NO STORM','NO DANGER','NO EMPTY SPACE','NO DARKNESS'] },
+    orgullo:       { pos:['TRIUMPHANT MOMENT','ACHIEVEMENT','INSPIRING LIGHT','STRONG PRESENCE'], neg:['NO STORM','NO DISASTER','NO EMPTY BACKGROUND'] },
+    inspiración:   { pos:['OPEN HORIZON','BRIGHT LIGHT','POSSIBILITY','FORWARD MOVEMENT','HOPE'], neg:['NO STORM','NO DISASTER','NO CLOSED SPACE','NO DARKNESS'] },
+    asombro:       { pos:['FUTURISTIC TECHNOLOGY','INNOVATION','SCALE AND IMPACT','PRODUCT HERO'], neg:['NO VINTAGE','NO NATURAL LANDSCAPE','NO FASHION EDITORIAL'] },
+    intriga:       { pos:['MYSTERIOUS ATMOSPHERE','DRAMATIC SHADOWS','CINEMATIC DEPTH','DARK ELEGANCE'], neg:['NO BRIGHT CHEERFUL','NO CROWD','NO COMMUNITY SCENE'] },
+    empoderamiento:{ pos:['STRONG PRESENCE','DIRECT GAZE','POWERFUL POSE','BOLD LIGHT'], neg:['NO WEAKNESS','NO CHAOS','NO SOFT LIGHT'] },
+    calma:         { pos:['PEACEFUL SCENE','NATURE','SOFT LIGHT','STILLNESS','WELLNESS'], neg:['NO CROWD','NO CHAOS','NO STORM','NO URGENCY'] },
+    nostalgia:     { pos:['WARM TONES','TIMELESS SETTING','SOFT FOCUS','GOLDEN LIGHT'], neg:['NO FUTURISTIC','NO NEON','NO HARSH CONTRAST'] },
+    amor:          { pos:['INTIMATE CONNECTION','SOFT LIGHT','CLOSENESS','TENDERNESS'], neg:['NO STORM','NO HARSH LIGHTING','NO COLD TONES'] },
+  },
+  heroTypes: {
+    concept:  { pos:['SYMBOLIC VISUAL','POWERFUL METAPHOR'], neg:['NO LITERAL STOCK PHOTO'] },
+    product:  { pos:['PRODUCT HERO SHOT','INNOVATION CONTEXT'], neg:['NO GENERIC BACKGROUND'] },
+    person:   { pos:['PORTRAIT FOCUS','AUTHENTIC EXPRESSION'], neg:['NO OBSCURED FACE'] },
+    brand:    { pos:['PREMIUM ENVIRONMENT'], neg:['NO COMPETITOR CONTEXT'] },
+    event:    { pos:['EVENT ENERGY','ATMOSPHERE'], neg:['NO EMPTY VENUE'] },
+    fallback: { pos:['EDITORIAL QUALITY'], neg:['NO GENERIC STOCK'] },
+  },
+};
+
+function generatePromptDominance(emotion, heroType, heroText, category) {
+  const emo  = DOMINANCE_PROFILES.emotions[emotion]   || DOMINANCE_PROFILES.emotions['aspiración'];
+  const hero = DOMINANCE_PROFILES.heroTypes[heroType] || DOMINANCE_PROFILES.heroTypes['fallback'];
+  const heroLabel = heroText.split('\n').join(' ').toUpperCase();
+  const positive = [heroLabel, ...emo.pos.slice(0,4), ...hero.pos.slice(0,1)].filter((v,i,a)=>a.indexOf(v)===i).slice(0,6);
+  const negative = [...emo.neg.slice(0,4), ...hero.neg.slice(0,1)].filter((v,i,a)=>a.indexOf(v)===i).slice(0,5);
+  return { dominantPrompt:[...positive,...negative].join('\n'), positiveTerms:positive, negativeTerms:negative };
 }
 
 module.exports = { ThinkingEngine };
