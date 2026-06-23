@@ -245,7 +245,12 @@ const server = http.createServer((req, res) => {
             const texto = parsed.content?.[0]?.text || 'Sin respuesta';
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ texto }));
-          } catch(e) { res.writeHead(500); res.end(JSON.stringify({ error: 'Error parseando respuesta' })); }
+          } catch(e) {
+            console.error('MATERIALIZE_ERROR message:', e.message);
+            console.error('MATERIALIZE_ERROR stack:', e.stack);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'MATERIALIZE_FAILED', message: e.message }));
+          }
         });
       });
       apiReq.on('error', err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
