@@ -463,7 +463,6 @@ const userMessage = `Editorial Brief generado por PASARELA ThinkingEngine:
 - Audiencia: ${brief.audience}
 - Categoría: ${brief.category}
 - Estilo editorial: ${brief.editorialStyle}
-- Dirección visual: ${brief.visualDirection}
  
 Hero Detector™:
 - Hero: "${brief.hero.text}" (tipo: ${brief.hero.type}, score: ${brief.hero.score})
@@ -474,21 +473,21 @@ Emotion Engine™:
 - Emoción secundaria: ${brief.emotionProfile.secondaryEmotion}
 - Intensidad: ${brief.emotionProfile.intensity}/100
 - Tono: ${brief.emotionProfile.tone}
-- Razón: ${brief.emotionProfile.reason}
  
-Instrucciones para generar el JSON editorial:
+Visual Direction Engine™:
+- Escena: ${brief.visualDirection.scene}
+- Mood: ${brief.visualDirection.mood}
+- Iluminación: ${brief.visualDirection.lighting}
+- Paleta: ${brief.visualDirection.colorPalette}
+- Atmósfera: ${brief.visualDirection.atmosphere}
+- Keywords visuales: ${brief.visualDirection.keywords.join(', ')}
+ 
+Instrucciones:
 1. La categoría DEBE ser: ${brief.category}
 2. El hero DEBE ser exactamente: "${brief.hero.text}"
 3. El titular debe reflejar la emoción: ${brief.emotionProfile.primaryEmotion}
 4. El gancho debe sonar: ${brief.emotionProfile.tone}
-5. Usa el estilo editorial "${brief.editorialStyle}" como guía tonal.`;
- 
-const payload = JSON.stringify({
-  model: 'claude-sonnet-4-6',
-  max_tokens: 512,
-  system: systemPrompt,
-  messages: [{ role: 'user', content: userMessage }],
-});
+5. El estilo visual que describe esta historia: ${brief.visualDirection.scene}`;
 
       const options = {
         hostname: 'api.anthropic.com',

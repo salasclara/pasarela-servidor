@@ -1,142 +1,196 @@
 /**
- * ThinkingEngine.js — v4 FINAL
+ * ThinkingEngine.js — v5 FINAL
  * PASARELA Editorial Intelligence™
- * Includes: HeroDetector v2 + EmotionEngine v1
- * All modules embedded — zero external dependencies.
+ * HeroDetector v2 + EmotionEngine v1 + VisualDirectionEngine v1
+ * Zero external dependencies.
  */
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// EMOTION ENGINE v1.0
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// VISUAL DIRECTION ENGINE v1.0
+// ═══════════════════════════════════════════════════════════════════════
 
-const EMOTION_PROFILES = [
-  { id:'urgencia',       signals:['huracan','terremoto','alerta','emergencia','catastrofe','tormenta','peligro','evacuacion','crisis','desastre'], primary:'urgencia',      secondary:'miedo',       intensity:98, tone:'directo, alarmante, informativo',            reason:'La idea comunica una amenaza o emergencia que requiere atención inmediata.' },
-  { id:'celebracion',    signals:['inaugura','inauguramos','inauguracion','abre sus puertas','gran apertura','apertura','lanzamiento','lanzamos','lanzo','celebra','celebramos','fiesta','festeja','brindis'], primary:'celebración', secondary:'orgullo',      intensity:88, tone:'positivo, cálido, aspiracional',            reason:'La idea comunica una apertura o lanzamiento que debe sentirse como logro y celebración.' },
-  { id:'orgullo',        signals:['graduacion','graduamos','graduados','promoci','titulacion','logro','logramos','exito','ganamos','gano','gana','campeon','premio','triunfo'], primary:'orgullo',      secondary:'inspiración', intensity:90, tone:'emotivo, aspiracional, celebratorio',        reason:'La idea comunica un logro personal o colectivo que debe resonar con orgullo.' },
-  { id:'inspiracion',    signals:['transforma','cambia','revolucion','innovacion','futuro','posible','sueno','vision','nuevo camino','oportunidad','potencial'], primary:'inspiración',  secondary:'esperanza',   intensity:85, tone:'visionario, poderoso, motivador',           reason:'La idea apunta a transformación o cambio que debe despertar inspiración.' },
-  { id:'solidaridad',    signals:['comunidad','unidos','juntos','ayuda','apoyo','donacion','voluntarios','familia','vecinos','colaboracion','se une','unen'], primary:'solidaridad',  secondary:'calidez',     intensity:82, tone:'humano, cercano, emotivo',                  reason:'La idea habla de unión comunitaria que debe transmitir solidaridad y pertenencia.' },
-  { id:'calma',          signals:['bienestar','rutina','meditacion','yoga','mindfulness','equilibrio','paz','descanso','relax','salud mental','respiracion','serenidad'], primary:'calma',        secondary:'bienestar',   intensity:72, tone:'suave, contemplativo, sanador',             reason:'La idea evoca bienestar y cuidado personal que debe transmitir calma y equilibrio.' },
-  { id:'lujo',           signals:['lujo','exclusivo','premium','haute couture','alta costura','gala','alfombra roja','vip','coleccion','disenador','fashion week'], primary:'aspiración',   secondary:'deseo',       intensity:88, tone:'sofisticado, elegante, exclusivo',           reason:'La idea evoca el mundo del lujo y la moda de alto nivel.' },
-  { id:'nostalgia',      signals:['aniversario','anos de','historia','trayectoria','legado','recordamos','memoria','clasico','tradicion','desde'], primary:'nostalgia',    secondary:'orgullo',     intensity:78, tone:'evocador, cálido, respetuoso',              reason:'La idea evoca historia o legado que debe transmitir nostalgia y respeto.' },
-  { id:'intriga',        signals:['secreto','detras de','exclusiva','primicia','intimo','confesion','nunca antes','por primera vez'], primary:'intriga',      secondary:'curiosidad',  intensity:86, tone:'misterioso, seductor, cinematográfico',     reason:'La idea sugiere revelación o exclusividad que debe generar intriga y curiosidad.' },
-  { id:'empoderamiento', signals:['mujer','latina','emprendedora','lider','fuerza','rompe','primera en','historico','barrera','representacion'], primary:'empoderamiento',secondary:'orgullo',    intensity:91, tone:'poderoso, afirmativo, inspirador',          reason:'La idea comunica un hito de representación o liderazgo que debe sentirse empoderador.' },
-  { id:'tecnologia',     signals:['ia','inteligencia artificial','robot','tecnologia','innovacion digital','automatizacion','metaverso','lanza gpt','presenta vision','robotaxi'], primary:'asombro',      secondary:'curiosidad',  intensity:87, tone:'visionario, técnico-editorial, disruptivo', reason:'La idea presenta una innovación tecnológica que debe generar asombro y curiosidad.' },
-  { id:'amor',           signals:['boda','matrimonio','amor','enamorados','romantico','pareja','compromiso','propuesta'], primary:'amor',         secondary:'ternura',     intensity:84, tone:'romántico, íntimo, luminoso',               reason:'La idea evoca amor y unión que debe transmitir calidez y emoción.' },
-];
-
-const CATEGORY_EMOTION_FALLBACK = {
-  MODA:       { primary:'aspiración',  secondary:'deseo',       intensity:75, tone:'sofisticado, elegante, aspiracional' },
-  BELLEZA:    { primary:'confianza',   secondary:'bienestar',   intensity:74, tone:'íntimo, luminoso, sensorial' },
-  TALENTO:    { primary:'inspiración', secondary:'admiración',  intensity:78, tone:'poderoso, auténtico, aspiracional' },
-  EVENTOS:    { primary:'emoción',     secondary:'expectativa', intensity:76, tone:'dinámico, celebratorio, social' },
-  LIFESTYLE:  { primary:'bienestar',   secondary:'calma',       intensity:70, tone:'cálido, cotidiano, sofisticado' },
-  EXCLUSIVAS: { primary:'intriga',     secondary:'curiosidad',  intensity:80, tone:'dramático, exclusivo, cinematográfico' },
+const MOOD_MAP_VD = {
+  'celebración':    { mood:'festive warm',        lighting:'golden hour',            colorPalette:'warm golds and whites',     camera:'editorial celebratory',   atmosphere:'bright movement'     },
+  'orgullo':        { mood:'inspiring',            lighting:'dramatic inspirational', colorPalette:'deep golds and warm tones', camera:'portrait editorial',      atmosphere:'triumphant focus'    },
+  'solidaridad':    { mood:'warm human',           lighting:'natural warm',           colorPalette:'warm earth tones',          camera:'documentary editorial',   atmosphere:'connected people'    },
+  'urgencia':       { mood:'tense alarming',       lighting:'dramatic contrast',      colorPalette:'dark greys and reds',       camera:'news editorial cinematic',atmosphere:'dark tension'        },
+  'inspiración':    { mood:'visionary hopeful',    lighting:'bright optimistic',      colorPalette:'clean whites and blues',    camera:'cinematic editorial',     atmosphere:'open possibility'    },
+  'asombro':        { mood:'futuristic wonder',    lighting:'neon blue',              colorPalette:'electric blue and black',   camera:'cinematic tech editorial',atmosphere:'tech innovation'     },
+  'aspiración':     { mood:'luxury elegant',       lighting:'luxury studio',          colorPalette:'blacks creams and gold',    camera:'magazine cover fashion',  atmosphere:'sophisticated'       },
+  'calma':          { mood:'serene peaceful',      lighting:'soft diffused',          colorPalette:'soft neutrals and greens',  camera:'lifestyle documentary',   atmosphere:'quiet stillness'     },
+  'intriga':        { mood:'mysterious dramatic',  lighting:'chiaroscuro',            colorPalette:'deep blacks and golds',     camera:'cinematic noir editorial',atmosphere:'cinematic suspense'  },
+  'empoderamiento': { mood:'powerful affirming',   lighting:'bold dramatic',          colorPalette:'bold reds and blacks',      camera:'portrait empowerment',    atmosphere:'strong presence'     },
+  'confianza':      { mood:'clean confident',      lighting:'bright clean',           colorPalette:'whites and soft pinks',     camera:'beauty editorial',        atmosphere:'clarity wellness'    },
+  'bienestar':      { mood:'calm wellness',        lighting:'natural soft',           colorPalette:'earthy greens and neutrals',camera:'lifestyle wellness',      atmosphere:'peaceful balance'    },
+  'amor':           { mood:'romantic intimate',    lighting:'soft romantic',          colorPalette:'soft pinks and creams',     camera:'intimate editorial',      atmosphere:'tender closeness'    },
+  'nostalgia':      { mood:'warm nostalgic',       lighting:'warm golden tones',      colorPalette:'sepia warm tones',          camera:'documentary portrait',    atmosphere:'timeless'            },
 };
 
-function detectEmotion(idea, category = 'EXCLUSIVAS') {
-  const text = idea.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  let bestMatch = null, bestScore = 0;
-  for (const profile of EMOTION_PROFILES) {
-    const matchCount = profile.signals.filter(s => text.includes(s)).length;
-    if (matchCount > 0 && matchCount > bestScore) { bestScore = matchCount; bestMatch = profile; }
-  }
-  if (bestMatch) {
-    return { emotionProfile: { primaryEmotion: bestMatch.primary, secondaryEmotion: bestMatch.secondary, intensity: bestMatch.intensity, reason: bestMatch.reason, tone: bestMatch.tone, source: 'idea-specific' } };
-  }
-  const fallback = CATEGORY_EMOTION_FALLBACK[category] || CATEGORY_EMOTION_FALLBACK.EXCLUSIVAS;
-  return { emotionProfile: { primaryEmotion: fallback.primary, secondaryEmotion: fallback.secondary, intensity: fallback.intensity, reason: `Emoción base de la categoría ${category}.`, tone: fallback.tone, source: 'category-fallback' } };
+const CATEGORY_RULES_VD = {
+  MODA:       { scene:'fashion editorial studio',          style:'high fashion editorial',      keywords:['fashion','elegance','style','luxury','magazine']   },
+  BELLEZA:    { scene:'beauty close-up portrait',          style:'beauty magazine',             keywords:['beauty','skin','glow','close-up','radiant']        },
+  TALENTO:    { scene:'talent portrait editorial',         style:'talent showcase',             keywords:['talent','performer','authentic','powerful']         },
+  EVENTOS:    { scene:'event atmosphere celebration',      style:'event coverage',              keywords:['event','celebration','people','energy','moment']    },
+  LIFESTYLE:  { scene:'authentic lifestyle moment',        style:'lifestyle documentary',       keywords:['lifestyle','authentic','real','warm','human']       },
+  EXCLUSIVAS: { scene:'exclusive cinematic portrait',      style:'cover story exclusive',       keywords:['exclusive','dramatic','cinematic','powerful','story']},
+};
+
+const HERO_AMP = {
+  'ALERTA':        { sceneAdd:'stormy sky threatening clouds',     kw:['storm','danger','warning','dramatic sky'],         moodAdd:'alarming tense',     lightOver:'dark dramatic stormy'    },
+  'REVOLUCIÓN':    { sceneAdd:'transformation movement change',    kw:['revolution','change','movement','transformation'],  moodAdd:'revolutionary',      lightOver:null                      },
+  'INAUGURACIÓN':  { sceneAdd:'grand opening ribbon cutting',      kw:['opening','celebration','new beginning'],            moodAdd:'celebratory proud',  lightOver:'warm golden festive'     },
+  'GRAN APERTURA': { sceneAdd:'grand opening celebration crowd',   kw:['grand opening','celebration','community'],          moodAdd:'festive proud',      lightOver:'warm golden festive'     },
+  'ROBOTAXI':      { sceneAdd:'autonomous vehicle futuristic city',kw:['autonomous','vehicle','future mobility','tech'],    moodAdd:'futuristic',         lightOver:'neon city night'         },
+  'GRADUACIÓN':    { sceneAdd:'graduation ceremony achievement',   kw:['graduation','achievement','milestone'],             moodAdd:'proud triumphant',   lightOver:'bright inspirational'    },
+  'SOLIDARIDAD':   { sceneAdd:'people helping hands community',    kw:['helping','community','support','together'],         moodAdd:'warm human',         lightOver:'warm natural'            },
+  'FUTURO':        { sceneAdd:'horizon possibility open sky',       kw:['horizon','future','possibility','light'],           moodAdd:'hopeful visionary',  lightOver:'golden sunrise'          },
+  'TRIUNFO':       { sceneAdd:'victory moment triumph winner',     kw:['victory','triumph','winner','glory'],               moodAdd:'triumphant',         lightOver:'dramatic golden'         },
+  'CELEBRACIÓN':   { sceneAdd:'joyful celebration people energy',  kw:['joy','celebration','energy','happiness'],           moodAdd:'joyful energetic',   lightOver:'warm bright festive'     },
+  'DEBUT':         { sceneAdd:'first moment spotlight stage',       kw:['debut','first','spotlight','stage'],                moodAdd:'anticipation proud', lightOver:'dramatic spotlight'      },
+  'SHAKIRA':       { sceneAdd:'iconic performer stage spotlight',  kw:['performer','icon','stage','energy'],                moodAdd:'iconic powerful',    lightOver:'dramatic stage lighting' },
+  'DALLAS':        { sceneAdd:'community people warm gathering',   kw:['community','people','warmth','together'],           moodAdd:'warm community',     lightOver:'warm natural'            },
+};
+
+function generateVisualDirection(category, heroText, emotion) {
+  const catKey = (category || 'EXCLUSIVAS').toUpperCase();
+  const catRule = CATEGORY_RULES_VD[catKey] || CATEGORY_RULES_VD.EXCLUSIVAS;
+  const moodProfile = MOOD_MAP_VD[(emotion || '').toLowerCase()] || MOOD_MAP_VD['aspiración'];
+  const heroKey = (heroText || '').toUpperCase().split('\n').join(' ');
+  const amp = HERO_AMP[heroKey] || null;
+  const scene    = amp ? amp.sceneAdd + ', ' + catRule.scene : catRule.scene;
+  const lighting = (amp && amp.lightOver) ? amp.lightOver : moodProfile.lighting;
+  const mood     = amp ? amp.moodAdd + ', ' + moodProfile.mood : moodProfile.mood;
+  const keywords = [...catRule.keywords.slice(0,3), ...(amp ? amp.kw.slice(0,3) : [])].filter((v,i,a) => a.indexOf(v) === i).slice(0,6);
+  return {
+    scene, mood, lighting,
+    camera:       moodProfile.camera,
+    colorPalette: moodProfile.colorPalette,
+    style:        catRule.style,
+    atmosphere:   moodProfile.atmosphere,
+    keywords,
+  };
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// HERO DETECTOR v2.0
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// EMOTION ENGINE v1.0
+// ═══════════════════════════════════════════════════════════════════════
 
-const CONCEPT_SIGNALS = [
-  { signals:['transforma','revoluciona','cambia todo','redefine','reimagina'], hero:'REVOLUCIÓN', score:100 },
-  { signals:['futuro de','el futuro','proxima generacion'],                    hero:'FUTURO',     score:98  },
-  { signals:['disrupc','disruptiv'],                                           hero:'DISRUPCIÓN', score:97  },
-  { signals:['huracan','terremoto','catastrofe','emergencia','alerta'],        hero:'ALERTA',     score:100 },
-  { signals:['innovac'],                                                        hero:'INNOVACIÓN', score:95  },
-  { signals:['crisis'],                                                         hero:'CRISIS',     score:96  },
+const EMOTION_PROFILES = [
+  { signals:['huracan','terremoto','alerta','emergencia','catastrofe','tormenta','peligro','evacuacion','crisis','desastre'], primary:'urgencia',      secondary:'miedo',       intensity:98, tone:'directo, alarmante, informativo',            reason:'La idea comunica una amenaza o emergencia.' },
+  { signals:['inaugura','inauguramos','inauguracion','abre sus puertas','gran apertura','apertura','lanzamiento','lanzamos','lanzo','celebra','celebramos','fiesta','brindis'], primary:'celebración', secondary:'orgullo', intensity:88, tone:'positivo, cálido, aspiracional', reason:'La idea comunica apertura o lanzamiento.' },
+  { signals:['graduacion','graduamos','graduados','promoci','logro','logramos','exito','ganamos','gano','gana','campeon','premio','triunfo'], primary:'orgullo', secondary:'inspiración', intensity:90, tone:'emotivo, aspiracional, celebratorio', reason:'La idea comunica un logro personal o colectivo.' },
+  { signals:['transforma','cambia','revolucion','innovacion','futuro','sueno','vision','oportunidad','potencial'], primary:'inspiración', secondary:'esperanza', intensity:85, tone:'visionario, poderoso, motivador', reason:'La idea apunta a transformación.' },
+  { signals:['comunidad','unidos','juntos','ayuda','apoyo','donacion','voluntarios','familia','vecinos','colaboracion','se une','unen'], primary:'solidaridad', secondary:'calidez', intensity:82, tone:'humano, cercano, emotivo', reason:'La idea habla de unión comunitaria.' },
+  { signals:['bienestar','rutina','meditacion','yoga','mindfulness','equilibrio','paz','descanso','relax','serenidad'], primary:'calma', secondary:'bienestar', intensity:72, tone:'suave, contemplativo, sanador', reason:'La idea evoca bienestar.' },
+  { signals:['lujo','exclusivo','premium','haute couture','alta costura','gala','alfombra roja','vip','disenador','fashion week'], primary:'aspiración', secondary:'deseo', intensity:88, tone:'sofisticado, elegante, exclusivo', reason:'La idea evoca el mundo del lujo.' },
+  { signals:['aniversario','anos de','historia','trayectoria','legado','recordamos','memoria','clasico','tradicion'], primary:'nostalgia', secondary:'orgullo', intensity:78, tone:'evocador, cálido, respetuoso', reason:'La idea evoca historia o legado.' },
+  { signals:['secreto','detras de','exclusiva','primicia','intimo','nunca antes','por primera vez'], primary:'intriga', secondary:'curiosidad', intensity:86, tone:'misterioso, seductor, cinematográfico', reason:'La idea sugiere revelación.' },
+  { signals:['mujer','latina','emprendedora','lider','fuerza','rompe','primera en','historico','representacion'], primary:'empoderamiento', secondary:'orgullo', intensity:91, tone:'poderoso, afirmativo, inspirador', reason:'La idea comunica liderazgo.' },
+  { signals:['ia','inteligencia artificial','robot','tecnologia','innovacion digital','automatizacion','metaverso','robotaxi'], primary:'asombro', secondary:'curiosidad', intensity:87, tone:'visionario, técnico-editorial, disruptivo', reason:'La idea presenta innovación tecnológica.' },
+  { signals:['boda','matrimonio','amor','enamorados','romantico','pareja','compromiso','propuesta'], primary:'amor', secondary:'ternura', intensity:84, tone:'romántico, íntimo, luminoso', reason:'La idea evoca amor.' },
 ];
 
-const KNOWN_PRODUCTS = [
-  { pattern:/robotaxi/i,              text:'ROBOTAXI',                                      score:94 },
-  { pattern:/vision\s*pro\s*(\d+)?/i, text:(m)=>`VISION PRO${m[1]?' '+m[1]:''}`,           score:93 },
-  { pattern:/gpt-?(\d+)/i,           text:(m)=>`GPT-${m[1]}`,                              score:93 },
-  { pattern:/starlink/i,              text:'STARLINK',                                      score:91 },
-  { pattern:/iphone\s*(\d+)?/i,      text:(m)=>`IPHONE${m[1]?' '+m[1]:''}`,               score:91 },
-  { pattern:/cybertruck/i,            text:'CYBERTRUCK',                                    score:92 },
-  { pattern:/neuralink/i,             text:'NEURALINK',                                     score:92 },
-  { pattern:/gemini/i,                text:'GEMINI',                                        score:90 },
-  { pattern:/chatgpt/i,               text:'CHATGPT',                                       score:90 },
-  { pattern:/dall-?e/i,               text:'DALL-E',                                        score:89 },
-  { pattern:/sora/i,                  text:'SORA',                                          score:89 },
-];
-
-const HIGH_IMPACT_NAMES = ['gabriela hearst','shakira','beyoncé','beyonce','jennifer lopez','rihanna','bad bunny','maluma','j balvin','karol g','rosalía','rosalia','zendaya','elon musk','taylor swift','madonna','kim kardashian'];
-const BRAND_SIGNALS     = [{name:'tesla',score:74},{name:'apple',score:74},{name:'openai',score:74},{name:'meta',score:72},{name:'google',score:72},{name:'microsoft',score:72},{name:'amazon',score:71},{name:'samsung',score:70},{name:'netflix',score:71},{name:'dior',score:73},{name:'chanel',score:73},{name:'gucci',score:73},{name:'prada',score:72},{name:'versace',score:72},{name:'balenciaga',score:72},{name:'zara',score:70},{name:'louis vuitton',score:73}];
-
-const INTENT_HEROES_HD = {
-  inauguración:{text:'INAUGURACIÓN',score:88}, apertura:{text:'GRAN APERTURA',score:86},
-  lanzamiento:{text:'LANZAMIENTO',score:75},   debut:{text:'DEBUT',score:82},
-  celebración:{text:'CELEBRACIÓN',score:80},   graduación:{text:'GRADUACIÓN',score:88},
-  aniversario:{text:'ANIVERSARIO',score:78},   premio:{text:'TRIUNFO',score:82},
-  exclusiva:{text:'EXCLUSIVA',score:85},
-  solidaridad:{text:'SOLIDARIDAD',score:83},
+const CAT_EMO_FALLBACK = {
+  MODA:{primary:'aspiración',secondary:'deseo',intensity:75,tone:'sofisticado, elegante, aspiracional'},
+  BELLEZA:{primary:'confianza',secondary:'bienestar',intensity:74,tone:'íntimo, luminoso, sensorial'},
+  TALENTO:{primary:'inspiración',secondary:'admiración',intensity:78,tone:'poderoso, auténtico, aspiracional'},
+  EVENTOS:{primary:'emoción',secondary:'expectativa',intensity:76,tone:'dinámico, celebratorio, social'},
+  LIFESTYLE:{primary:'bienestar',secondary:'calma',intensity:70,tone:'cálido, cotidiano, sofisticado'},
+  EXCLUSIVAS:{primary:'intriga',secondary:'curiosidad',intensity:80,tone:'dramático, exclusivo, cinematográfico'},
 };
 
-const INTENT_TRIGGERS_HD = {
-  inauguración:['inaugura','inauguramos','inauguracion'], apertura:['abre sus puertas','abrimos','apertura','abrio','nuevo restaurante','nuevo cafe','nueva tienda','gran apertura'],
-  lanzamiento:['lanzamos','lanzamiento','lanzo'],         debut:['debut','debuta','primera vez','estrena'],
-  celebración:['celebra','celebramos','festeja','fiesta'],graduación:['graduacion','graduamos','graduados','promoci'],
-  aniversario:['aniversario','anos de','cumpleanos'],     premio:['gano','ganamos','gana','triunfo','campeon','premio'],
+function detectEmotion(idea, category) {
+  const text = idea.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  let best = null, bestScore = 0;
+  for (const p of EMOTION_PROFILES) {
+    const n = p.signals.filter(s => text.includes(s)).length;
+    if (n > 0 && n > bestScore) { bestScore = n; best = p; }
+  }
+  if (best) return { primaryEmotion:best.primary, secondaryEmotion:best.secondary, intensity:best.intensity, reason:best.reason, tone:best.tone, source:'idea-specific' };
+  const fb = CAT_EMO_FALLBACK[category] || CAT_EMO_FALLBACK.EXCLUSIVAS;
+  return { primaryEmotion:fb.primary, secondaryEmotion:fb.secondary, intensity:fb.intensity, reason:`Emoción base: ${category}`, tone:fb.tone, source:'category-fallback' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HERO DETECTOR v2.0
+// ═══════════════════════════════════════════════════════════════════════
+
+const CONCEPT_SIG = [
+  { signals:['transforma','revoluciona','cambia todo','redefine'], hero:'REVOLUCIÓN', score:100 },
+  { signals:['futuro de','el futuro','proxima generacion'],        hero:'FUTURO',     score:98  },
+  { signals:['disrupc','disruptiv'],                               hero:'DISRUPCIÓN', score:97  },
+  { signals:['huracan','terremoto','catastrofe','emergencia','alerta'], hero:'ALERTA',score:100 },
+  { signals:['innovac'],                                           hero:'INNOVACIÓN', score:95  },
+  { signals:['crisis'],                                            hero:'CRISIS',     score:96  },
+];
+
+const KNOWN_PROD = [
+  { pattern:/robotaxi/i,              fn:(m)=>'ROBOTAXI',                                       score:94 },
+  { pattern:/vision\s*pro\s*(\d+)?/i, fn:(m)=>`VISION PRO${m[1]?' '+m[1]:''}`,                 score:93 },
+  { pattern:/gpt-?(\d+)/i,           fn:(m)=>`GPT-${m[1]}`,                                    score:93 },
+  { pattern:/starlink/i,              fn:(m)=>'STARLINK',                                       score:91 },
+  { pattern:/cybertruck/i,            fn:(m)=>'CYBERTRUCK',                                     score:92 },
+  { pattern:/neuralink/i,             fn:(m)=>'NEURALINK',                                      score:92 },
+  { pattern:/chatgpt/i,               fn:(m)=>'CHATGPT',                                        score:90 },
+];
+
+const HI_NAMES = ['gabriela hearst','shakira','beyoncé','beyonce','jennifer lopez','rihanna','bad bunny','maluma','j balvin','karol g','rosalía','rosalia','zendaya','elon musk','taylor swift','madonna','kim kardashian'];
+const BRANDS   = [{n:'tesla',s:74},{n:'apple',s:74},{n:'openai',s:74},{n:'meta',s:72},{n:'google',s:72},{n:'dior',s:73},{n:'chanel',s:73},{n:'gucci',s:73},{n:'prada',s:72},{n:'zara',s:70}];
+
+const INTENT_H = {
+  inauguración:{t:'INAUGURACIÓN',s:88}, apertura:{t:'GRAN APERTURA',s:86}, lanzamiento:{t:'LANZAMIENTO',s:75},
+  debut:{t:'DEBUT',s:82}, celebración:{t:'CELEBRACIÓN',s:80}, graduación:{t:'GRADUACIÓN',s:88},
+  aniversario:{t:'ANIVERSARIO',s:78}, premio:{t:'TRIUNFO',s:82}, exclusiva:{t:'EXCLUSIVA',s:85},
+  solidaridad:{t:'SOLIDARIDAD',s:83},
+};
+const INTENT_T = {
+  inauguración:['inaugura','inauguramos','inauguracion'],
+  apertura:['abre sus puertas','abrimos','apertura','abrio','nuevo restaurante','nuevo cafe','nueva tienda','gran apertura'],
+  lanzamiento:['lanzamos','lanzamiento','lanzo'],
+  debut:['debut','debuta','primera vez','estrena'],
+  celebración:['celebra','celebramos','festeja','fiesta'],
+  graduación:['graduacion','graduamos','graduados','promoci'],
+  aniversario:['aniversario','anos de','cumpleanos'],
+  premio:['gano','ganamos','gana','triunfo','campeon','premio'],
   exclusiva:['exclusiva','primicia','detras de'],
   solidaridad:['se une','unen','juntos','solidaridad','ayudando'],
 };
+const CAT_FB = {MODA:'ESTILO',BELLEZA:'BELLEZA',TALENTO:'TALENTO',EVENTOS:'EVENTO',LIFESTYLE:'LIFESTYLE',EXCLUSIVAS:'EXCLUSIVA'};
 
-const CATEGORY_FALLBACK_HD = {MODA:'ESTILO',BELLEZA:'BELLEZA',TALENTO:'TALENTO',EVENTOS:'EVENTO',LIFESTYLE:'LIFESTYLE',EXCLUSIVAS:'EXCLUSIVA'};
-
-function resolveLayout(text) {
-  const w = text.trim().split(/\s+/).length;
-  return w===1?'gigante':w===2?'dos-lineas':w===3?'tres-lineas':'compacto';
-}
-
-function normHD(str) { return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
-
-function extractCapProd(idea) {
-  const GENERIC = new Set(['LA','EL','LOS','LAS','UN','UNA','DE','DEL','EN','Y','CON','POR','QUE','SE','ES','HOY','SU','AL','NO','SI']);
-  const words = idea.split(/\s+/); const products = [];
-  for (let i=1;i<words.length;i++) {
-    const w = words[i].replace(/[.,!?]/g,'');
-    if (/^[A-ZÁÉÍÓÚ][a-zA-Z0-9áéíóú\-]+/.test(w)&&w.length>2&&!GENERIC.has(w.toUpperCase())) {
-      if (i+1<words.length){const next=words[i+1].replace(/[.,!?]/g,'');if(/^[A-ZÁÉÍÓÚ0-9]/.test(next)&&next.length>1&&!GENERIC.has(next.toUpperCase()))products.push({text:`${w} ${next}`.toUpperCase(),score:88});}
-      products.push({text:w.toUpperCase(),score:85});
+function rLayout(t){const w=t.trim().split(/\s+/).length;return w===1?'gigante':w===2?'dos-lineas':w===3?'tres-lineas':'compacto';}
+function nrm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function capProd(idea){
+  const G=new Set(['LA','EL','LOS','LAS','UN','UNA','DE','DEL','EN','Y','CON','POR','QUE','SE','ES','HOY','SU','AL','NO','SI']);
+  const words=idea.split(/\s+/);const p=[];
+  for(let i=1;i<words.length;i++){
+    const w=words[i].replace(/[.,!?]/g,'');
+    if(/^[A-ZÁÉÍÓÚ][a-zA-Z0-9áéíóú\-]+/.test(w)&&w.length>2&&!G.has(w.toUpperCase())){
+      if(i+1<words.length){const nx=words[i+1].replace(/[.,!?]/g,'');if(/^[A-ZÁÉÍÓÚ0-9]/.test(nx)&&nx.length>1&&!G.has(nx.toUpperCase()))p.push({t:`${w} ${nx}`.toUpperCase(),s:88});}
+      p.push({t:w.toUpperCase(),s:85});
     }
   }
-  return products;
+  return p;
 }
 
-function detectHero(idea, category='EXCLUSIVAS') {
-  const text = normHD(idea); const candidates = [];
-  let hasName=false;
-  for (const {signals,hero,score} of CONCEPT_SIGNALS) { if(signals.some(s=>text.includes(s))) candidates.push({text:hero,type:'concept',score,reason:`Concepto: ${hero}`}); }
-  for (const p of KNOWN_PRODUCTS) { const m=idea.match(p.pattern); if(m){const t=typeof p.text==='function'?p.text(m):p.text; candidates.push({text:t,type:'product',score:p.score,reason:`Producto: ${t}`});} }
-  for (const name of HIGH_IMPACT_NAMES) { if(text.includes(normHD(name))){const f=name.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join('\n').toUpperCase(); candidates.push({text:f,type:'person',score:92,reason:`Persona: ${name}`}); hasName=true; break;} }
-  if(!hasName){const cp=extractCapProd(idea);for(const p of cp.slice(0,2))candidates.push({text:p.text,type:'product',score:p.score,reason:`Producto cap: ${p.text}`});}
-  for (const b of BRAND_SIGNALS){if(text.includes(b.name))candidates.push({text:b.name.toUpperCase(),type:'brand',score:b.score,reason:`Marca: ${b.name}`});}
-  for (const [intent,triggers] of Object.entries(INTENT_TRIGGERS_HD)){if(triggers.some(t=>text.includes(t))){const h=INTENT_HEROES_HD[intent];if(h)candidates.push({text:h.text,type:'event',score:h.score,reason:`Intent: ${intent}`,});}}
-  candidates.push({text:CATEGORY_FALLBACK_HD[category]||'EXCLUSIVA',type:'fallback',score:50,reason:`Fallback: ${category}`});
-  candidates.sort((a,b)=>b.score-a.score);
-  const w=candidates[0];
-  return { hero:{text:w.text,type:w.type,score:w.score,reason:w.reason,layout:resolveLayout(w.text)}, heroCandidates:candidates.map(c=>({text:c.text,type:c.type,score:c.score})) };
+function detectHero(idea, category) {
+  const text=nrm(idea);const cands=[];let hasName=false;
+  for(const{signals,hero,score}of CONCEPT_SIG){if(signals.some(s=>text.includes(s)))cands.push({text:hero,type:'concept',score,reason:`Concepto: ${hero}`});}
+  for(const p of KNOWN_PROD){const m=idea.match(p.pattern);if(m)cands.push({text:p.fn(m),type:'product',score:p.score,reason:`Producto: ${p.fn(m)}`});}
+  for(const name of HI_NAMES){if(text.includes(nrm(name))){const f=name.split(' ').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join('\n').toUpperCase();cands.push({text:f,type:'person',score:92,reason:`Persona: ${name}`});hasName=true;break;}}
+  if(!hasName){const cp=capProd(idea);for(const p of cp.slice(0,2))cands.push({text:p.t,type:'product',score:p.s,reason:`Producto cap: ${p.t}`});}
+  for(const b of BRANDS){if(text.includes(b.n))cands.push({text:b.n.toUpperCase(),type:'brand',score:b.s,reason:`Marca: ${b.n}`});}
+  for(const[intent,triggers]of Object.entries(INTENT_T)){if(triggers.some(t=>text.includes(t))){const h=INTENT_H[intent];if(h)cands.push({text:h.t,type:'event',score:h.s,reason:`Intent: ${intent}`});}}
+  cands.push({text:CAT_FB[category]||'EXCLUSIVA',type:'fallback',score:50,reason:`Fallback: ${category}`});
+  cands.sort((a,b)=>b.score-a.score);
+  const w=cands[0];
+  return {hero:{text:w.text,type:w.type,score:w.score,reason:w.reason,layout:rLayout(w.text)},heroCandidates:cands.map(c=>({text:c.text,type:c.type,score:c.score}))};
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // THINKING ENGINE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 
-const CATEGORY_SIGNALS = {
+const CAT_SIG = {
   MODA:       ['moda','fashion','ropa','outfit','look','tendencia','colección','diseñador','pasarela','estilo','vestido','temporada','prenda','marca','lujo','zapatilla','bolso','accesorio'],
   BELLEZA:    ['belleza','maquillaje','skincare','piel','cabello','tratamiento','cosmético','perfume','rutina','labial','cuidado','spa','facial','serum','glam'],
   TALENTO:    ['modelo','modelaje','casting','agencia','talento','carrera','editorial','shooting','fotografía','artista','actor','cantante','influencer','creador','academia'],
@@ -145,41 +199,40 @@ const CATEGORY_SIGNALS = {
   EXCLUSIVAS: ['exclusiva','primicia','secreto','detrás','entrevista','especial','íntimo','confidencial','revelación','historia'],
 };
 
-const EDITORIAL_STYLE_MAP = {MODA:'high fashion editorial — Vogue, minimal luxury',BELLEZA:'beauty editorial — íntimo, luminoso, sensorial',TALENTO:'portrait editorial — poderoso, auténtico, aspiracional',EVENTOS:'event editorial — dinámico, celebratorio, social',LIFESTYLE:'lifestyle editorial — cálido, cotidiano, sofisticado',EXCLUSIVAS:'cover story — dramático, exclusivo, cinematográfico'};
-const VISUAL_DIRECTION_MAP = {MODA:'fondo neutro o arquitectónico, iluminación directa',BELLEZA:'primer plano, piel iluminada, fondo oscuro',TALENTO:'retrato ambiental, mirada directa a cámara',EVENTOS:'espacio amplio, ambiente festivo',LIFESTYLE:'escena cotidiana estilizada, paleta cálida',EXCLUSIVAS:'composición cinematográfica, alto contraste'};
-const AUDIENCE_SIGNALS     = {profesional:['academia','agencia','casting','carrera','modelo','industria','negocio'],aspiracional:['lujo','exclusiva','gala','alfombra','premio','desfile'],comunidad:['dallas','carrollton','texas','latina','hispana','comunidad','local'],general:[]};
-const INTENT_SIGNALS_TE    = {anuncio:['inauguramos','abrimos','lanzamos','presentamos','anunciamos','debut','apertura','nuevo','nueva'],celebración:['celebramos','cumpleaños','aniversario','ganamos','logramos','éxito'],inspiración:['tips','cómo','aprende','guía','secreto','transforma','mejora'],cobertura:['estuvo','fue','asistió','participó','desfiló','se presentó']};
-
-function normTE(str){return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+const ED_STYLE = {MODA:'high fashion editorial — Vogue, minimal luxury',BELLEZA:'beauty editorial — íntimo, luminoso, sensorial',TALENTO:'portrait editorial — poderoso, auténtico, aspiracional',EVENTOS:'event editorial — dinámico, celebratorio, social',LIFESTYLE:'lifestyle editorial — cálido, cotidiano, sofisticado',EXCLUSIVAS:'cover story — dramático, exclusivo, cinematográfico'};
+const VIS_DIR  = {MODA:'fondo neutro o arquitectónico, iluminación directa',BELLEZA:'primer plano, piel iluminada, fondo oscuro',TALENTO:'retrato ambiental, mirada directa a cámara',EVENTOS:'espacio amplio, ambiente festivo',LIFESTYLE:'escena cotidiana estilizada, paleta cálida',EXCLUSIVAS:'composición cinematográfica, alto contraste'};
+const AUD_SIG  = {profesional:['academia','agencia','casting','carrera','modelo','industria','negocio'],aspiracional:['lujo','exclusiva','gala','alfombra','premio','desfile'],comunidad:['dallas','carrollton','texas','latina','hispana','comunidad','local'],general:[]};
+const INT_SIG  = {anuncio:['inauguramos','abrimos','lanzamos','presentamos','anunciamos','debut','apertura','nuevo','nueva'],celebración:['celebramos','cumpleaños','aniversario','ganamos','logramos','éxito'],inspiración:['tips','cómo','aprende','guía','secreto','transforma','mejora'],cobertura:['estuvo','fue','asistió','participó','desfiló','se presentó']};
 
 class ThinkingEngine {
   understandIdea(idea) {
-    const text = normTE(idea);
-    const STOP = new Set(['el','la','los','las','un','una','de','del','en','y','a','que','se','es','hoy','con','por','para','al']);
-    const topic = idea.split(/\s+/).filter(w=>!STOP.has(w.toLowerCase())).slice(0,6).join(' ');
+    const text=nrm(idea);
+    const STOP=new Set(['el','la','los','las','un','una','de','del','en','y','a','que','se','es','hoy','con','por','para','al']);
+    const topic=idea.split(/\s+/).filter(w=>!STOP.has(w.toLowerCase())).slice(0,6).join(' ');
     let intent='editorial';
-    for(const[k,s]of Object.entries(INTENT_SIGNALS_TE)){if(s.some(x=>text.includes(x))){intent=k;break;}}
+    for(const[k,s]of Object.entries(INT_SIG)){if(s.some(x=>text.includes(x))){intent=k;break;}}
     let audience='general';
-    for(const[k,s]of Object.entries(AUDIENCE_SIGNALS)){if(k==='general')continue;if(s.some(x=>text.includes(x))){audience=k;break;}}
+    for(const[k,s]of Object.entries(AUD_SIG)){if(k==='general')continue;if(s.some(x=>text.includes(x))){audience=k;break;}}
     return {topic,intent,audience};
   }
 
   classifyIdea(idea) {
-    const text = normTE(idea);
+    const text=nrm(idea);
     const scores={};
-    for(const[cat,signals]of Object.entries(CATEGORY_SIGNALS)){scores[cat]=signals.filter(s=>text.includes(s)).length;}
+    for(const[cat,signals]of Object.entries(CAT_SIG)){scores[cat]=signals.filter(s=>text.includes(s)).length;}
     const category=Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
     const fc=scores[category]===0?'EXCLUSIVAS':category;
-    return {category:fc,editorialStyle:EDITORIAL_STYLE_MAP[fc],visualDirection:VISUAL_DIRECTION_MAP[fc]};
+    return {category:fc,editorialStyle:ED_STYLE[fc],baseVisualDirection:VIS_DIR[fc]};
   }
 
   analyze(idea) {
     if(!idea||typeof idea!=='string'||!idea.trim()) throw new Error('ThinkingEngine: idea inválida');
-    const {topic,intent,audience}          = this.understandIdea(idea);
-    const {category,editorialStyle,visualDirection} = this.classifyIdea(idea);
-    const {hero,heroCandidates}            = detectHero(idea,category);
-    const {emotionProfile}                 = detectEmotion(idea,category);
-    return {originalIdea:idea.trim(),topic,intent,audience,category,editorialStyle,visualDirection,hero,heroCandidates,emotionProfile};
+    const {topic,intent,audience}                    = this.understandIdea(idea);
+    const {category,editorialStyle,baseVisualDirection} = this.classifyIdea(idea);
+    const {hero,heroCandidates}                       = detectHero(idea,category);
+    const emotionProfile                              = detectEmotion(idea,category);
+    const visualDirection                             = generateVisualDirection(category,hero.text,emotionProfile.primaryEmotion);
+    return {originalIdea:idea.trim(),topic,intent,audience,category,editorialStyle,baseVisualDirection,hero,heroCandidates,emotionProfile,visualDirection};
   }
 }
 
