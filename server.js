@@ -503,6 +503,12 @@ Instrucciones:
 3. El titular debe reflejar la emoción: ${brief.emotionProfile.primaryEmotion}
 4. El gancho debe sonar: ${brief.emotionProfile.tone}
 5. El estilo visual que describe esta historia: ${brief.visualDirection.scene}`;
+const payload = JSON.stringify({
+  model: 'claude-sonnet-4-6',
+  max_tokens: 512,
+  system: systemPrompt,
+  messages: [{ role: 'user', content: userMessage }],
+});
 
       const options = {
         hostname: 'api.anthropic.com',
