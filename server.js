@@ -461,17 +461,27 @@ const userMessage = `Editorial Brief generado por PASARELA ThinkingEngine:
 - Tema: ${brief.topic}
 - Intención: ${brief.intent}
 - Audiencia: ${brief.audience}
-- Categoría sugerida: ${brief.category}
-- Emoción clave: ${brief.emotion}
+- Categoría: ${brief.category}
 - Estilo editorial: ${brief.editorialStyle}
 - Dirección visual: ${brief.visualDirection}
-- Hero sugerido por Hero Detector™: "${brief.hero.text}" (prioridad: ${brief.hero.priority}/100, razón: ${brief.hero.reason})
-
-Instrucciones:
+ 
+Hero Detector™:
+- Hero: "${brief.hero.text}" (tipo: ${brief.hero.type}, score: ${brief.hero.score})
+- Razón: ${brief.hero.reason}
+ 
+Emotion Engine™:
+- Emoción primaria: ${brief.emotionProfile.primaryEmotion}
+- Emoción secundaria: ${brief.emotionProfile.secondaryEmotion}
+- Intensidad: ${brief.emotionProfile.intensity}/100
+- Tono: ${brief.emotionProfile.tone}
+- Razón: ${brief.emotionProfile.reason}
+ 
+Instrucciones para generar el JSON editorial:
 1. La categoría DEBE ser: ${brief.category}
 2. El hero DEBE ser exactamente: "${brief.hero.text}"
-3. Usa el estilo editorial y la emoción para construir el titular y el gancho.
-4. Genera el JSON editorial PASARELA.`;
+3. El titular debe reflejar la emoción: ${brief.emotionProfile.primaryEmotion}
+4. El gancho debe sonar: ${brief.emotionProfile.tone}
+5. Usa el estilo editorial "${brief.editorialStyle}" como guía tonal.`;
  
 const payload = JSON.stringify({
   model: 'claude-sonnet-4-6',
