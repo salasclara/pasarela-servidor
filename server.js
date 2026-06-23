@@ -497,12 +497,17 @@ Visual Direction Engine™:
 - Atmósfera: ${brief.visualDirection.atmosphere}
 - Keywords visuales: ${brief.visualDirection.keywords.join(', ')}
  
+Strength Visual Constraints™:
+- Elementos REQUERIDOS: ${brief.visualDirection.requiredElements.join(', ')}
+- Elementos PROHIBIDOS: ${brief.visualDirection.forbiddenElements.join(', ')}
+ 
 Instrucciones:
 1. La categoría DEBE ser: ${brief.category}
 2. El hero DEBE ser exactamente: "${brief.hero.text}"
 3. El titular debe reflejar la emoción: ${brief.emotionProfile.primaryEmotion}
 4. El gancho debe sonar: ${brief.emotionProfile.tone}
-5. El estilo visual que describe esta historia: ${brief.visualDirection.scene}`;
+5. El estilo visual es: ${brief.visualDirection.scene}
+6. El gancho NO debe evocar: ${brief.visualDirection.forbiddenElements.slice(0,3).join(', ')}`;
 const payload = JSON.stringify({
   model: 'claude-sonnet-4-6',
   max_tokens: 512,

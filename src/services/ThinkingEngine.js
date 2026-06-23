@@ -51,7 +51,58 @@ const HERO_AMP = {
   'DALLAS':        { sceneAdd:'community people warm gathering',   kw:['community','people','warmth','together'],           moodAdd:'warm community',     lightOver:'warm natural'            },
 };
 
-function generateVisualDirection(category, heroText, emotion) {
+
+// ── VISUAL CONSTRAINTS™ ──────────────────────────────────────────────────────
+// requiredElements: elementos que DEBEN aparecer en la imagen
+// forbiddenElements: elementos que NO deben aparecer
+const VISUAL_CONSTRAINTS = {
+  // Por emoción
+  emotions: {
+    'urgencia':       { required:['storm clouds','strong wind','dramatic sky','tension','danger'],          forbidden:['smiling people','fashion poses','studio portrait','glamour','selfie'] },
+    'solidaridad':    { required:['people together','hands helping','community warmth','human connection'],  forbidden:['solo person','empty space','fashion editorial','studio portrait','luxury'] },
+    'celebración':    { required:['people celebrating','joy','festive atmosphere','warmth'],                 forbidden:['storm','empty space','danger','tension'] },
+    'orgullo':        { required:['triumphant person','achievement moment','inspiring light'],               forbidden:['storm','disaster','empty background'] },
+    'aspiración':     { required:['fashion editorial','luxury environment','elegant composition'],           forbidden:['disaster','crowd chaos','community gathering','storm'] },
+    'calma':          { required:['peaceful scene','nature','soft light','stillness'],                       forbidden:['crowd','chaos','storm','dramatic contrast'] },
+    'intriga':        { required:['mysterious atmosphere','dramatic shadows','cinematic depth'],             forbidden:['bright cheerful','crowd','community scene'] },
+    'inspiración':    { required:['open horizon','bright light','possibility','upward movement'],            forbidden:['storm','disaster','closed space','darkness'] },
+    'asombro':        { required:['futuristic elements','technology','innovation','scale'],                  forbidden:['vintage','natural landscape','community warmth'] },
+    'empoderamiento': { required:['strong presence','direct gaze','powerful pose','bold light'],             forbidden:['weakness','crowd dependency','storm chaos'] },
+    'nostalgia':      { required:['warm tones','timeless setting','soft focus','memory feel'],               forbidden:['futuristic','neon','harsh contrast'] },
+    'amor':           { required:['intimate connection','soft light','closeness','tenderness'],              forbidden:['storm','crowd chaos','harsh lighting'] },
+  },
+  // Por categoría (se fusionan con los de emoción)
+  categories: {
+    MODA:       { required:['fashion editorial','luxury setting','elegant model','runway or studio'],        forbidden:['natural disaster','community scene','news event','chaos'] },
+    BELLEZA:    { required:['close-up portrait','radiant skin','beauty lighting','clean background'],        forbidden:['storm','crowd','news editorial','disaster'] },
+    TALENTO:    { required:['performer portrait','authentic expression','stage or editorial setting'],       forbidden:['empty landscape','disaster','crowd chaos'] },
+    EVENTOS:    { required:['event atmosphere','people','energy','celebration space'],                       forbidden:['empty landscape','studio portrait alone','disaster'] },
+    LIFESTYLE:  { required:['authentic moment','real people','warm setting','human scale'],                  forbidden:['studio fashion','disaster','news event','cold corporate'] },
+    EXCLUSIVAS: { required:['cinematic composition','dramatic lighting','exclusive feel'],                   forbidden:['mundane setting','harsh news','crowd chaos'] },
+  },
+  // Por hero type
+  heroTypes: {
+    concept:  { required:['symbolic visual','strong metaphor','impactful composition'],  forbidden:['literal interpretation','generic stock'] },
+    product:  { required:['product hero shot','context environment','innovation feel'],  forbidden:['people posing with product as background','generic landscape'] },
+    person:   { required:['portrait focus','authentic expression','personality'],        forbidden:['obscured face','crowd where person is lost'] },
+    brand:    { required:['brand context','premium environment'],                         forbidden:['competitor branding','generic stock'] },
+    event:    { required:['event energy','moment capture','atmosphere'],                  forbidden:['empty venue','post-event cleanup'] },
+  },
+};
+
+function mergeConstraints(category, emotion, heroType) {
+  const emoC   = VISUAL_CONSTRAINTS.emotions[emotion]   || { required:[], forbidden:[] };
+  const catC   = VISUAL_CONSTRAINTS.categories[category] || { required:[], forbidden:[] };
+  const heroC  = VISUAL_CONSTRAINTS.heroTypes[heroType]  || { required:[], forbidden:[] };
+
+  // Fusionar sin duplicados
+  const req = [...new Set([...emoC.required.slice(0,3), ...catC.required.slice(0,2), ...heroC.required.slice(0,1)])].slice(0,6);
+  const forb = [...new Set([...emoC.forbidden.slice(0,3), ...catC.forbidden.slice(0,2)])].slice(0,5);
+
+  return { requiredElements: req, forbiddenElements: forb };
+}
+
+function generateVisualDirection(category, heroText, emotion, heroType) {
   const catKey = (category || 'EXCLUSIVAS').toUpperCase();
   const catRule = CATEGORY_RULES_VD[catKey] || CATEGORY_RULES_VD.EXCLUSIVAS;
   const moodProfile = MOOD_MAP_VD[(emotion || '').toLowerCase()] || MOOD_MAP_VD['aspiración'];
@@ -61,6 +112,7 @@ function generateVisualDirection(category, heroText, emotion) {
   const lighting = (amp && amp.lightOver) ? amp.lightOver : moodProfile.lighting;
   const mood     = amp ? amp.moodAdd + ', ' + moodProfile.mood : moodProfile.mood;
   const keywords = [...catRule.keywords.slice(0,3), ...(amp ? amp.kw.slice(0,3) : [])].filter((v,i,a) => a.indexOf(v) === i).slice(0,6);
+  const constraints = mergeConstraints(catKey, emotion || 'aspiración', heroType || 'event');
   return {
     scene, mood, lighting,
     camera:       moodProfile.camera,
@@ -68,6 +120,8 @@ function generateVisualDirection(category, heroText, emotion) {
     style:        catRule.style,
     atmosphere:   moodProfile.atmosphere,
     keywords,
+    requiredElements:  constraints.requiredElements,
+    forbiddenElements: constraints.forbiddenElements,
   };
 }
 
@@ -231,7 +285,7 @@ class ThinkingEngine {
     const {category,editorialStyle,baseVisualDirection} = this.classifyIdea(idea);
     const {hero,heroCandidates}                       = detectHero(idea,category);
     const emotionProfile                              = detectEmotion(idea,category);
-    const visualDirection                             = generateVisualDirection(category,hero.text,emotionProfile.primaryEmotion);
+    const visualDirection                             = generateVisualDirection(category,hero.text,emotionProfile.primaryEmotion,hero.type);
     return {originalIdea:idea.trim(),topic,intent,audience,category,editorialStyle,baseVisualDirection,hero,heroCandidates,emotionProfile,visualDirection};
   }
 }
