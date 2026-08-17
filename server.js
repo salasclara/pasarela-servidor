@@ -1,5 +1,7 @@
 const http = require('http');
 const https = require('https');
+const { Pool } = require('pg');
+
 try {
   const { ThinkingEngine } = require('./src/services/ThinkingEngine');
   const t = new ThinkingEngine();
@@ -10,8 +12,11 @@ try {
 }
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
-const SUPABASE_URL = 'https://evjlfnkabqicqngmwtzo.supabase.co';
-const SUPABASE_SECRET = process.env.SUPABASE_SECRET_KEY;
+
+const pool = new Pool({
+  connectionString: process.env.PASARELA_PG,
+  ssl: false,
+});
 
 const FUENTES = [
   // Moda Internacional
@@ -136,7 +141,7 @@ function calcularTiempo(fechaStr) {
 function generarSlug(titulo) {
   return titulo
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')
@@ -181,30 +186,17 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // GET /blog
+  // GET /blog — leer posts desde PostgreSQL
   if (req.method === 'GET' && req.url === '/blog') {
-    const supabaseReq = https.request({
-      hostname: SUPABASE_URL.replace('https://', ''),
-      path: '/rest/v1/noticias?publicado=eq.true&order=created_at.desc',
-      method: 'GET',
-      headers: {
-        'apikey': SUPABASE_SECRET,
-        'Authorization': `Bearer ${SUPABASE_SECRET}`,
-        'Content-Type': 'application/json',
-      },
-    }, supabaseRes => {
-      let data = '';
-      supabaseRes.on('data', chunk => { data += chunk; });
-      supabaseRes.on('end', () => {
+    pool.query('SELECT * FROM noticias WHERE publicado = true ORDER BY created_at DESC')
+      .then(result => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(data);
+        res.end(JSON.stringify(result.rows));
+      })
+      .catch(e => {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
       });
-    });
-    supabaseReq.on('error', e => {
-      res.writeHead(500);
-      res.end(JSON.stringify({ error: e.message }));
-    });
-    supabaseReq.end();
     return;
   }
 
@@ -246,8 +238,6 @@ const server = http.createServer((req, res) => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ texto }));
           } catch(e) {
-            console.error('MATERIALIZE_ERROR message:', e.message);
-            console.error('MATERIALIZE_ERROR stack:', e.stack);
             res.writeHead(500, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: false, error: 'MATERIALIZE_FAILED', message: e.message }));
           }
@@ -260,64 +250,28 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // POST /publicar-blog
+  // POST /publicar-blog — guardar noticia en PostgreSQL
   if (req.method === 'POST' && req.url === '/publicar-blog') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
     req.on('end', async () => {
       try {
-        const { titulo, contenido, tono, fuente, link } = JSON.parse(body);
+        const { titulo, contenido, tono } = JSON.parse(body);
         if (!titulo || !contenido) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: 'titulo y contenido son requeridos' }));
           return;
         }
         const slug = generarSlug(titulo);
-        const postData = JSON.stringify({
-          titulo, contenido,
-          tono: tono || 'editorial',
-          slug, publicado: true,
-        });
-
-        const supabaseReq = https.request({
-          hostname: SUPABASE_URL.replace('https://', ''),
-          path: '/rest/v1/noticias',
-          method: 'POST',
-          headers: {
-            'apikey': SUPABASE_SECRET,
-            'Authorization': `Bearer ${SUPABASE_SECRET}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
-            'Content-Length': Buffer.byteLength(postData),
-          },
-        }, supabaseRes => {
-          let data = '';
-          supabaseRes.on('data', chunk => { data += chunk; });
-          supabaseRes.on('end', () => {
-            try {
-              const parsed = JSON.parse(data);
-              if (supabaseRes.statusCode >= 400) {
-                res.writeHead(400);
-                res.end(JSON.stringify({ error: parsed.message || 'Error en Supabase' }));
-                return;
-              }
-              const post = Array.isArray(parsed) ? parsed[0] : parsed;
-              const url = `https://pasarelastudiointer.com/noticias/${slug}`;
-              console.log(`✓ Publicado: ${titulo} → ${url}`);
-              res.writeHead(200, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ url, id: post.id, slug }));
-            } catch(e) {
-              res.writeHead(500);
-              res.end(JSON.stringify({ error: 'Error parseando respuesta de Supabase' }));
-            }
-          });
-        });
-        supabaseReq.on('error', e => {
-          res.writeHead(500);
-          res.end(JSON.stringify({ error: e.message }));
-        });
-        supabaseReq.write(postData);
-        supabaseReq.end();
+        const result = await pool.query(
+          'INSERT INTO noticias (titulo, contenido, tono, slug, publicado) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [titulo, contenido, tono || 'editorial', slug, true]
+        );
+        const post = result.rows[0];
+        const url = `https://pasarelastudiointer.com/noticias/${slug}`;
+        console.log(`✓ Publicado: ${titulo} → ${url}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ url, id: post.id, slug }));
       } catch(e) {
         res.writeHead(500);
         res.end(JSON.stringify({ error: e.message }));
@@ -325,16 +279,17 @@ const server = http.createServer((req, res) => {
     });
     return;
   }
-// POST /titulo-editorial — genera titular viral + hero para portada
-if (req.method === 'POST' && req.url === '/titulo-editorial') {
-  let body = '';
-  req.on('data', chunk => { body += chunk; });
-  req.on('end', () => {
-    let titulo = '';
-    try { titulo = JSON.parse(body).titulo; }
-    catch(e) { res.writeHead(400); res.end(JSON.stringify({ error: 'JSON invalido' })); return; }
 
-    const prompt = `Eres director de arte editorial de la revista PASARELA™, inspirada en Vogue, Harper's Bazaar y Elle.
+  // POST /titulo-editorial
+  if (req.method === 'POST' && req.url === '/titulo-editorial') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      let titulo = '';
+      try { titulo = JSON.parse(body).titulo; }
+      catch(e) { res.writeHead(400); res.end(JSON.stringify({ error: 'JSON invalido' })); return; }
+
+      const prompt = `Eres director de arte editorial de la revista PASARELA™, inspirada en Vogue, Harper's Bazaar y Elle.
 
 Tu tarea: transformar este título de noticia en un titular editorial premium para portada de revista.
 
@@ -350,67 +305,51 @@ REGLAS ESTRICTAS:
 4. Nunca uses artículos (el, la, los, las, un, una) en el hero.
 5. El resultado debe verse como portada de Vogue, nunca como título de nota de blog.
 
-Ejemplos correctos:
-- Titulo: "Shakira deslumbra en la inauguración del Mundial 2026 con look verde"
-  titular: "EL LOOK QUE CONQUISTÓ"
-  gancho: "Una elección que detuvo el mundo y redefinió lo que significa vestirse para la historia."
-  hero: "SHAKIRA"
-
-- Titulo: "Zara lanza colección de vestidos blancos que todas quieren"
-  titular: "LA COLECCIÓN QUE"
-  gancho: "Blanco puro, corte perfecto. La prenda que todas buscan y pocas logran encontrar."
-  hero: "AGOTÓ ZARA"
-
-- Titulo: "Belinda redefine la elegancia en los Latin Grammy 2026"
-  titular: "ELEGANCIA REDEFINIDA"
-  gancho: "Cuando Belinda entra a una sala, el resto del mundo deja de existir. Esta noche no fue diferente."
-  hero: "BELINDA"
-
 Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
 {"titular": "TEXTO AQUÍ", "gancho": "texto aquí en minúsculas", "hero": "TEXTO AQUÍ"}`;
 
-    const payload = JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const options = {
-      hostname: 'api.anthropic.com',
-      path: '/v1/messages',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'Content-Length': Buffer.byteLength(payload),
-      },
-    };
-
-    const apiReq = https.request(options, apiRes => {
-      let data = '';
-      apiRes.on('data', chunk => { data += chunk; });
-      apiRes.on('end', () => {
-        try {
-          const parsed = JSON.parse(data);
-          const texto = parsed.content?.[0]?.text || '{}';
-          const resultado = JSON.parse(texto.trim());
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(resultado));
-        } catch(e) {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ titular: titulo.toUpperCase().substring(0, 40), hero: 'EXCLUSIVA' }));
-        }
+      const payload = JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }],
       });
+
+      const options = {
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(payload),
+        },
+      };
+
+      const apiReq = https.request(options, apiRes => {
+        let data = '';
+        apiRes.on('data', chunk => { data += chunk; });
+        apiRes.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            const texto = parsed.content?.[0]?.text || '{}';
+            const resultado = JSON.parse(texto.trim());
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(resultado));
+          } catch(e) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ titular: titulo.toUpperCase().substring(0, 40), hero: 'EXCLUSIVA' }));
+          }
+        });
+      });
+      apiReq.on('error', err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
+      apiReq.write(payload);
+      apiReq.end();
     });
-    apiReq.on('error', err => { res.writeHead(500); res.end(JSON.stringify({ error: err.message })); });
-    apiReq.write(payload);
-    apiReq.end();
-  });
-  return;
-}
-  
-// POST /api/materialize — PASARELA AI ENGINE
+    return;
+  }
+
+  // POST /api/materialize
   if (req.method === 'POST' && req.url === '/api/materialize') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
@@ -431,71 +370,48 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
         return;
       }
 
-      /**
- * PATCH — Integración ThinkingEngine en server.js
- * 
- * En server.js, dentro del bloque POST /api/materialize,
- * REEMPLAZA el bloque donde se construye el systemPrompt y el payload
- * con este código.
- *
- * BUSCA esta sección (aproximadamente línea 416-430):
- *
- *   const systemPrompt = `Eres el motor editorial...`;
- *   const payload = JSON.stringify({ model: ..., system: systemPrompt, messages: [...] });
- *
- * REEMPLAZA con lo siguiente:
- */
- 
-// ── PASO 1: ThinkingEngine analiza la idea ──
-console.log('[materialize] iniciando request');
-const { ThinkingEngine } = require('./src/services/ThinkingEngine');
-console.log('[materialize] ThinkingEngine cargado');
-const engine = new ThinkingEngine();
-const brief  = engine.analyze(idea);
- 
-console.log('[ThinkingEngine] Brief generado:', JSON.stringify(brief));
- 
-// ── PASO 2: Construir prompt enriquecido con el Editorial Brief ──
-const systemPrompt = `Eres el motor editorial de PASARELA, revista de moda y talento latina con 37 años en Dallas, Texas.
+      console.log('[materialize] iniciando request');
+      const { ThinkingEngine } = require('./src/services/ThinkingEngine');
+      console.log('[materialize] ThinkingEngine cargado');
+      const engine = new ThinkingEngine();
+      const brief = engine.analyze(idea);
+
+      console.log('[ThinkingEngine] Brief generado:', JSON.stringify(brief));
+
+      const systemPrompt = `Eres el motor editorial de PASARELA, revista de moda y talento latina con 37 años en Dallas, Texas.
 Devuelves ÚNICAMENTE JSON puro, sin markdown, sin texto adicional.
 La categoría DEBE ser exactamente una de: MODA, BELLEZA, TALENTO, EVENTOS, LIFESTYLE, EXCLUSIVAS.
-Titular en MAYÚSCULAS máx 8 palabras. 
+Titular en MAYÚSCULAS máx 8 palabras.
 Gancho: 2-3 líneas emocionales separadas por \\n, estilo fashion magazine, en minúscula.
 Hero: UNA palabra en MAYÚSCULAS.
 Formato exacto: {"categoria":"MODA","titular":"...","gancho":"...\\n...\\n...","hero":"..."}`;
- 
-/**
- * PATCH — Integración Hero en userMessage de /api/materialize
- *
- * En server.js, dentro del bloque POST /api/materialize,
- * REEMPLAZA el userMessage actual con este:
- */
 
-const userMessage = `Editorial Brief — PASARELA ThinkingEngine:
+      const userMessage = `Editorial Brief — PASARELA ThinkingEngine:
 - Idea: "${brief.originalIdea}"
 - Categoría: ${brief.category}
 - Estilo: ${brief.editorialStyle}
 - Hero: "${brief.hero.text}" [${brief.hero.type}]
 - Emoción: ${brief.emotionProfile.primaryEmotion} / ${brief.emotionProfile.secondaryEmotion}
 - Tono: ${brief.emotionProfile.tone}
- 
+
 VISUAL PROMPT DOMINANCE:
 ${brief.promptDominance.positiveTerms.join('\n')}
- 
+
 ${brief.promptDominance.negativeTerms.join('\n')}
- 
+
 INSTRUCCIONES:
 1. Categoría DEBE ser: ${brief.category}
 2. Hero DEBE ser exactamente: "${brief.hero.text}"
 3. Titular debe reflejar: ${brief.emotionProfile.primaryEmotion}
 4. Gancho debe sonar: ${brief.emotionProfile.tone}
 5. El gancho NO debe evocar: ${brief.promptDominance.negativeTerms.slice(0,3).join(', ')}`;
-const payload = JSON.stringify({
-  model: 'claude-sonnet-4-6',
-  max_tokens: 512,
-  system: systemPrompt,
-  messages: [{ role: 'user', content: userMessage }],
-});
+
+      const payload = JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+      });
 
       const options = {
         hostname: 'api.anthropic.com',
@@ -547,9 +463,11 @@ const payload = JSON.stringify({
     });
     return;
   }
+
   res.writeHead(404);
   res.end();
 });
+
 server.listen(3000, '0.0.0.0', () => {
   console.log('Servidor Pasarela Studio corriendo en http://0.0.0.0:3000');
 });
