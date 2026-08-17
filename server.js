@@ -14,7 +14,7 @@ try {
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const pool = new Pool({
-  connectionString: process.env.PASARELA_PG, || 'postgresql://postgres:OdKnMEAUvdaRgvUCWeESUNbJrSIhEMeS@postgres.railway.internal:5432/railway',
+  connectionString: process.env.PASARELA_PG || 'postgresql://postgres:OdKnMEAUvdaRgvUCWeESUNbJrSIhEMeS@postgres.railway.internal:5432/railway',
   ssl: false,
 });
 
