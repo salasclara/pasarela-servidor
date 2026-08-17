@@ -1,9 +1,6 @@
 const http = require('http');
 const https = require('https');
-const pool = new Pool({
-  connectionString: process.env.PASARELA_PG || 'postgresql://postgres:OdKnMEAUvdaRgvUCWeESUNbJrSIhEMeS@postgres.railway.internal:5432/railway',
-  ssl: false,
-});
+const { Pool } = require('pg');
 
 try {
   const { ThinkingEngine } = require('./src/services/ThinkingEngine');
@@ -17,7 +14,7 @@ try {
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const pool = new Pool({
-  connectionString: process.env.PASARELA_PG ,
+  connectionString: process.env.PASARELA_PG || 'postgresql://postgres:OdKnMEAUvdaRgvUCWeESUNbJrSIhEMeS@postgres.railway.internal:5432/railway',
   ssl: false,
 });
 
@@ -276,9 +273,8 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ url, id: post.id, slug }));
       } catch(e) {
-        console.error('ERROR publicar-blog:', e);
         res.writeHead(500);
-        res.end(JSON.stringify({ error: e.message, detail: String(e) }));
+        res.end(JSON.stringify({ error: e.message }));
       }
     });
     return;
