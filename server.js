@@ -273,8 +273,9 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ url, id: post.id, slug }));
       } catch(e) {
+        console.error('ERROR publicar-blog:', e);
         res.writeHead(500);
-        res.end(JSON.stringify({ error: e.message }));
+        res.end(JSON.stringify({ error: e.message, detail: String(e) }));
       }
     });
     return;
