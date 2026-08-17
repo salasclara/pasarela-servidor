@@ -1,6 +1,9 @@
 const http = require('http');
 const https = require('https');
-const { Pool } = require('pg');
+const pool = new Pool({
+  connectionString: process.env.PASARELA_PG || 'postgresql://postgres:OdKnMEAUvdaRgvUCWeESUNbJrSIhEMeS@postgres.railway.internal:5432/railway',
+  ssl: false,
+});
 
 try {
   const { ThinkingEngine } = require('./src/services/ThinkingEngine');
