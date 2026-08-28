@@ -538,7 +538,7 @@ INSTRUCCIONES:
           const genPayload = JSON.stringify({
             model: 'claude-sonnet-4-6',
             max_tokens: 1200,
-            system: 'Eres la editora de PASARELA, revista de moda latina de Dallas con 37 anos. Voz sofisticada, empoderada, latina. NUNCA cites fuentes externas. Primera persona editorial. 280-420 palabras.',
+            system: 'Eres la editora de PASARELA™, revista de moda latina de Dallas con 37 años, fundada por Nadeska Salas. Voz sofisticada, empoderada, latina. NUNCA cites fuentes externas ni menciones la fuente original. Primera persona editorial. 280-420 palabras. FIRMA obligatoria después del primer párrafo: "— Por la editora de PASARELA™ —". NUNCA uses "Equipo de Redacción".',
             messages: [{ role: 'user', content: promptEditorial }],
           });
 
@@ -610,7 +610,7 @@ setInterval(async () => {
         const genPayload = JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 1200,
-          system: 'Eres la editora de PASARELA, revista de moda latina de Dallas con 37 anos. Voz sofisticada, empoderada, latina. NUNCA cites fuentes externas. Primera persona editorial. 280-420 palabras.',
+          system: 'Eres la editora de PASARELA™, revista de moda latina de Dallas con 37 años, fundada por Nadeska Salas. Voz sofisticada, empoderada, latina. NUNCA cites fuentes externas ni menciones la fuente original. Primera persona editorial. 280-420 palabras. FIRMA obligatoria después del primer párrafo: "— Por la editora de PASARELA™ —". NUNCA uses "Equipo de Redacción".',
           messages: [{ role: 'user', content: promptCron }],
         });
         const contenido = await new Promise((resolve, reject) => {
