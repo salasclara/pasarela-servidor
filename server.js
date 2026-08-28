@@ -177,6 +177,40 @@ async function actualizarNoticias() {
 actualizarNoticias();
 setInterval(actualizarNoticias, 30 * 60 * 1000);
 
+
+const FB_PAGE_ID = process.env.FACEBOOK_PAGE_ID || '100063498372907';
+const FB_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN || '';
+
+function publicarEnFacebook(titulo, contenido, urlArticulo, imagen) {
+  if (!FB_PAGE_TOKEN) { console.log('[Facebook] Token no configurado — saltando'); return Promise.resolve(null); }
+  const resumen = contenido.replace(/[\r\n]+/g, ' ').substring(0, 220) + '...';
+  const mensaje = titulo + '\n\n' + resumen + '\n\nLee el articulo completo en PASARELA →';
+  const postData = new URLSearchParams({ message: mensaje, link: urlArticulo, access_token: FB_PAGE_TOKEN });
+  return new Promise((resolve) => {
+    const postBody = postData.toString();
+    const opts = {
+      hostname: 'graph.facebook.com',
+      path: '/v19.0/' + FB_PAGE_ID + '/feed',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postBody) },
+    };
+    const r = https.request(opts, res => {
+      let d = '';
+      res.on('data', c => { d += c; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(d);
+          if (parsed.id) { console.log('[Facebook] Publicado OK — post ID:', parsed.id); resolve(parsed.id); }
+          else { console.error('[Facebook] Error:', JSON.stringify(parsed)); resolve(null); }
+        } catch(e) { console.error('[Facebook] Parse error:', e.message); resolve(null); }
+      });
+    });
+    r.on('error', e => { console.error('[Facebook] Network error:', e.message); resolve(null); });
+    r.write(postBody);
+    r.end();
+  });
+}
+
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
@@ -278,6 +312,7 @@ const server = http.createServer((req, res) => {
         const post = result.rows[0];
         const url = `https://pasarelastudiointer.com/noticias/${slug}`;
         console.log(`✓ Publicado: ${titulo} → ${url}`);
+        publicarEnFacebook(titulo, contenido, url, imagen || '').catch(e => console.error('[Facebook] Error en publicar-blog:', e.message));
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ url, id: post.id, slug }));
       } catch(e) {
@@ -533,6 +568,7 @@ INSTRUCCIONES:
           );
           const url = 'https://pasarelastudiointer.com/noticias/' + slug;
           console.log('[auto-publicar] Publicado: ' + noticia.titulo);
+          publicarEnFacebook(noticia.titulo, contenido, url, noticia.imagen || '').catch(e => console.error('[Facebook] Error en auto-publicar:', e.message));
           resultados.push({ titulo: noticia.titulo, url, id: result.rows[0].id });
         } catch(e) {
           console.error('[auto-publicar] Error:', e.message);
