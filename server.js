@@ -18,6 +18,11 @@ const pool = new Pool({
   ssl: false,
 });
 
+// Migracion automatica — agrega columna imagen si no existe
+pool.query("ALTER TABLE noticias ADD COLUMN IF NOT EXISTS imagen TEXT DEFAULT ''")
+  .then(() => console.log('[DB] Columna imagen verificada OK'))
+  .catch(e => console.error('[DB] Migracion imagen error:', e.message));
+
 const FUENTES = [
   // Moda Internacional
   { nombre: 'Vogue México', url: 'https://www.vogue.mx/feed/rss', scope: 'Moda' },
