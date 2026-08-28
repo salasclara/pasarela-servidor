@@ -209,9 +209,12 @@ const server = http.createServer((req, res) => {
       try { prompt = JSON.parse(body).prompt; }
       catch(e) { res.writeHead(400); res.end(JSON.stringify({ error: 'JSON invalido' })); return; }
 
+      const SISTEMA_EDITORIAL = 'Eres la editora de PASARELA\u2122, revista de moda y talento latina con 37 a\u00f1os en Dallas, Texas, fundada por Nadeska Salas.\n\nREGLAS ABSOLUTAS:\n1. Escribe SIEMPRE con voz editorial propia (\"En PASARELA creemos...\", \"Desde nuestra perspectiva...\").\n2. NUNCA menciones la fuente original. CERO referencias externas.\n3. El art\u00edculo debe sentirse 100% original, investigado y producido por PASARELA.\n4. Voz: sofisticada, empoderada, latina, editorial. M\u00e1x 2 frases en ingl\u00e9s.\n5. Estructura: apertura impactante → desarrollo con perspectiva propia → cierre inspiracional.\n6. Extensi\u00f3n: 280-420 palabras. Denso pero elegante.\n7. PROHIBIDO: citar fuentes, usar \"seg\u00fan\", \"de acuerdo con\", \"reporta\", \"informa\", \"se\u00f1ala\", \"publica\".';
+
       const payload = JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: 1200,
+        system: SISTEMA_EDITORIAL,
         messages: [{ role: 'user', content: prompt }],
       });
 
@@ -256,7 +259,7 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => { body += chunk; });
     req.on('end', async () => {
       try {
-        const { titulo, contenido, tono } = JSON.parse(body);
+        const { titulo, contenido, tono, imagen } = JSON.parse(body);
         if (!titulo || !contenido) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: 'titulo y contenido son requeridos' }));
@@ -264,8 +267,8 @@ const server = http.createServer((req, res) => {
         }
         const slug = generarSlug(titulo);
         const result = await pool.query(
-          'INSERT INTO noticias (titulo, contenido, tono, slug, publicado) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          [titulo, contenido, tono || 'editorial', slug, true]
+          'INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+          [titulo, contenido, tono || 'editorial', slug, true, imagen || '']
         );
         const post = result.rows[0];
         const url = `https://pasarelastudiointer.com/noticias/${slug}`;
@@ -464,6 +467,81 @@ INSTRUCCIONES:
     return;
   }
 
+
+  // POST /auto-publicar — publicar automaticamente los mejores articulos del dia
+  if (req.method === 'POST' && req.url === '/auto-publicar') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      let cantidad = 3;
+      try { cantidad = JSON.parse(body).cantidad || 3; } catch(e) {}
+
+      if (cacheNoticias.length === 0) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ publicados: 0, error: 'Cache RSS vacio' }));
+        return;
+      }
+
+      const prioridad = ['Moda', 'Belleza', 'Talento', 'Dallas', 'Lifestyle'];
+      const seleccionadas = [];
+      for (const cat of prioridad) {
+        const del_cat = cacheNoticias.filter(n => n.scope === cat && n.titulo.length > 20);
+        seleccionadas.push(...del_cat.slice(0, 2));
+        if (seleccionadas.length >= cantidad * 2) break;
+      }
+      const aPublicar = seleccionadas.slice(0, cantidad);
+      const resultados = [];
+
+      for (const noticia of aPublicar) {
+        try {
+          const promptEditorial = 'Escribe un articulo editorial original sobre este tema de moda/belleza/talento:\n\nTEMA: ' + noticia.titulo + '\nCONTEXTO: ' + (noticia.descripcion || '') + '\nCATEGORIA: ' + noticia.scope + '\n\nEl articulo es para PASARELA, revista de moda latina de Dallas. Voz propia, sin citar fuentes.';
+          const genPayload = JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 1200,
+            system: 'Eres la editora de PASARELA, revista de moda latina de Dallas con 37 anos. Voz sofisticada, empoderada, latina. NUNCA cites fuentes externas. Primera persona editorial. 280-420 palabras.',
+            messages: [{ role: 'user', content: promptEditorial }],
+          });
+
+          const contenido = await new Promise((resolve, reject) => {
+            const opts = {
+              hostname: 'api.anthropic.com',
+              path: '/v1/messages',
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(genPayload) },
+            };
+            const r = https.request(opts, apiRes => {
+              let d = '';
+              apiRes.on('data', c => { d += c; });
+              apiRes.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } });
+            });
+            r.on('error', reject);
+            r.write(genPayload);
+            r.end();
+          });
+
+          if (!contenido) { resultados.push({ titulo: noticia.titulo, error: 'Claude sin respuesta' }); continue; }
+
+          const slug = generarSlug(noticia.titulo);
+          const result = await pool.query(
+            'INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [noticia.titulo, contenido, 'editorial', slug, true, noticia.imagen || '']
+          );
+          const url = 'https://pasarelastudiointer.com/noticias/' + slug;
+          console.log('[auto-publicar] Publicado: ' + noticia.titulo);
+          resultados.push({ titulo: noticia.titulo, url, id: result.rows[0].id });
+        } catch(e) {
+          console.error('[auto-publicar] Error:', e.message);
+          resultados.push({ titulo: noticia.titulo, error: e.message });
+        }
+      }
+
+      const exitosos = resultados.filter(r => r.url).length;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ publicados: exitosos, total: aPublicar.length, resultados }));
+    });
+    return;
+  }
+
   res.writeHead(404);
   res.end();
 });
@@ -471,3 +549,39 @@ INSTRUCCIONES:
 server.listen(3000, '0.0.0.0', () => {
   console.log('Servidor Pasarela Studio corriendo en http://0.0.0.0:3000');
 });
+
+// Auto-publicar cada 6 horas (3 articulos por ciclo)
+setInterval(async () => {
+  console.log('[CRON] Iniciando auto-publicacion...');
+  if (cacheNoticias.length === 0) { console.log('[CRON] Cache vacio, saltando'); return; }
+  try {
+    const prioridad = ['Moda', 'Belleza', 'Talento', 'Dallas', 'Lifestyle'];
+    const seleccionadas = [];
+    for (const cat of prioridad) {
+      const del_cat = cacheNoticias.filter(n => n.scope === cat && n.titulo.length > 20);
+      seleccionadas.push(...del_cat.slice(0, 2));
+      if (seleccionadas.length >= 6) break;
+    }
+    const aPublicar = seleccionadas.slice(0, 3);
+    for (const noticia of aPublicar) {
+      try {
+        const promptCron = 'Escribe un articulo editorial original sobre: ' + noticia.titulo + '. Contexto: ' + (noticia.descripcion || '') + '. Para PASARELA, revista de moda latina. Voz propia, sin citar fuentes.';
+        const genPayload = JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1200,
+          system: 'Eres la editora de PASARELA, revista de moda latina de Dallas con 37 anos. Voz sofisticada, empoderada, latina. NUNCA cites fuentes externas. Primera persona editorial. 280-420 palabras.',
+          messages: [{ role: 'user', content: promptCron }],
+        });
+        const contenido = await new Promise((resolve, reject) => {
+          const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(genPayload) } };
+          const r = https.request(opts, apiRes => { let d = ''; apiRes.on('data', c => { d += c; }); apiRes.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+          r.on('error', reject); r.write(genPayload); r.end();
+        });
+        if (!contenido) continue;
+        const slug = generarSlug(noticia.titulo);
+        await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6)', [noticia.titulo, contenido, 'editorial', slug, true, noticia.imagen || '']);
+        console.log('[CRON] Publicado: ' + noticia.titulo);
+      } catch(e) { console.error('[CRON] Error:', e.message); }
+    }
+  } catch(e) { console.error('[CRON] Error general:', e.message); }
+}, 6 * 60 * 60 * 1000);
