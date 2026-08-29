@@ -178,7 +178,7 @@ actualizarNoticias();
 setInterval(actualizarNoticias, 30 * 60 * 1000);
 
 
-const FB_PAGE_ID = process.env.FACEBOOK_PAGE_ID || '100063498372907';
+const FB_PAGE_ID = process.env.FACEBOOK_PAGE_ID || '160291140702239';
 const FB_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN || '';
 
 function publicarEnFacebook(titulo, contenido, urlArticulo, imagen) {
@@ -207,6 +207,87 @@ function publicarEnFacebook(titulo, contenido, urlArticulo, imagen) {
     });
     r.on('error', e => { console.error('[Facebook] Network error:', e.message); resolve(null); });
     r.write(postBody);
+    r.end();
+  });
+}
+
+
+// Publicar FOTO en Facebook — alta monetizacion
+function publicarFotoFacebook(imageUrl, caption) {
+  if (!FB_PAGE_TOKEN || !imageUrl) { console.log('[FB Foto] Token o imagen faltante'); return Promise.resolve(null); }
+  const postData = new URLSearchParams({ url: imageUrl, caption: caption, access_token: FB_PAGE_TOKEN });
+  return new Promise((resolve) => {
+    const postBody = postData.toString();
+    const opts = {
+      hostname: 'graph.facebook.com',
+      path: '/v19.0/' + FB_PAGE_ID + '/photos',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postBody) },
+    };
+    const r = https.request(opts, res => {
+      let d = '';
+      res.on('data', c => { d += c; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(d);
+          if (parsed.id) { console.log('[FB Foto] Publicada OK — ID:', parsed.id); resolve(parsed.id); }
+          else { console.error('[FB Foto] Error:', JSON.stringify(parsed)); resolve(null); }
+        } catch(e) { console.error('[FB Foto] Parse error:', e.message); resolve(null); }
+      });
+    });
+    r.on('error', e => { console.error('[FB Foto] Network error:', e.message); resolve(null); });
+    r.write(postBody);
+    r.end();
+  });
+}
+
+// Publicar STORY en Facebook — mayor ingreso de monetizacion
+async function publicarStoryFacebook(imageUrl) {
+  if (!FB_PAGE_TOKEN || !imageUrl) { console.log('[FB Story] Token o imagen faltante'); return null; }
+  const photoId = await new Promise((resolve) => {
+    const postData = new URLSearchParams({ url: imageUrl, published: 'false', access_token: FB_PAGE_TOKEN });
+    const postBody = postData.toString();
+    const opts = {
+      hostname: 'graph.facebook.com',
+      path: '/v19.0/' + FB_PAGE_ID + '/photos',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postBody) },
+    };
+    const r = https.request(opts, res => {
+      let d = '';
+      res.on('data', c => { d += c; });
+      res.on('end', () => {
+        try { const p = JSON.parse(d); resolve(p.id || null); }
+        catch(e) { resolve(null); }
+      });
+    });
+    r.on('error', () => resolve(null));
+    r.write(postBody);
+    r.end();
+  });
+  if (!photoId) { console.error('[FB Story] No se pudo subir la foto'); return null; }
+  return new Promise((resolve) => {
+    const storyData = new URLSearchParams({ photo_id: photoId, access_token: FB_PAGE_TOKEN });
+    const storyBody = storyData.toString();
+    const opts = {
+      hostname: 'graph.facebook.com',
+      path: '/v19.0/' + FB_PAGE_ID + '/photo_stories',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(storyBody) },
+    };
+    const r = https.request(opts, res => {
+      let d = '';
+      res.on('data', c => { d += c; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(d);
+          if (parsed.id) { console.log('[FB Story] Publicada OK — ID:', parsed.id); resolve(parsed.id); }
+          else { console.error('[FB Story] Error:', JSON.stringify(parsed)); resolve(null); }
+        } catch(e) { console.error('[FB Story] Parse error:', e.message); resolve(null); }
+      });
+    });
+    r.on('error', e => { console.error('[FB Story] Network error:', e.message); resolve(null); });
+    r.write(storyBody);
     r.end();
   });
 }
@@ -583,6 +664,39 @@ INSTRUCCIONES:
     return;
   }
 
+
+  // POST /foto-facebook — publicar foto manualmente
+  if (req.method === 'POST' && req.url === '/foto-facebook') {
+    let body = '';
+    req.on('data', d => { body += d; });
+    req.on('end', async () => {
+      const { imageUrl, caption } = JSON.parse(body || '{}');
+      if (!imageUrl) { res.writeHead(400); res.end(JSON.stringify({ error: 'imageUrl requerido' })); return; }
+      const id = await publicarFotoFacebook(imageUrl, caption || '✨ PASARELA™ — Moda, cultura e identidad latina. #ModaLatina #Pasarela #DallasFashion');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: !!id, photo_id: id }));
+    });
+    return;
+  }
+
+  // POST /story-facebook — publicar Story manualmente
+  if (req.method === 'POST' && req.url === '/story-facebook') {
+    let body = '';
+    req.on('data', d => { body += d; });
+    req.on('end', async () => {
+      const data = JSON.parse(body || '{}');
+      const imageUrl = data.imageUrl || (() => {
+        const conImg = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
+        return conImg.length > 0 ? conImg[Math.floor(Math.random() * conImg.length)].imagen : null;
+      })();
+      if (!imageUrl) { res.writeHead(400); res.end(JSON.stringify({ error: 'No hay imagen disponible' })); return; }
+      const id = await publicarStoryFacebook(imageUrl);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: !!id, story_id: id, imagen: imageUrl }));
+    });
+    return;
+  }
+
   res.writeHead(404);
   res.end();
 });
@@ -626,3 +740,78 @@ setInterval(async () => {
     }
   } catch(e) { console.error('[CRON] Error general:', e.message); }
 }, 6 * 60 * 60 * 1000);
+
+// ============================================================
+// CRONS DE MONETIZACION FACEBOOK
+// ============================================================
+
+// CRON FOTOS — cada 4 horas, 2 fotos con caption editorial AI
+setInterval(async () => {
+  console.log('[CRON-FOTO] Iniciando publicacion de fotos...');
+  if (!FB_PAGE_TOKEN) { console.log('[CRON-FOTO] Sin token Facebook, saltando'); return; }
+  try {
+    const conImagen = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
+    if (conImagen.length === 0) { console.log('[CRON-FOTO] Sin imagenes disponibles'); return; }
+    const seleccionadas = [...conImagen].sort(() => Math.random() - 0.5).slice(0, 2);
+    for (const noticia of seleccionadas) {
+      try {
+        const captionPayload = JSON.stringify({
+          model: 'claude-sonnet-4-6', max_tokens: 200,
+          system: 'Eres la editora de PASARELA™. Caption editorial para foto de moda en Facebook. Max 3 lineas. Voz empoderada, latina, sofisticada. Termina con 3-4 hashtags en español e inglés (#ModaLatina #Pasarela #DallasFashion etc). Sin citar fuentes. Firma: — PASARELA™',
+          messages: [{ role: 'user', content: 'Tema de la foto: ' + noticia.titulo + '. Escribe el caption editorial.' }],
+        });
+        const caption = await new Promise((resolve, reject) => {
+          const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
+          const r = https.request(opts, apiRes => { let d = ''; apiRes.on('data', c => { d += c; }); apiRes.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+          r.on('error', reject); r.write(captionPayload); r.end();
+        });
+        if (!caption) continue;
+        await publicarFotoFacebook(noticia.imagen, caption);
+        console.log('[CRON-FOTO] Foto publicada:', noticia.titulo);
+        await new Promise(r => setTimeout(r, 30000));
+      } catch(e) { console.error('[CRON-FOTO] Error:', e.message); }
+    }
+  } catch(e) { console.error('[CRON-FOTO] Error general:', e.message); }
+}, 4 * 60 * 60 * 1000);
+
+// CRON STORIES — cada 2 horas (Stories = mayor ingreso de monetizacion)
+setInterval(async () => {
+  console.log('[CRON-STORY] Iniciando Story...');
+  if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
+  try {
+    const conImagen = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
+    if (conImagen.length === 0) { console.log('[CRON-STORY] Sin imagenes disponibles'); return; }
+    const noticia = conImagen[Math.floor(Math.random() * conImagen.length)];
+    await publicarStoryFacebook(noticia.imagen);
+    console.log('[CRON-STORY] Story publicada para:', noticia.titulo);
+  } catch(e) { console.error('[CRON-STORY] Error:', e.message); }
+}, 2 * 60 * 60 * 1000);
+
+// CRON ENGAGEMENT — cada 3 horas, post inspiracional con imagen
+setInterval(async () => {
+  console.log('[CRON-ENGAGE] Iniciando post de engagement...');
+  if (!FB_PAGE_TOKEN) { console.log('[CRON-ENGAGE] Sin token Facebook, saltando'); return; }
+  try {
+    const temas = ['elegancia latina', 'moda como identidad', 'empowerment femenino', 'Dallas fashion scene', 'cultura latina y moda', 'belleza autentica', 'estilo editorial', 'mujer empoderada', 'modelaje profesional Dallas', 'fashion week inspiracion'];
+    const tema = temas[Math.floor(Math.random() * temas.length)];
+    const engagePayload = JSON.stringify({
+      model: 'claude-sonnet-4-6', max_tokens: 220,
+      system: 'Eres la editora de PASARELA™ en Facebook. Crea un post de engagement: frase inspiracional de moda, pregunta a la comunidad, o insight editorial. Max 4 lineas. Voz empoderada, latina. Emojis elegantes. 3-4 hashtags. Invita a comentar o compartir. Firma: — PASARELA™',
+      messages: [{ role: 'user', content: 'Post de engagement sobre: ' + tema }],
+    });
+    const post = await new Promise((resolve, reject) => {
+      const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(engagePayload) } };
+      const r = https.request(opts, apiRes => { let d = ''; apiRes.on('data', c => { d += c; }); apiRes.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+      r.on('error', reject); r.write(engagePayload); r.end();
+    });
+    if (!post) return;
+    const conImagen = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
+    if (conImagen.length > 0) {
+      const noticia = conImagen[Math.floor(Math.random() * conImagen.length)];
+      await publicarFotoFacebook(noticia.imagen, post);
+    } else {
+      await publicarEnFacebook('PASARELA™', post, 'https://pasarelastudiointer.com', '');
+    }
+    console.log('[CRON-ENGAGE] Post engagement publicado — tema:', tema);
+  } catch(e) { console.error('[CRON-ENGAGE] Error:', e.message); }
+}, 3 * 60 * 60 * 1000);
