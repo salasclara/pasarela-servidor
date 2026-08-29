@@ -697,6 +697,19 @@ INSTRUCCIONES:
     return;
   }
 
+  // GET /debug-env — diagnostico variables de entorno
+  if (req.method === 'GET' && req.url === '/debug-env') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      FB_TOKEN_PRESENT: !!process.env.FACEBOOK_PAGE_TOKEN,
+      FB_TOKEN_LENGTH: (process.env.FACEBOOK_PAGE_TOKEN || '').length,
+      FB_TOKEN_START: (process.env.FACEBOOK_PAGE_TOKEN || '').substring(0, 8),
+      FB_PAGE_ID: process.env.FACEBOOK_PAGE_ID || 'not_set',
+      NODE_ENV: process.env.NODE_ENV || 'not_set'
+    }));
+    return;
+  }
+
   res.writeHead(404);
   res.end();
 });
