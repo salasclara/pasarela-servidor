@@ -180,11 +180,11 @@ setInterval(actualizarNoticias, 30 * 60 * 1000);
 
 const FB_PAGE_ID = process.env.FACEBOOK_PAGE_ID || '160291140702239';
 // Token fallback hardcodeado — mover a env var cuando Railway resuelva el bug de inyeccion
-const _t1 = 'EAAdtfhDFcGgBSfzpvNjmK2hOn5uDIDLq2ZCB8SsziJEDy';
-const _t2 = 'Pj8qZCZBXCZCQSVm8atQAG794n9f4IrJO9ZAF5Qz1jSSLTE';
-const _t3 = 'LpaiUBkbNlQ3ZBnlNVHendqUh7KfjJwsm8MVSfNIsZBPv6hp';
-const _t4 = 'nslnVen8GEdD62jdcU1l10tPOoZBaKFu80a0FIl0IDqPeU92';
-const _t5 = 'l9geqB0eEmmZBWnveMQEXgtK1MHRXbTezap8ymaA3WZCPg';
+const _t1 = 'EAAdtfhDFcGgBSUimnjA5tSz8W8lZAr6PtLYzsCCUllXu';
+const _t2 = 'sXL7cufeZAsCh4RNBLqIR6V1HjvphVvlw8WwsXzKaUABg9';
+const _t3 = 'avTEKUZApqZBrf5f56p3ZAfWvv4zYrl4IoRgBGFWfvFHJch';
+const _t4 = 'aylrpjzgNvcX9TnIpXRHhoyqs3sVUUbi1IjfNwZBVbIChG';
+const _t5 = 'ZC8sDiboR8BzvY53COUsnaUdVw9uDLXlrea5TJ5pwH4uhGtJ';
 const FB_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN || (_t1+_t2+_t3+_t4+_t5);
 
 function publicarEnFacebook(titulo, contenido, urlArticulo, imagen) {
