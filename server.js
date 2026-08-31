@@ -325,6 +325,19 @@ const server = http.createServer((req, res) => {
       });
     return;
   }
+  // GET /test-cover — publicar cover editorial manual
+  if (req.method === 'GET' && req.url === '/test-cover') {
+   try {
+     const buffer = await generarCoverPasarela('Elegancia latina. Poder. Transformación.');
+     await publicarFotoBuffer(buffer, '✨ Pasarela Studio Internacional — donde el talento se convierte en arte. Dallas, TX #PasarelaStudio #Moda #Modelaje');
+     res.writeHead(200, { 'Content-Type': 'application/json' });
+     res.end(JSON.stringify({ ok: true, mensaje: 'Cover publicada en Facebook' }));
+   } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+   }
+   return;
+ }
 
   // POST /claude — generar relato editorial fashion
   if (req.method === 'POST' && req.url === '/claude') {
