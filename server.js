@@ -760,7 +760,153 @@ setInterval(async () => {
     }
   } catch(e) { console.error('[CRON] Error general:', e.message); }
 }, 6 * 60 * 60 * 1000);
+// ============================================================
+// GENERADOR DE COVERS EDITORIALES PASARELA TU REVISTA
+// ============================================================
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const FormData = require('form-data');
 
+const EDITORIAL_POOL = [
+  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=85',
+  'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1080&q=85',
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=85',
+  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=85',
+  'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=85',
+  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=85',
+  'https://images.unsplash.com/photo-1581338834647-b0fb40704e21?w=1080&q=85',
+  'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=1080&q=85',
+  'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1080&q=85',
+  'https://images.unsplash.com/photo-1523359346063-d879354c0ea5?w=1080&q=85',
+  'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?w=1080&q=85',
+  'https://images.unsplash.com/photo-1614251056216-f748f76cd228?w=1080&q=85',
+  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1080&q=85',
+  'https://images.unsplash.com/photo-1585914641050-fa5466c2e3d0?w=1080&q=85',
+  'https://images.unsplash.com/photo-1537832816519-689ad163239b?w=1080&q=85'
+];
+
+async function fetchBuf(url) {
+  return new Promise((resolve, reject) => {
+    const mod = require('https');
+    const req = mod.get(url, (res) => {
+      if (res.statusCode === 301 || res.statusCode === 302) {
+        return fetchBuf(res.headers.location).then(resolve).catch(reject);
+      }
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    });
+    req.on('error', reject);
+  });
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '', lines = [];
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line.trim());
+      line = word + ' ';
+    } else { line = test; }
+  }
+  if (line.trim()) lines.push(line.trim());
+  const startY = y - ((lines.length - 1) * lineHeight) / 2;
+  lines.slice(0, 4).forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
+}
+
+async function generarCoverPasarela(titulo = '') {
+  const W = 1080, H = 1080;
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
+
+  // Foto editorial de fondo
+  const imgUrl = EDITORIAL_POOL[Math.floor(Math.random() * EDITORIAL_POOL.length)];
+  try {
+    const buf = await fetchBuf(imgUrl);
+    const img = await loadImage(buf);
+    const scale = Math.max(W / img.width, H / img.height);
+    const sw = img.width * scale, sh = img.height * scale;
+    ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+  } catch(e) {
+    ctx.fillStyle = '#0D0A0B';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Gradiente oscuro editorial
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(13,10,11,0.55)');
+  grad.addColorStop(0.35, 'rgba(13,10,11,0.15)');
+  grad.addColorStop(1, 'rgba(13,10,11,0.92)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Barra superior burgundy
+  ctx.fillStyle = '#7B2D3E';
+  ctx.fillRect(0, 0, W, 95);
+
+  // PASARELA
+  ctx.fillStyle = '#E8C5B0';
+  ctx.font = 'bold 54px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('P A S A R E L A', W / 2, 62);
+
+  // TU REVISTA
+  ctx.fillStyle = '#C9A66B';
+  ctx.font = '22px Arial, sans-serif';
+  ctx.fillText('T U   R E V I S T A', W / 2, 88);
+
+  // Línea gold
+  ctx.strokeStyle = '#C9A66B';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(60, 105); ctx.lineTo(W - 60, 105);
+  ctx.stroke();
+
+  // Título principal
+  if (titulo) {
+    const texto = titulo.toUpperCase().split(' ').slice(0, 10).join(' ');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 66px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 14;
+    wrapText(ctx, texto, W / 2, H - 230, W - 120, 74);
+    ctx.shadowBlur = 0;
+  }
+
+  // Barra inferior
+  ctx.fillStyle = 'rgba(123,45,62,0.88)';
+  ctx.fillRect(0, H - 85, W, 85);
+
+  ctx.fillStyle = '#C9A66B';
+  ctx.font = 'bold 17px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  DALLAS, TX', W / 2, H - 50);
+
+  ctx.fillStyle = '#E8C5B0';
+  ctx.font = '14px Arial, sans-serif';
+  ctx.fillText('pasarelastudiointer.com  ·  @PASARELASTUDIO', W / 2, H - 28);
+
+  return canvas.toBuffer('image/png');
+}
+
+async function publicarFotoBuffer(buffer, caption) {
+  const form = new FormData();
+  form.append('source', buffer, { filename: 'cover.png', contentType: 'image/png' });
+  form.append('caption', caption);
+  form.append('access_token', FB_PAGE_TOKEN);
+  const res = await fetch(`https://graph.facebook.com/v19.0/${FB_PAGE_ID}/photos`, {
+    method: 'POST',
+    body: form,
+    headers: form.getHeaders()
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(`FB: ${data.error.message}`);
+  console.log('[publicarFotoBuffer] Publicado:', data.id);
+  return data;
+}
+// ============================================================
 // ============================================================
 // CRONS DE MONETIZACION FACEBOOK
 // ============================================================
@@ -794,7 +940,7 @@ setInterval(async () => {
   try {
     for (let _i = 0; _i < 2; _i++) {
       try {
-        const imgUrl = getImagenPasarela();
+        
         const captionPayload = JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 200,
           system: 'Eres la editora de PASARELA™. Caption editorial para foto de moda en Facebook. Max 3 lineas. Voz empoderada, latina, sofisticada. Termina con 3-4 hashtags en español e inglés (#ModaLatina #Pasarela #DallasFashion etc). Sin citar fuentes. Firma: — PASARELA™',
@@ -806,7 +952,8 @@ setInterval(async () => {
           r.on('error', reject); r.write(captionPayload); r.end();
         });
         if (!caption) continue;
-        await publicarFotoFacebook(imgUrl, caption);
+        const buffer = await generarCoverPasarela(caption); 
+        await publicarFotoBuffer(buffer, caption);
         console.log('[CRON-FOTO] Foto publicada OK');
         await new Promise(r => setTimeout(r, 30000));
       } catch(e) { console.error('[CRON-FOTO] Error:', e.message); }
@@ -819,7 +966,7 @@ setInterval(async () => {
   console.log('[CRON-STORY] Iniciando Story...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
   try {
-    const imgUrl = getImagenPasarela();
+  const imgUrl = EDITORIAL_POOL[Math.floor(Math.random() * EDITORIAL_POOL.length)];
     await publicarStoryFacebook(imgUrl);
     console.log('[CRON-STORY] Story publicada OK');
   } catch(e) { console.error('[CRON-STORY] Error:', e.message); }
@@ -843,7 +990,8 @@ setInterval(async () => {
       r.on('error', reject); r.write(engagePayload); r.end();
     });
     if (!post) return;
-    await publicarFotoFacebook(getImagenPasarela(), post);
+    const buffer = await generarCoverPasarela(post);
+    await publicarFotoBuffer(buffer, post);
     console.log('[CRON-ENGAGE] Post engagement publicado — tema:', tema);
   } catch(e) { console.error('[CRON-ENGAGE] Error:', e.message); }
 }, 3 * 60 * 60 * 1000);
