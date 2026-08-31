@@ -655,8 +655,9 @@ INSTRUCCIONES:
           );
           const url = 'https://pasarelastudiointer.com/noticias/' + slug;
           console.log('[auto-publicar] Publicado: ' + noticia.titulo);
-          publicarEnFacebook(noticia.titulo, contenido, url, noticia.imagen || '').catch(e => console.error('[Facebook] Error en auto-publicar:', e.message));
-          resultados.push({ titulo: noticia.titulo, url, id: result.rows[0].id });
+          noticia.imagen
+  ? publicarFotoFacebook(noticia.imagen, noticia.titulo + '\n\n' + contenido.substring(0,200) + '...\n\n🔗 ' + url)
+  : publicarEnFacebook(noticia.titulo, contenido, url, '')
         } catch(e) {
           console.error('[auto-publicar] Error:', e.message);
           resultados.push({ titulo: noticia.titulo, error: e.message });
