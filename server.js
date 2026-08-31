@@ -180,11 +180,11 @@ setInterval(actualizarNoticias, 30 * 60 * 1000);
 
 const FB_PAGE_ID = process.env.FACEBOOK_PAGE_ID || '160291140702239';
 // Token fallback hardcodeado — mover a env var cuando Railway resuelva el bug de inyeccion
-const _t1 = 'EAAdtfhDFcGgBSUimnjA5tSz8W8lZAr6PtLYzsCCUllXu';
-const _t2 = 'sXL7cufeZAsCh4RNBLqIR6V1HjvphVvlw8WwsXzKaUABg9';
-const _t3 = 'avTEKUZApqZBrf5f56p3ZAfWvv4zYrl4IoRgBGFWfvFHJch';
-const _t4 = 'aylrpjzgNvcX9TnIpXRHhoyqs3sVUUbi1IjfNwZBVbIChG';
-const _t5 = 'ZC8sDiboR8BzvY53COUsnaUdVw9uDLXlrea5TJ5pwH4uhGtJ';
+const _t1 = 'EAAdtfhDFcGgBSWRMBSvgY2TtemBhHblRHEZBa74Q8v8r';
+const _t2 = 'zBwCwBpFZCz5DQ5YZAZBQXCbw3wSZBEn7pYa8HM1XHEUL';
+const _t3 = 'Uv9PowiaWJmc9bh91ws28OTOAZAnNQZARWN183ebKzgm5';
+const _t4 = 'w3Y3eckyKZBOkRQhlCoO0CyAsMFvDbKhUQe6pZAiZCt2F';
+const _t5 = 'x63OMQIFALkwybWoY5jdI4vrwgZD';
 const FB_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN || (_t1+_t2+_t3+_t4+_t5);
 
 function publicarEnFacebook(titulo, contenido, urlArticulo, imagen) {
