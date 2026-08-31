@@ -905,19 +905,30 @@ async function generarCoverPasarela(titulo = '') {
 }
 
 async function publicarFotoBuffer(buffer, caption) {
-  const blob = new Blob([buffer], { type: 'image/png' });
-  const form = new FormData();
-  form.append('source', blob, 'cover.png');
-  form.append('caption', caption);
-  form.append('access_token', FB_PAGE_TOKEN);
-  const res = await fetch(`https://graph.facebook.com/v19.0/${FB_PAGE_ID}/photos`, {
-    method: 'POST',
-    body: form
+  const fs = require('fs');
+  const FormData = require('form-data');
+  const tmpPath = `/tmp/cover_${Date.now()}.png`;
+  fs.writeFileSync(tmpPath, buffer);
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('source', fs.createReadStream(tmpPath));
+    form.append('caption', caption);
+    form.append('access_token', FB_PAGE_TOKEN);
+    form.submit(`https://graph.facebook.com/v19.0/${FB_PAGE_ID}/photos`, (err, res) => {
+      fs.unlinkSync(tmpPath);
+      if (err) return reject(err);
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.error) return reject(new Error(`FB: ${json.error.message}`));
+          console.log('[publicarFotoBuffer] Publicado:', json.id);
+          resolve(json);
+        } catch(e) { reject(e); }
+      });
+    });
   });
-  const data = await res.json();
-  if (data.error) throw new Error(`FB: ${data.error.message}`);
-  console.log('[publicarFotoBuffer] Publicado:', data.id);
-  return data;
 }
 // ============================================================
 // ============================================================
