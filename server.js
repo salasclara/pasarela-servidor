@@ -765,20 +765,40 @@ setInterval(async () => {
 // CRONS DE MONETIZACION FACEBOOK
 // ============================================================
 
+// Pool curado de imagenes editoriales PASARELA (nivel modulo)
+const PASARELA_IMAGES = [
+  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=85',
+  'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1080&q=85',
+  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=85',
+  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=85',
+  'https://images.unsplash.com/photo-1537832816519-689ad163239b?w=1080&q=85',
+  'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=1080&q=85',
+  'https://images.unsplash.com/photo-1581338834647-b0fb40704e21?w=1080&q=85',
+  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=85',
+  'https://images.unsplash.com/photo-1523359346063-d879354c0ea5?w=1080&q=85',
+  'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=85',
+  'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1080&q=85',
+  'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?w=1080&q=85',
+  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1080&q=85',
+  'https://images.unsplash.com/photo-1614251056216-f748f76cd228?w=1080&q=85',
+  'https://images.unsplash.com/photo-1585914641050-fa5466c2e3d0?w=1080&q=85'
+];
+function getImagenPasarela() {
+  return PASARELA_IMAGES[Math.floor(Math.random() * PASARELA_IMAGES.length)];
+}
+
 // CRON FOTOS — cada 4 horas, 2 fotos con caption editorial AI
 setInterval(async () => {
   console.log('[CRON-FOTO] Iniciando publicacion de fotos...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-FOTO] Sin token Facebook, saltando'); return; }
   try {
-    const conImagen = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
-    if (conImagen.length === 0) { console.log('[CRON-FOTO] Sin imagenes disponibles'); return; }
-    const seleccionadas = [...conImagen].sort(() => Math.random() - 0.5).slice(0, 2);
-    for (const noticia of seleccionadas) {
+    for (let _i = 0; _i < 2; _i++) {
       try {
+        const imgUrl = getImagenPasarela();
         const captionPayload = JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 200,
           system: 'Eres la editora de PASARELA™. Caption editorial para foto de moda en Facebook. Max 3 lineas. Voz empoderada, latina, sofisticada. Termina con 3-4 hashtags en español e inglés (#ModaLatina #Pasarela #DallasFashion etc). Sin citar fuentes. Firma: — PASARELA™',
-          messages: [{ role: 'user', content: 'Tema de la foto: ' + noticia.titulo + '. Escribe el caption editorial.' }],
+          messages: [{ role: 'user', content: 'Escribe un caption editorial de moda para una foto de Pasarela Studio Internacional en Dallas.' }],
         });
         const caption = await new Promise((resolve, reject) => {
           const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
@@ -786,8 +806,8 @@ setInterval(async () => {
           r.on('error', reject); r.write(captionPayload); r.end();
         });
         if (!caption) continue;
-        await publicarFotoFacebook(noticia.imagen, caption);
-        console.log('[CRON-FOTO] Foto publicada:', noticia.titulo);
+        await publicarFotoFacebook(imgUrl, caption);
+        console.log('[CRON-FOTO] Foto publicada OK');
         await new Promise(r => setTimeout(r, 30000));
       } catch(e) { console.error('[CRON-FOTO] Error:', e.message); }
     }
@@ -799,11 +819,9 @@ setInterval(async () => {
   console.log('[CRON-STORY] Iniciando Story...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
   try {
-    const conImagen = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
-    if (conImagen.length === 0) { console.log('[CRON-STORY] Sin imagenes disponibles'); return; }
-    const noticia = conImagen[Math.floor(Math.random() * conImagen.length)];
-    await publicarStoryFacebook(noticia.imagen);
-    console.log('[CRON-STORY] Story publicada para:', noticia.titulo);
+    const imgUrl = getImagenPasarela();
+    await publicarStoryFacebook(imgUrl);
+    console.log('[CRON-STORY] Story publicada OK');
   } catch(e) { console.error('[CRON-STORY] Error:', e.message); }
 }, 2 * 60 * 60 * 1000);
 
@@ -825,13 +843,7 @@ setInterval(async () => {
       r.on('error', reject); r.write(engagePayload); r.end();
     });
     if (!post) return;
-    const conImagen = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
-    if (conImagen.length > 0) {
-      const noticia = conImagen[Math.floor(Math.random() * conImagen.length)];
-      await publicarFotoFacebook(noticia.imagen, post);
-    } else {
-      await publicarEnFacebook('PASARELA™', post, 'https://pasarelastudiointer.com', '');
-    }
+    await publicarFotoFacebook(getImagenPasarela(), post);
     console.log('[CRON-ENGAGE] Post engagement publicado — tema:', tema);
   } catch(e) { console.error('[CRON-ENGAGE] Error:', e.message); }
 }, 3 * 60 * 60 * 1000);
