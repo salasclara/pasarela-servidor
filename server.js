@@ -905,14 +905,14 @@ async function generarCoverPasarela(titulo = '') {
 }
 
 async function publicarFotoBuffer(buffer, caption) {
+  const blob = new Blob([buffer], { type: 'image/png' });
   const form = new FormData();
-  form.append('source', buffer, { filename: 'cover.png', contentType: 'image/png' });
+  form.append('source', blob, 'cover.png');
   form.append('caption', caption);
   form.append('access_token', FB_PAGE_TOKEN);
   const res = await fetch(`https://graph.facebook.com/v19.0/${FB_PAGE_ID}/photos`, {
     method: 'POST',
-    body: form,
-    headers: form.getHeaders()
+    body: form
   });
   const data = await res.json();
   if (data.error) throw new Error(`FB: ${data.error.message}`);
