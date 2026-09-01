@@ -776,7 +776,13 @@ setInterval(async () => {
 // ============================================================
 // GENERADOR DE COVERS EDITORIALES PASARELA TU REVISTA
 // ============================================================
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
+try {
+  ['/usr/share/fonts', '/usr/local/share/fonts', '/usr/share/fonts/truetype'].forEach(d => {
+    try { GlobalFonts.loadFontsFromDir(d); } catch(e) {}
+  });
+  console.log('[fonts] Sistema cargado');
+} catch(e) { console.log('[fonts] Sin fuentes sistema'); }
 const FormData = require('form-data');
 
 const EDITORIAL_POOL = [
@@ -856,13 +862,13 @@ async function generarCoverPasarela(titulo = '') {
 
   // PASARELA
   ctx.fillStyle = '#E8C5B0';
-  ctx.font = 'bold 54px Georgia, serif';
+  ctx.font = 'bold 54px serif';
   ctx.textAlign = 'center';
   ctx.fillText('P A S A R E L A', W / 2, 62);
 
   // TU REVISTA
   ctx.fillStyle = '#C9A66B';
-  ctx.font = '22px Arial, sans-serif';
+  ctx.font = '22px sans-serif';
   ctx.fillText('T U   R E V I S T A', W / 2, 88);
 
   // Línea gold
@@ -876,7 +882,7 @@ async function generarCoverPasarela(titulo = '') {
   if (titulo) {
     const texto = titulo.toUpperCase().split(' ').slice(0, 10).join(' ');
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 66px Georgia, serif';
+    ctx.font = 'bold 66px serif';
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 14;
@@ -889,12 +895,12 @@ async function generarCoverPasarela(titulo = '') {
   ctx.fillRect(0, H - 85, W, 85);
 
   ctx.fillStyle = '#C9A66B';
-  ctx.font = 'bold 17px Arial, sans-serif';
+  ctx.font = 'bold 17px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  DALLAS, TX', W / 2, H - 50);
 
   ctx.fillStyle = '#E8C5B0';
-  ctx.font = '14px Arial, sans-serif';
+  ctx.font = '14px sans-serif';
   ctx.fillText('pasarelastudiointer.com  ·  @PASARELASTUDIO', W / 2, H - 28);
 
   return canvas.toBuffer('image/png');
