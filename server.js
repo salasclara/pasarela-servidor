@@ -1019,9 +1019,13 @@ setInterval(async () => {
 setInterval(async () => {
   console.log('[CRON-STORY] Iniciando Story...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
-  try {
+   try {
+    const imgUrl = EDITORIAL_POOL[Math.floor(Math.random() * EDITORIAL_POOL.length)];
+    await publicarStoryFacebook(imgUrl);
+    console.log('[CRON-STORY] Story publicada OK');
+  } catch(e) { console.error('[CRON-STORY] Error:', e.message); }
+}, 2 * 60 * 60 * 1000);
   
-
 // CRON ENGAGEMENT — cada 3 horas, post inspiracional con imagen
 setInterval(async () => {
   console.log('[CRON-ENGAGE] Iniciando post de engagement...');
