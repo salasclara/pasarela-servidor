@@ -798,19 +798,15 @@ const EDITORIAL_POOL = [
 ];
 
 async function fetchBuf(url) {
-  return new Promise((resolve, reject) => {
-    const mod = require('https');
-    const req = mod.get(url, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        return fetchBuf(res.headers.location).then(resolve).catch(reject);
-      }
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    });
-    req.on('error', reject);
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; PasarelaBot/1.0)',
+      'Accept': 'image/*'
+    }
   });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const ab = await res.arrayBuffer();
+  return Buffer.from(ab);
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
