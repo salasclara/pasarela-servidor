@@ -1056,3 +1056,9 @@ setInterval(async () => {
     console.log('[CRON-ENGAGE] Post engagement publicado — tema:', tema);
   } catch(e) { console.error('[CRON-ENGAGE] Error:', e.message); }
 }, 3 * 60 * 60 * 1000);
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`[SERVER] Corriendo en puerto ${PORT}`);
+});
