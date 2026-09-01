@@ -785,14 +785,15 @@ async function setupFonts() {
     { url: 'https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@5.0.18/files/playfair-display-latin-700-normal.woff2', path: '/tmp/serif-bold.woff2', family: 'PSSerif' },
     { url: 'https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.15/files/outfit-latin-400-normal.woff2', path: '/tmp/sans-reg.woff2', family: 'PSSans' },
     { url: 'https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.15/files/outfit-latin-700-normal.woff2', path: '/tmp/sans-bold.woff2', family: 'PSSansBold' }
+    { url: null, path: './BAUHS93.TTF', family: 'PSBauhaus' }
   ];
   for (const f of fonts) {
-    try {
-      if (!fs.existsSync(f.path)) { fs.writeFileSync(f.path, await fetchBuf(f.url)); }
-      GlobalFonts.registerFromPath(f.path, f.family);
-      console.log('[fonts]', f.family, 'OK');
-    } catch(e) { console.log('[fonts] Error:', f.family, e.message); }
-  }
+   try {
+    if (f.url && !fs.existsSync(f.path)) { fs.writeFileSync(f.path, await fetchBuf(f.url)); }
+    GlobalFonts.registerFromPath(f.path, f.family);
+    console.log('[fonts]', f.family, 'OK');
+  } catch(e) { console.log('[fonts] Error:', f.family, e.message); }
+ }
   fontsLoaded = true;
 }
 try {
@@ -876,12 +877,12 @@ async function generarCoverPasarela(titulo = '') {
   ctx.fillRect(0, 0, W, H);
 
   // Barra superior burgundy
-  ctx.fillStyle = '#7B2D3E';
+  ctx.fillStyle = '#FF0090';
   ctx.fillRect(0, 0, W, 95);
 
   // PASARELA
   ctx.fillStyle = '#E8C5B0';
-  ctx.font = 'bold 54px PSserif';
+  ctx.font = '54px PSBauhaus';
   ctx.textAlign = 'center';
   ctx.fillText('P A S A R E L A', W / 2, 62);
 
