@@ -784,8 +784,7 @@ async function setupFonts() {
   const fonts = [
     { url: 'https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@5.0.18/files/playfair-display-latin-700-normal.woff2', path: '/tmp/serif-bold.woff2', family: 'PSSerif' },
     { url: 'https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.15/files/outfit-latin-400-normal.woff2', path: '/tmp/sans-reg.woff2', family: 'PSSans' },
-    { url: 'https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.15/files/outfit-latin-700-normal.woff2', path: '/tmp/sans-bold.woff2', family: 'PSSansBold' },
-{ url: null, path: './BAUHS93.TTF', family: 'PSBauhaus' }
+    { url: 'https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.15/files/outfit-latin-700-normal.woff2', path: '/tmp/sans-bold.woff2', family: 'PSSansBold' }
   ];
   for (const f of fonts) {
    try {
@@ -877,12 +876,12 @@ async function generarCoverPasarela(titulo = '') {
   ctx.fillRect(0, 0, W, H);
 
   // Barra superior burgundy
-  ctx.fillStyle = '#FF0090';
+  ctx.fillStyle = '#7B2D3E';
   ctx.fillRect(0, 0, W, 95);
 
   // PASARELA
   ctx.fillStyle = '#E8C5B0';
-  ctx.font = '54px PSBauhaus';
+  ctx.font = 'bold 54px PSSerif';
   ctx.textAlign = 'center';
   ctx.fillText('P A S A R E L A', W / 2, 62);
 
@@ -911,7 +910,7 @@ async function generarCoverPasarela(titulo = '') {
   }
 
   // Barra inferior
-  ctx.fillStyle = 'rgba(123,45,62,0.88)';
+  ctx.fillStyle = '#7B2D3E';
   ctx.fillRect(0, H - 85, W, 85);
 
   ctx.fillStyle = '#C9A66B';
