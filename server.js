@@ -777,6 +777,24 @@ setInterval(async () => {
 // GENERADOR DE COVERS EDITORIALES PASARELA TU REVISTA
 // ============================================================
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
+let fontsLoaded = false;
+async function setupFonts() {
+  if (fontsLoaded) return;
+  const fs = require('fs');
+  const fonts = [
+    { url: 'https://cdn.jsdelivr.net/npm/@fontsource/playfair-display@5.0.18/files/playfair-display-latin-700-normal.woff2', path: '/tmp/serif-bold.woff2', family: 'PSSerif' },
+    { url: 'https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.15/files/outfit-latin-400-normal.woff2', path: '/tmp/sans-reg.woff2', family: 'PSSans' },
+    { url: 'https://cdn.jsdelivr.net/npm/@fontsource/outfit@5.0.15/files/outfit-latin-700-normal.woff2', path: '/tmp/sans-bold.woff2', family: 'PSSansBold' }
+  ];
+  for (const f of fonts) {
+    try {
+      if (!fs.existsSync(f.path)) { fs.writeFileSync(f.path, await fetchBuf(f.url)); }
+      GlobalFonts.registerFromPath(f.path, f.family);
+      console.log('[fonts]', f.family, 'OK');
+    } catch(e) { console.log('[fonts] Error:', f.family, e.message); }
+  }
+  fontsLoaded = true;
+}
 try {
   ['/usr/share/fonts', '/usr/local/share/fonts', '/usr/share/fonts/truetype'].forEach(d => {
     try { GlobalFonts.loadFontsFromDir(d); } catch(e) {}
@@ -831,6 +849,7 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 }
 
 async function generarCoverPasarela(titulo = '') {
+  await setupFonts();
   const W = 1080, H = 1080;
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
@@ -862,13 +881,13 @@ async function generarCoverPasarela(titulo = '') {
 
   // PASARELA
   ctx.fillStyle = '#E8C5B0';
-  ctx.font = 'bold 54px serif';
+  ctx.font = 'bold 54px PSserif';
   ctx.textAlign = 'center';
   ctx.fillText('P A S A R E L A', W / 2, 62);
 
   // TU REVISTA
   ctx.fillStyle = '#C9A66B';
-  ctx.font = '22px sans-serif';
+  ctx.font = '22px PSSans';
   ctx.fillText('T U   R E V I S T A', W / 2, 88);
 
   // Línea gold
@@ -882,7 +901,7 @@ async function generarCoverPasarela(titulo = '') {
   if (titulo) {
     const texto = titulo.toUpperCase().split(' ').slice(0, 10).join(' ');
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 66px serif';
+    ctx.font = 'bold 66px PSSerif';
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 14;
@@ -895,12 +914,12 @@ async function generarCoverPasarela(titulo = '') {
   ctx.fillRect(0, H - 85, W, 85);
 
   ctx.fillStyle = '#C9A66B';
-  ctx.font = 'bold 17px sans-serif';
+  ctx.font = 'bold 17px PSSansBold';
   ctx.textAlign = 'center';
   ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  DALLAS, TX', W / 2, H - 50);
 
   ctx.fillStyle = '#E8C5B0';
-  ctx.font = '14px sans-serif';
+  ctx.font = '14px PSSans';
   ctx.fillText('pasarelastudiointer.com  ·  @PASARELASTUDIO', W / 2, H - 28);
 
   return canvas.toBuffer('image/png');
