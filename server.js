@@ -905,6 +905,15 @@ async function generarCoverPasarela(titulo = '') {
 }
 
 async function publicarFotoBuffer(buffer, caption) {
+  // Obtener page access token desde user token
+  let pageToken = FB_PAGE_TOKEN;
+  try {
+    const tr = await fetch(`https://graph.facebook.com/v19.0/${FB_PAGE_ID}?fields=access_token&access_token=${FB_PAGE_TOKEN}`);
+    const td = await tr.json();
+    if (td.access_token) pageToken = td.access_token;
+    console.log('[publicarFotoBuffer] Page token obtenido:', !!td.access_token);
+  } catch(e) { console.log('[publicarFotoBuffer] Usando token original'); }
+
   const fs = require('fs');
   const FormData = require('form-data');
   const tmpPath = `/tmp/cover_${Date.now()}.png`;
@@ -913,7 +922,7 @@ async function publicarFotoBuffer(buffer, caption) {
     const form = new FormData();
     form.append('source', fs.createReadStream(tmpPath));
     form.append('caption', caption);
-    form.append('access_token', FB_PAGE_TOKEN);
+    form.append('access_token', pageToken);
     form.submit(`https://graph.facebook.com/v19.0/${FB_PAGE_ID}/photos`, (err, res) => {
       fs.unlinkSync(tmpPath);
       if (err) return reject(err);
