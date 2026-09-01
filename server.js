@@ -1020,18 +1020,7 @@ setInterval(async () => {
   console.log('[CRON-STORY] Iniciando Story...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
   try {
-  const EDITORIAL_POOL = [
-  'https://picsum.photos/seed/ps1/1080/1080',
-  'https://picsum.photos/seed/ps2/1080/1080',
-  'https://picsum.photos/seed/ps3/1080/1080',
-  'https://picsum.photos/seed/ps4/1080/1080',
-  'https://picsum.photos/seed/ps5/1080/1080',
-  'https://picsum.photos/seed/ps6/1080/1080',
-  'https://picsum.photos/seed/ps7/1080/1080',
-  'https://picsum.photos/seed/ps8/1080/1080',
-  'https://picsum.photos/seed/ps9/1080/1080',
-  'https://picsum.photos/seed/ps10/1080/1080'
-];
+  
 
 // CRON ENGAGEMENT — cada 3 horas, post inspiracional con imagen
 setInterval(async () => {
