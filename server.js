@@ -202,16 +202,16 @@ const PAGES_EXTRA = [
     hashtags: '#MaravillaDelReino #FeCristiana #MujerDeValor #ComunidadLatina #Esperanza',
     temas: ['fe', 'familia', 'mujer', 'esperanza', 'comunidad', 'propósito', 'amor', 'inspiración', 'bendición', 'gratitud']
   },
-  // ⏳ PENDIENTE — Fancy by Roxette (agregar token cuando tengas acceso)
-  // {
-  //   id: 'FANCY_PAGE_ID',
-  //   token: process.env.FANCY_PAGE_TOKEN || '',
-  //   nombre: 'Fancy by Roxette',
-  //   nicho: 'moda y accesorios',
-  //   voice: 'Eres la editora de Fancy by Roxette, tienda de moda y accesorios en Dallas. Voz chic, accesible y tendenciosa. Español con términos de moda.',
-  //   hashtags: '#FancyByRoxette #ModaAccesorios #Tendencias #StyleLatina #FashionDallas',
-  //   temas: ['accesorios', 'moda', 'tendencias', 'looks', 'outfit', 'estilo', 'joyería', 'bolsos']
-  // },
+  // ✅ ACTIVA — Fancy by Roxette
+  {
+    id: '2645809545432358',
+    token: process.env.FANCY_PAGE_TOKEN || 'EAAMiSCsCtFEBScQVVW7xv658yOfznLtETuIxKlCwXZBZB8OZClTrNkquUdQNg6nCLFZC9z5sNetbxqKC535LUNUdjoapZCOtypzj81Pa5sddk47afuW11OBhQOOAhMcFZAAusT0czWZB3giY1LD1FPKqF9zZCRMWkmaFZAEg24avt9lbyZCOtEdjSZCqZCkISYZCypzYMZAFLGf2A8kel7JZAKzyHKkBjirM5SEf0fZCgjlap6TJnDQwdYY66jxAYtbFiQZDZD',
+    nombre: 'Fancy by Roxette',
+    nicho: 'moda y accesorios',
+    voice: 'Eres la editora de Fancy by Roxette, boutique de moda y accesorios en Dallas. Voz chic, aspiracional y accesible. Mezcla de español e inglés de moda. Tendencias, outfits y estilo de vida.',
+    hashtags: '#FancyByRoxette #ModaAccesorios #Tendencias #StyleLatina #FashionDallas #OOTD #BoutiqueDallas',
+    temas: ['accesorios', 'moda', 'tendencias', 'looks', 'outfit', 'estilo', 'joyería', 'bolsos', 'belleza', 'maquillaje', 'zapatos', 'ropa']
+  },
   // ⏳ PENDIENTE — Trabajando En Casa
   // {
   //   id: 'TRABAJANDO_EN_CASA_PAGE_ID',
