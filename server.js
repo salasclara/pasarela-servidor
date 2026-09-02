@@ -821,6 +821,29 @@ INSTRUCCIONES:
     return;
   }
 
+
+  // TEST MULTI-PÁGINA — dispara publicarCoverParaPagina en todas las páginas extra
+  if (req.method === 'GET' && req.url === '/test-multipagina') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    const resultados = [];
+    const titulo = 'Estilo Editorial — PASARELA™ Revista';
+    (async () => {
+      for (const page of PAGES_EXTRA) {
+        if (!page.token) { resultados.push({ pagina: page.nombre, status: 'sin token' }); continue; }
+        try {
+          await publicarCoverParaPagina(page, titulo);
+          resultados.push({ pagina: page.nombre, status: 'OK' });
+          await new Promise(r => setTimeout(r, 5000));
+        } catch(e) {
+          resultados.push({ pagina: page.nombre, status: 'ERROR', error: e.message });
+        }
+      }
+      console.log('[test-multipagina] Resultados:', JSON.stringify(resultados));
+    })();
+    res.end(JSON.stringify({ mensaje: 'Publicando en páginas extra...', paginas: PAGES_EXTRA.map(p => p.nombre), nota: 'Ver logs Railway para resultados' }));
+    return;
+  }
+
   res.writeHead(404);
   res.end();
 });
