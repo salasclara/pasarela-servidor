@@ -212,15 +212,25 @@ const PAGES_EXTRA = [
     hashtags: '#FancyByRoxette #ModaAccesorios #Tendencias #StyleLatina #FashionDallas #OOTD #BoutiqueDallas',
     temas: ['accesorios', 'moda', 'tendencias', 'looks', 'outfit', 'estilo', 'joyería', 'bolsos', 'belleza', 'maquillaje', 'zapatos', 'ropa']
   },
-  // ⏳ PENDIENTE — Trabajando En Casa
+  // ✅ ACTIVA — Amar es
+  {
+    id: '529892146881748',
+    token: process.env.AMAR_ES_PAGE_TOKEN || 'EAAMiSCsCtFEBSc2JNt0kbjNhehR3Rb4ioNZBJhpiQWo3NZBYPQyc2CzdvNO8ZA6TZAE7rlZAbiPP6daOzpcX88BvcAVh0r0ZBZApzFOBwXi8nkmZBy3j6eKgGLCdTo043v4NCBAvimC7uYbzIZCgRMlS5ihkuXmWHpFJVUTE9iZCMr3ZBZCCM38Drl2oYKSzdV5Rya8d0pYZC8vGTeov8nwAnqwlaZCZAj3ZAHNQkckwM1h4FJGkCp90erRVZApqePQZDZD',
+    nombre: 'Amar es',
+    nicho: 'amor, relaciones y lifestyle femenino',
+    voice: 'Eres la voz de Amar es, espacio de amor, relaciones y bienestar femenino para mujeres latinas. Voz cálida, empática e inspiradora. Frases con profundidad, consejos de vida y amor propio. Español.',
+    hashtags: '#AmarEs #Relaciones #AmorPropio #MujerLatina #Lifestyle #Bienestar #VidaPlena',
+    temas: ['amor', 'relaciones', 'autoestima', 'bienestar', 'pareja', 'familia', 'crecimiento personal', 'mujer', 'motivación', 'inspiración', 'vida', 'felicidad']
+  },
+  // ⏳ PENDIENTE — Trabajando En Casa (agregar token)
   // {
   //   id: 'TRABAJANDO_EN_CASA_PAGE_ID',
   //   token: process.env.TRABAJANDO_EN_CASA_PAGE_TOKEN || '',
   //   nombre: 'Trabajando En Casa',
-  //   nicho: 'emprendimiento y home office',
-  //   voice: 'Eres la editora de Trabajando En Casa, guía de emprendimiento digital latino. Voz práctica, motivadora, directa. Español.',
-  //   hashtags: '#TrabajandoEnCasa #Emprendimiento #TrabajoRemoto #EmprendedoraLatina #NegocioDigital',
-  //   temas: ['emprendimiento', 'trabajo remoto', 'productividad', 'negocio online', 'ingresos extra', 'freelance']
+  //   nicho: 'emprendimiento digital y trabajo remoto',
+  //   voice: 'Eres la editora de Trabajando En Casa, guía de emprendimiento digital y trabajo remoto para latinos. Voz práctica, motivadora y directa. Tips accionables, sin rodeos. Español.',
+  //   hashtags: '#TrabajandoEnCasa #Emprendimiento #TrabajoRemoto #EmprendedoraLatina #NegocioDigital #IngresoExtra #LibertadFinanciera',
+  //   temas: ['emprendimiento', 'trabajo remoto', 'productividad', 'negocio online', 'ingresos extra', 'freelance', 'dinero', 'marketing digital']
   // },
 ];
 
