@@ -855,7 +855,7 @@ async function generarCoverPasarela(titulo = '') {
   const ctx = canvas.getContext('2d');
 
   // Foto editorial de fondo
-  const imgUrl = EDITORIAL_POOL[Math.floor(Math.random() * EDITORIAL_POOL.length)];
+  const imgUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 999) + 1}/1080/1080`;
   try {
     const buf = await fetchBuf(imgUrl);
     const img = await loadImage(buf);
@@ -997,7 +997,7 @@ setInterval(async () => {
   console.log('[CRON-STORY] Iniciando Story...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
    try {
-    const imgUrl = EDITORIAL_POOL[Math.floor(Math.random() * EDITORIAL_POOL.length)];
+    const imgUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 999) + 1}/1080/1080`;
     await publicarStoryFacebook(imgUrl);
     console.log('[CRON-STORY] Story publicada OK');
   } catch(e) { console.error('[CRON-STORY] Error:', e.message); }
