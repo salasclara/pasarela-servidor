@@ -269,12 +269,23 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     form.append('source', coverBuffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
     await new Promise((resolve, reject) => {
       form.submit(`https://graph.facebook.com/v19.0/${pageConfig.id}/photos`, (err, res) => {
-        res.resume();
-        if (err) reject(err);
-        else resolve();
+        if (err) return reject(err);
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => {
+          try {
+            const json = JSON.parse(body);
+            if (json.error) {
+              console.error('[MultiPage] FB error en', pageConfig.nombre, ':', json.error.message);
+              reject(new Error(json.error.message));
+            } else {
+              console.log('[MultiPage] Cover publicado en:', pageConfig.nombre, '| post id:', json.id, '|', titulo);
+              resolve(json);
+            }
+          } catch(e) { reject(e); }
+        });
       });
     });
-    console.log('[MultiPage] Cover publicado en:', pageConfig.nombre, '|', titulo);
   } catch(e) { console.error('[MultiPage] Error en', pageConfig.nombre, ':', e.message); }
 }
 
