@@ -753,6 +753,19 @@ setInterval(async () => {
     const aPublicar = seleccionadas.slice(0, 3);
     for (const noticia of aPublicar) {
       try {
+        // Filtro de relevancia — solo moda, belleza, talento, modelaje
+        const filtroPayload = JSON.stringify({
+          model: 'claude-haiku-3-5', max_tokens: 5,
+          system: 'Responde SOLO con SI o NO. Sin explicacion.',
+          messages: [{ role: 'user', content: '¿Este titular es relevante para una revista de moda, belleza, talento o modelaje? Titulo: "' + noticia.titulo + '"' }]
+        });
+        const relevante = await new Promise((resolve, reject) => {
+          const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(filtroPayload) } };
+          const r = https.request(opts, apiRes => { let d = ''; apiRes.on('data', c => { d += c; }); apiRes.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || 'NO'); } catch(e) { reject(e); } }); });
+          r.on('error', reject); r.write(filtroPayload); r.end();
+        });
+        if (!relevante.trim().toUpperCase().startsWith('SI')) { console.log('[CRON] Descartado off-brand:', noticia.titulo); continue; }
+
         const promptCron = 'Escribe un articulo editorial original sobre: ' + noticia.titulo + '. Contexto: ' + (noticia.descripcion || '') + '. Para PASARELA, revista de moda latina. Voz propia, sin citar fuentes.';
         const genPayload = JSON.stringify({
           model: 'claude-sonnet-4-6',
@@ -768,7 +781,25 @@ setInterval(async () => {
         if (!contenido) continue;
         const slug = generarSlug(noticia.titulo);
         await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6)', [noticia.titulo, contenido, 'editorial', slug, true, noticia.imagen || '']);
-        console.log('[CRON] Publicado: ' + noticia.titulo);
+        console.log('[CRON] Publicado en blog: ' + noticia.titulo);
+        // Publicar cover editorial en Facebook
+        try {
+          const teaserPayload = JSON.stringify({
+            model: 'claude-sonnet-4-6', max_tokens: 120,
+            system: 'Eres la directora digital de PASARELA™ revista. Escribe SOLO el caption para Facebook: 2 líneas editoriales impactantes sobre el tema, luego 5 hashtags relevantes. Sin comillas, sin asteriscos, sin markdown.',
+            messages: [{ role: 'user', content: 'Caption de revista para Facebook sobre: ' + noticia.titulo }]
+          });
+          const teaser = await new Promise((resolve, reject) => {
+            const opts2 = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(teaserPayload) } };
+            const r2 = https.request(opts2, apiRes2 => { let d2 = ''; apiRes2.on('data', c => { d2 += c; }); apiRes2.on('end', () => { try { resolve(JSON.parse(d2).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+            r2.on('error', reject); r2.write(teaserPayload); r2.end();
+          });
+          if (teaser) {
+            const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+            await publicarFotoBuffer(coverBuffer, teaser);
+            console.log('[CRON] Cover publicado en Facebook:', noticia.titulo);
+          }
+        } catch(efb) { console.error('[CRON] Error Facebook cover:', efb.message); }
       } catch(e) { console.error('[CRON] Error:', e.message); }
     }
   } catch(e) { console.error('[CRON] Error general:', e.message); }
