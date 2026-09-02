@@ -187,6 +187,87 @@ const _t4 = 'w3Y3eckyKZBOkRQhlCoO0CyAsMFvDbKhUQe6pZAiZCt2F';
 const _t5 = 'x63OMQIFALkwybWoY5jdI4vrwgZD';
 const FB_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN || (_t1+_t2+_t3+_t4+_t5);
 
+// ============================================================
+// CONFIG MULTI-PÁGINA — agregar pages aquí cuando tengas los tokens
+// Cada página tiene su propia voz, nicho y hashtags
+// ============================================================
+const PAGES_EXTRA = [
+  // ✅ ACTIVA — Comunidad de Fe Maravillas Del Reino
+  {
+    id: '1402427610030236',
+    token: process.env.COMUNIDAD_FE_PAGE_TOKEN || 'EAAdtfhDFcGgBSRTJ4Xi3NfoR5yg4Dv5douXqGBjxtUw3d71U88rILYEs4gokGCpRSjm9gZBZAsNff7AN8lMCUvWFdCNCPwa06QZBQKjqwmwhdGzIzGMZCyjyeXqXXhUzt2HZCyCeUZBdSavmvnHhaKre48vz3vfNjsu5IASOmEDeUZA04hO7BRqdf6SqteBaoZAa9qgADCqAndRxwMJ9dyN3CwF8kG5raLtI4SIcOwBCQFLZAJ3Wo9dlO',
+    nombre: 'Comunidad de Fe Maravillas Del Reino',
+    nicho: 'fe, comunidad y empoderamiento femenino cristiano',
+    voice: 'Eres la voz de Maravillas Del Reino, comunidad cristiana de mujeres latinas. Voz inspiradora, cálida, llena de fe y esperanza. Escribe con amor y propósito. Español.',
+    hashtags: '#MaravillaDelReino #FeCristiana #MujerDeValor #ComunidadLatina #Esperanza',
+    temas: ['fe', 'familia', 'mujer', 'esperanza', 'comunidad', 'propósito', 'amor', 'inspiración', 'bendición', 'gratitud']
+  },
+  // ⏳ PENDIENTE — Fancy by Roxette (agregar token cuando tengas acceso)
+  // {
+  //   id: 'FANCY_PAGE_ID',
+  //   token: process.env.FANCY_PAGE_TOKEN || '',
+  //   nombre: 'Fancy by Roxette',
+  //   nicho: 'moda y accesorios',
+  //   voice: 'Eres la editora de Fancy by Roxette, tienda de moda y accesorios en Dallas. Voz chic, accesible y tendenciosa. Español con términos de moda.',
+  //   hashtags: '#FancyByRoxette #ModaAccesorios #Tendencias #StyleLatina #FashionDallas',
+  //   temas: ['accesorios', 'moda', 'tendencias', 'looks', 'outfit', 'estilo', 'joyería', 'bolsos']
+  // },
+  // ⏳ PENDIENTE — Trabajando En Casa
+  // {
+  //   id: 'TRABAJANDO_EN_CASA_PAGE_ID',
+  //   token: process.env.TRABAJANDO_EN_CASA_PAGE_TOKEN || '',
+  //   nombre: 'Trabajando En Casa',
+  //   nicho: 'emprendimiento y home office',
+  //   voice: 'Eres la editora de Trabajando En Casa, guía de emprendimiento digital latino. Voz práctica, motivadora, directa. Español.',
+  //   hashtags: '#TrabajandoEnCasa #Emprendimiento #TrabajoRemoto #EmprendedoraLatina #NegocioDigital',
+  //   temas: ['emprendimiento', 'trabajo remoto', 'productividad', 'negocio online', 'ingresos extra', 'freelance']
+  // },
+];
+
+// Función genérica: publica cover editorial en cualquier página
+async function publicarCoverParaPagina(pageConfig, titulo) {
+  if (!pageConfig.token || !pageConfig.id) {
+    console.log('[MultiPage] Token o ID faltante para:', pageConfig.nombre);
+    return;
+  }
+  try {
+    // Generar caption con la voz del nicho
+    const captionPayload = JSON.stringify({
+      model: 'claude-haiku-3-5', max_tokens: 120,
+      system: pageConfig.voice + ' Escribe SOLO el caption: 2 líneas editoriales sobre el tema, luego 4 hashtags. Sin comillas, sin asteriscos.',
+      messages: [{ role: 'user', content: 'Caption editorial para: ' + titulo }]
+    });
+    const caption = await new Promise((resolve, reject) => {
+      const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
+      const r = https.request(opts, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+      r.on('error', reject); r.write(captionPayload); r.end();
+    });
+    if (!caption) return;
+    // Intercambiar por page token largo
+    let pageToken = pageConfig.token;
+    try {
+      const tr = await fetch(`https://graph.facebook.com/v19.0/${pageConfig.id}?fields=access_token&access_token=${pageConfig.token}`);
+      const td = await tr.json();
+      if (td.access_token) pageToken = td.access_token;
+    } catch(e) {}
+    // Publicar cover
+    const coverBuffer = await generarCoverPasarela(titulo.substring(0, 80));
+    const FormData = require('form-data');
+    const form = new FormData();
+    form.append('caption', caption + '\n\n' + pageConfig.hashtags);
+    form.append('access_token', pageToken);
+    form.append('source', coverBuffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
+    await new Promise((resolve, reject) => {
+      form.submit(`https://graph.facebook.com/v19.0/${pageConfig.id}/photos`, (err, res) => {
+        res.resume();
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    console.log('[MultiPage] Cover publicado en:', pageConfig.nombre, '|', titulo);
+  } catch(e) { console.error('[MultiPage] Error en', pageConfig.nombre, ':', e.message); }
+}
+
 function publicarEnFacebook(titulo, contenido, urlArticulo, imagen) {
   if (!FB_PAGE_TOKEN) { console.log('[Facebook] Token no configurado — saltando'); return Promise.resolve(null); }
   const resumen = contenido.replace(/[\r\n]+/g, ' ').substring(0, 220) + '...';
@@ -800,6 +881,17 @@ setInterval(async () => {
             console.log('[CRON] Cover publicado en Facebook:', noticia.titulo);
           }
         } catch(efb) { console.error('[CRON] Error Facebook cover:', efb.message); }
+        // Publicar mismo artículo en páginas extra con voz adaptada
+        if (PAGES_EXTRA.length > 0) {
+          for (const page of PAGES_EXTRA) {
+            if (!page.token) continue;
+            // Verificar relevancia para el nicho de la página extra
+            const tituloRelevante = page.temas.some(t => noticia.titulo.toLowerCase().includes(t));
+            if (!tituloRelevante) continue;
+            await publicarCoverParaPagina(page, noticia.titulo).catch(e => console.error('[MultiPage] Error blog:', e.message));
+            await new Promise(r => setTimeout(r, 8000));
+          }
+        }
       } catch(e) { console.error('[CRON] Error:', e.message); }
     }
   } catch(e) { console.error('[CRON] Error general:', e.message); }
@@ -1022,6 +1114,16 @@ setInterval(async () => {
       } catch(e) { console.error('[CRON-FOTO] Error:', e.message); }
     }
   } catch(e) { console.error('[CRON-FOTO] Error general:', e.message); }
+  // Publicar en páginas extra con contenido del mismo nicho
+  if (PAGES_EXTRA.length > 0) {
+    const temasAleatorios = ['tendencias de la temporada', 'estilo editorial', 'moda latina', 'looks de la semana', 'accesorios imprescindibles'];
+    const temaExtra = temasAleatorios[Math.floor(Math.random() * temasAleatorios.length)];
+    for (const page of PAGES_EXTRA) {
+      if (!page.token) continue;
+      await publicarCoverParaPagina(page, temaExtra).catch(e => console.error('[MultiPage] Error CRON-FOTO:', e.message));
+      await new Promise(r => setTimeout(r, 10000)); // 10s entre páginas
+    }
+  }
 }, 4 * 60 * 60 * 1000);
 
 // CRON STORIES — cada 2 horas (Stories = mayor ingreso de monetizacion)
