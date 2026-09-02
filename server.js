@@ -960,31 +960,9 @@ async function publicarFotoBuffer(buffer, caption) {
     });
   });
 }
-// ============================================================
-// ============================================================
-// CRONS DE MONETIZACION FACEBOOK
-// ============================================================
-
-// Pool curado de imagenes editoriales PASARELA (nivel modulo)
-const PASARELA_IMAGES = [
-  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=85',
-  'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1080&q=85',
-  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=85',
-  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=85',
-  'https://images.unsplash.com/photo-1537832816519-689ad163239b?w=1080&q=85',
-  'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=1080&q=85',
-  'https://images.unsplash.com/photo-1581338834647-b0fb40704e21?w=1080&q=85',
-  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=85',
-  'https://images.unsplash.com/photo-1523359346063-d879354c0ea5?w=1080&q=85',
-  'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=85',
-  'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1080&q=85',
-  'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?w=1080&q=85',
-  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1080&q=85',
-  'https://images.unsplash.com/photo-1614251056216-f748f76cd228?w=1080&q=85',
-  'https://images.unsplash.com/photo-1585914641050-fa5466c2e3d0?w=1080&q=85'
-];
 function getImagenPasarela() {
-  return PASARELA_IMAGES[Math.floor(Math.random() * PASARELA_IMAGES.length)];
+  const seed = Math.floor(Math.random() * 999) + 1;
+  return `https://picsum.photos/seed/${seed}/1080/1080`;
 }
 
 // CRON FOTOS — cada 4 horas, 2 fotos con caption editorial AI
@@ -997,7 +975,7 @@ setInterval(async () => {
         
         const captionPayload = JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 200,
-          system: 'Eres la editora de PASARELA™. Caption editorial para foto de moda en Facebook. Max 3 lineas. Voz empoderada, latina, sofisticada. Termina con 3-4 hashtags en español e inglés (#ModaLatina #Pasarela #DallasFashion etc). Sin citar fuentes. Firma: — PASARELA™',
+          system: 'Eres la editora de PASARELA™. Escribe SOLO el caption, sin preámbulo, sin comillas, sin asteriscos ni markdown. Max 3 líneas de texto editorial poderoso sobre moda latina. Termina con 3 hashtags en español.', (#ModaLatina #Pasarela #DallasFashion etc). Sin citar fuentes. Firma: — PASARELA™',
           messages: [{ role: 'user', content: 'Escribe un caption editorial de moda para una foto de Pasarela Studio Internacional en Dallas.' }],
         });
         const caption = await new Promise((resolve, reject) => {
