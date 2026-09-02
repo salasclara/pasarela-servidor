@@ -976,6 +976,7 @@ setInterval(async () => {
         const captionPayload = JSON.stringify({
           model: 'claude-sonnet-4-6', max_tokens: 200,
           system: 'Eres la editora de PASARELA™. Escribe SOLO el caption, sin preámbulo, sin comillas, sin asteriscos ni markdown. Max 2 líneas de texto editorial poderoso sobre moda latina en Dallas. Termina con 3 hashtags: #ModaLatina #PasarelaStudio #DallasFashion',
+          messages: [{ role: 'user', content: 'Genera un caption editorial para PASARELA™' }],
         });
         const caption = await new Promise((resolve, reject) => {
           const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
