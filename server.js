@@ -243,7 +243,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
   try {
     // Generar caption con la voz del nicho
     const captionPayload = JSON.stringify({
-      model: 'claude-haiku-3-5', max_tokens: 120,
+      model: 'claude-sonnet-4-6', max_tokens: 120,
       system: pageConfig.voice + ' Escribe SOLO el caption: 2 líneas editoriales sobre el tema, luego 4 hashtags. Sin comillas, sin asteriscos.',
       messages: [{ role: 'user', content: 'Caption editorial para: ' + titulo }]
     });
@@ -252,7 +252,8 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       const r = https.request(opts, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
       r.on('error', reject); r.write(captionPayload); r.end();
     });
-    if (!caption) return;
+    if (!caption) { console.error('[MultiPage] Caption vacío para:', pageConfig.nombre); return; }
+    console.log('[MultiPage] Caption generado para:', pageConfig.nombre, '— publicando cover...');
     // Intercambiar por page token largo
     let pageToken = pageConfig.token;
     try {
