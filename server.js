@@ -195,7 +195,7 @@ const PAGES_EXTRA = [
   // ✅ ACTIVA — Comunidad de Fe Maravillas Del Reino
   {
     id: '1402427610030236',
-    token: process.env.FB_TOKEN_COMUNIDAD_DE_FE || 'EAAdtfhDFcGgBSRTJ4Xi3NfoR5yg4Dv5douXqGBjxtUw3d71U88rILYEs4gokGCpRSjm9gZBZAsNff7AN8lMCUvWFdCNCPwa06QZBQKjqwmwhdGzIzGMZCyjyeXqXXhUzt2HZCyCeUZBdSavmvnHhaKre48vz3vfNjsu5IASOmEDeUZA04hO7BRqdf6SqteBaoZAa9qgADCqAndRxwMJ9dyN3CwF8kG5raLtI4SIcOwBCQFLZAJ3Wo9dlO',
+    token: process.env.COMUNIDAD_FE_PAGE_TOKEN,
     nombre: 'Comunidad de Fe Maravillas Del Reino',
     nicho: 'fe, comunidad y empoderamiento femenino cristiano',
     voice: 'Eres la voz de Maravillas Del Reino, comunidad cristiana de mujeres latinas. Voz inspiradora, cálida, llena de fe y esperanza. Escribe con amor y propósito. Español.',
@@ -205,7 +205,7 @@ const PAGES_EXTRA = [
   // ✅ ACTIVA — Fancy by Roxette
   {
     id: '2645809545432358',
-    token: process.env.FANCY_PAGE_TOKEN || 'EAAMiSCsCtFEBScQVVW7xv658yOfznLtETuIxKlCwXZBZB8OZClTrNkquUdQNg6nCLFZC9z5sNetbxqKC535LUNUdjoapZCOtypzj81Pa5sddk47afuW11OBhQOOAhMcFZAAusT0czWZB3giY1LD1FPKqF9zZCRMWkmaFZAEg24avt9lbyZCOtEdjSZCqZCkISYZCypzYMZAFLGf2A8kel7JZAKzyHKkBjirM5SEf0fZCgjlap6TJnDQwdYY66jxAYtbFiQZDZD',
+    token: process.env.FANCY_BY_TOKEN,
     nombre: 'Fancy by Roxette',
     nicho: 'moda y accesorios',
     voice: 'Eres la editora de Fancy by Roxette, boutique de moda y accesorios en Dallas. Voz chic, aspiracional y accesible. Mezcla de español e inglés de moda. Tendencias, outfits y estilo de vida.',
@@ -215,7 +215,7 @@ const PAGES_EXTRA = [
   // ✅ ACTIVA — Amar es
   {
     id: '529892146881748',
-    token: process.env.FB_TOKEN_AMAR_ES || 'EAAMiSCsCtFEBSc2JNt0kbjNhehR3Rb4ioNZBJhpiQWo3NZBYPQyc2CzdvNO8ZA6TZAE7rlZAbiPP6daOzpcX88BvcAVh0r0ZBZApzFOBwXi8nkmZBy3j6eKgGLCdTo043v4NCBAvimC7uYbzIZCgRMlS5ihkuXmWHpFJVUTE9iZCMr3ZBZCCM38Drl2oYKSzdV5Rya8d0pYZC8vGTeov8nwAnqwlaZCZAj3ZAHNQkckwM1h4FJGkCp90erRVZApqePQZDZD',
+    token: process.env.AMAR_ES_TOKEN,
     nombre: 'Amar es',
     nicho: 'amor, relaciones y lifestyle femenino',
     voice: 'Eres la voz de Amar es, espacio de amor, relaciones y bienestar femenino para mujeres latinas. Voz cálida, empática e inspiradora. Frases con profundidad, consejos de vida y amor propio. Español.',
@@ -225,7 +225,7 @@ const PAGES_EXTRA = [
   {
     id: '321611941644368',
     nombre: 'Trabajando En Casa',
-    token: process.env.FB_TOKEN_TRABAJANDO_EN_CASA,
+    token: process.env.FACEBOOK_TRABA_TOKEN,
     voice: 'Eres la voz de Trabajando En Casa, comunidad de emprendedoras latinas que trabajan desde casa. Voz emprendedora, práctica y motivacional. Inspira con oportunidades reales. Español.',
     hashtags: '#TrabajarDesdeCasa #EmprendimientoLatino #LibertadFinanciera #NegocioDesdeHouse #EmprendedoraLatina',
     temas: ['oportunidades', 'trabajo remoto', 'emprendimiento']
@@ -882,6 +882,9 @@ INSTRUCCIONES:
 
 server.listen(3000, '0.0.0.0', () => {
   console.log('Servidor Pasarela Studio corriendo en http://0.0.0.0:3000');
+console.log('[ENV] FB_TOKEN_COMUNIDAD_DE_FE:', process.env.COMUNIDAD_FE_PAGE_TOKEN ? 'SET(' + process.env.COMUNIDAD_FE_PAGE_TOKEN.substring(0,10) + '...)' : 'NO DEFINIDA');
+console.log('[ENV] FB_TOKEN_AMAR_ES:', process.env.AMAR_ES_TOKEN ? 'SET(' + process.env.AMAR_ES_TOKEN.substring(0,10) + '...)' : 'NO DEFINIDA');
+console.log('[ENV] FB_TOKEN_TRABAJANDO_EN_CASA:', process.env.FACEBOOK_TRABA_TOKEN ? 'SET(' + process.env.FACEBOOK_TRABA_TOKEN.substring(0,10) + '...)' : 'NO DEFINIDA');
 });
 
 // Auto-publicar cada 6 horas (3 articulos por ciclo)
