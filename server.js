@@ -432,6 +432,53 @@ const server = http.createServer(async (req, res) => {
    return;
  }
 
+  // GET /test-blog-facebook — prueba el flujo completo: RSS imagen real + articulo + link
+  if (req.method === 'GET' && req.url === '/test-blog-facebook') {
+    try {
+      if (cacheNoticias.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'Cache RSS vacio, espera 30s y reintenta' }));
+        return;
+      }
+      // Elegir noticia con imagen
+      const conImagen = cacheNoticias.filter(n => n.imagen && n.imagen.startsWith('http'));
+      const noticia = conImagen.length > 0 ? conImagen[0] : cacheNoticias[0];
+      // Generar articulo editorial
+      const promptTest = 'Escribe un articulo editorial original sobre: ' + noticia.titulo + '. Para PASARELA, revista de moda latina. Voz propia, 280-350 palabras.';
+      const genPayload = JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 900,
+        system: 'Eres la editora de PASARELA™, revista de moda latina de Dallas. Voz sofisticada, empoderada, latina. NUNCA cites fuentes. Primera persona editorial.',
+        messages: [{ role: 'user', content: promptTest }]
+      });
+      const contenido = await new Promise((resolve, reject) => {
+        const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(genPayload) } };
+        const r = https.request(opts, apiRes => { let d = ''; apiRes.on('data', c => { d += c; }); apiRes.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+        r.on('error', reject); r.write(genPayload); r.end();
+      });
+      if (!contenido) throw new Error('Claude sin respuesta');
+      // Guardar en DB
+      const slug = generarSlug(noticia.titulo);
+      await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING', [noticia.titulo, contenido, 'editorial', slug, true, noticia.imagen || '']);
+      // Publicar en Facebook con imagen real
+      const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
+      const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
+      const captionFB = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
+      let fbId = null;
+      if (noticia.imagen) {
+        fbId = await publicarFotoFacebook(noticia.imagen, captionFB);
+      } else {
+        const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+        fbId = await publicarFotoBuffer(coverBuffer, captionFB);
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, titulo: noticia.titulo, imagen: noticia.imagen || null, urlBlog, fb_id: fbId }));
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   // POST /claude — generar relato editorial fashion
   if (req.method === 'POST' && req.url === '/claude') {
     let body = '';
