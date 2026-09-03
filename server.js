@@ -1037,23 +1037,75 @@ try {
 } catch(e) { console.log('[fonts] Sin fuentes sistema'); }
 const FormData = require('form-data');
 
-const EDITORIAL_POOL = [
-  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=85',
-  'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1080&q=85',
-  'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=85',
-  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=85',
-  'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=85',
-  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=85',
-  'https://images.unsplash.com/photo-1581338834647-b0fb40704e21?w=1080&q=85',
-  'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=1080&q=85',
-  'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1080&q=85',
-  'https://images.unsplash.com/photo-1523359346063-d879354c0ea5?w=1080&q=85',
-  'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?w=1080&q=85',
-  'https://images.unsplash.com/photo-1614251056216-f748f76cd228?w=1080&q=85',
-  'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1080&q=85',
-  'https://images.unsplash.com/photo-1585914641050-fa5466c2e3d0?w=1080&q=85',
-  'https://images.unsplash.com/photo-1537832816519-689ad163239b?w=1080&q=85'
-];
+// ── Pool de imágenes curado por categoría — moda, belleza, talento ────────────
+const FASHION_POOLS = {
+  MODA: [
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=85',
+    'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1080&q=85',
+    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=85',
+    'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=85',
+    'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=85',
+    'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1080&q=85',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1080&q=85',
+    'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=1080&q=85',
+    'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1080&q=85',
+    'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1080&q=85',
+    'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=1080&q=85',
+    'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1080&q=85',
+    'https://images.unsplash.com/photo-1485518882345-15568b007407?w=1080&q=85',
+    'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1080&q=85',
+    'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=1080&q=85',
+    'https://images.unsplash.com/photo-1537832816519-689ad163239b?w=1080&q=85',
+    'https://images.unsplash.com/photo-1614251056216-f748f76cd228?w=1080&q=85',
+    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1080&q=85',
+    'https://images.unsplash.com/photo-1585914641050-fa5466c2e3d0?w=1080&q=85',
+    'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=1080&q=85',
+    'https://images.unsplash.com/photo-1469460340997-2f854421e72f?w=1080&q=85',
+    'https://images.unsplash.com/photo-1509695507497-903c140c43b0?w=1080&q=85',
+    'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=85',
+    'https://images.unsplash.com/photo-1581338834647-b0fb40704e21?w=1080&q=85',
+    'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1080&q=85',
+  ],
+  BELLEZA: [
+    'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1080&q=85',
+    'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=1080&q=85',
+    'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=1080&q=85',
+    'https://images.unsplash.com/photo-1560869713-7d0a29430803?w=1080&q=85',
+    'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=1080&q=85',
+    'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=1080&q=85',
+    'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1080&q=85',
+    'https://images.unsplash.com/photo-1583001931096-959e9a1a6223?w=1080&q=85',
+    'https://images.unsplash.com/photo-1542833919-a6f9dca099bf?w=1080&q=85',
+    'https://images.unsplash.com/photo-1523359346063-d879354c0ea5?w=1080&q=85',
+    'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?w=1080&q=85',
+    'https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=1080&q=85',
+    'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=1080&q=85',
+    'https://images.unsplash.com/photo-1567401893571-d7379dbff6d3?w=1080&q=85',
+    'https://images.unsplash.com/photo-1626784215021-2e39ccf971cd?w=1080&q=85',
+  ],
+  TALENTO: [
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1080&q=85',
+    'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=1080&q=85',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1080&q=85',
+    'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1080&q=85',
+    'https://images.unsplash.com/photo-1485518882345-15568b007407?w=1080&q=85',
+    'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1080&q=85',
+    'https://images.unsplash.com/photo-1469460340997-2f854421e72f?w=1080&q=85',
+    'https://images.unsplash.com/photo-1509695507497-903c140c43b0?w=1080&q=85',
+    'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=1080&q=85',
+    'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=85',
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=85',
+    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=85',
+    'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=1080&q=85',
+    'https://images.unsplash.com/photo-1581338834647-b0fb40704e21?w=1080&q=85',
+    'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=1080&q=85',
+  ],
+};
+
+function getImagenCategoria(cat) {
+  const pool = FASHION_POOLS[cat] || FASHION_POOLS.MODA;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 async function fetchBuf(url) {
   const res = await fetch(url, {
@@ -1082,16 +1134,16 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   lines.slice(0, 4).forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
 }
 
-async function generarCoverPasarela(titulo = '') {
+async function generarCoverPasarela(titulo = '', imageUrl = null) {
+  if (!imageUrl) imageUrl = getImagenCategoria('MODA');
   await setupFonts();
   const W = 1080, H = 1080;
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
   // Foto editorial de fondo
-  const imgUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 999) + 1}/1080/1080`;
   try {
-    const buf = await fetchBuf(imgUrl);
+    const buf = await fetchBuf(imageUrl);
     const img = await loadImage(buf);
     const scale = Math.max(W / img.width, H / img.height);
     const sw = img.width * scale, sh = img.height * scale;
@@ -1271,10 +1323,7 @@ async function publicarFotoBuffer(buffer, caption) {
     });
   });
 }
-function getImagenPasarela() {
-  const seed = Math.floor(Math.random() * 999) + 1;
-  return `https://picsum.photos/seed/${seed}/1080/1080`;
-}
+function getImagenPasarela() { return getImagenCategoria('MODA'); }
 
 // CRON FOTOS — cada 4 horas, 2 fotos con caption editorial AI
 setInterval(async () => {
@@ -1284,19 +1333,41 @@ setInterval(async () => {
     for (let _i = 0; _i < 2; _i++) {
       try {
         
+        // Seleccionar categoría y tema rotativo
+        const temasFoto = [
+          { cat: 'MODA',    tema: 'tendencias de moda latina en Dallas esta temporada' },
+          { cat: 'BELLEZA', tema: 'secretos de belleza y rutinas de las modelos profesionales' },
+          { cat: 'TALENTO', tema: 'empowerment femenino y modelaje profesional en Dallas' },
+          { cat: 'MODA',    tema: 'estilo editorial y looks que marcan tendencia en 2026' },
+          { cat: 'BELLEZA', tema: 'maquillaje artístico y transformación de imagen latina' },
+          { cat: 'MODA',    tema: 'fashion week y las colecciones que debes conocer' },
+          { cat: 'TALENTO', tema: 'mujer latina y su lugar en la industria de la moda global' },
+          { cat: 'MODA',    tema: 'lujo, sofisticación y elegancia contemporánea latina' },
+          { cat: 'BELLEZA', tema: 'cuidado de la piel y rituales de belleza de nuestras modelos' },
+          { cat: 'TALENTO', tema: 'casting, talento y el camino al éxito en la pasarela' },
+        ];
+        const temaObj = temasFoto[(_i + Math.floor(Date.now() / 1000)) % temasFoto.length];
         const captionPayload = JSON.stringify({
-          model: 'claude-sonnet-4-6', max_tokens: 200,
-          system: 'Eres la editora de PASARELA™. Escribe SOLO el caption, sin preámbulo, sin comillas, sin asteriscos ni markdown. Max 2 líneas de texto editorial poderoso sobre moda latina en Dallas. Termina con 3 hashtags: #ModaLatina #PasarelaStudio #DallasFashion',
-          messages: [{ role: 'user', content: 'Genera un caption editorial para PASARELA™' }],
+          model: 'claude-sonnet-4-6', max_tokens: 320,
+          system: 'Eres la directora editorial de PASARELA™, revista de moda latina con 37 años en Dallas. Responde EXACTAMENTE en este formato, sin texto adicional, sin asteriscos, sin comillas:\nCOVER: [3 a 5 palabras impactantes para portada de revista en español — sustantivos o adjetivos poderosos, SIN negar ni usar "no"]\nCAPTION: [2 frases editoriales elegantes y distintas sobre el tema, max 200 caracteres en total, voz empoderada latina]\nHASHTAGS: #ModaLatina #PasarelaStudio #DallasFashion',
+          messages: [{ role: 'user', content: 'Crea contenido editorial sobre: ' + temaObj.tema }],
         });
-        const caption = await new Promise((resolve, reject) => {
+        const rawCaption = await new Promise((resolve, reject) => {
           const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
           const r = https.request(opts, apiRes => { let d = ''; apiRes.on('data', c => { d += c; }); apiRes.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
           r.on('error', reject); r.write(captionPayload); r.end();
         });
-        if (!caption) continue;
-        const buffer = await generarCoverPasarela(caption); 
-        await publicarFotoBuffer(buffer, caption);
+        if (!rawCaption) continue;
+        const coverMatch = rawCaption.match(/COVER:\s*(.+)/i);
+        const captionMatch = rawCaption.match(/CAPTION:\s*(.+)/i);
+        const hashMatch = rawCaption.match(/HASHTAGS:\s*(.+)/i);
+        const coverText = coverMatch ? coverMatch[1].trim() : temaObj.tema.split(' ').slice(0,4).join(' ');
+        const captionText = captionMatch ? captionMatch[1].trim() : temaObj.tema;
+        const hashText = hashMatch ? hashMatch[1].trim() : '#ModaLatina #PasarelaStudio #DallasFashion';
+        const fullCaption = captionText + '\n\n' + hashText;
+        const imgUrl = getImagenCategoria(temaObj.cat);
+        const buffer = await generarCoverPasarela(coverText, imgUrl);
+        await publicarFotoBuffer(buffer, fullCaption);
         console.log('[CRON-FOTO] Foto publicada OK');
         await new Promise(r => setTimeout(r, 30000));
       } catch(e) { console.error('[CRON-FOTO] Error:', e.message); }
@@ -1319,7 +1390,7 @@ setInterval(async () => {
   console.log('[CRON-STORY] Iniciando Story...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
    try {
-    const imgUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 999) + 1}/1080/1080`;
+    const imgUrl = getImagenCategoria('MODA');
     await publicarStoryFacebook(imgUrl);
     console.log('[CRON-STORY] Story publicada OK');
   } catch(e) { console.error('[CRON-STORY] Error:', e.message); }
@@ -1343,7 +1414,9 @@ setInterval(async () => {
       r.on('error', reject); r.write(engagePayload); r.end();
     });
     if (!post) return;
-    const buffer = await generarCoverPasarela(post);
+    const engImg = getImagenCategoria('TALENTO');
+    const engCover = post.split('\n')[0].replace(/[#@✨💫🌟]/g,'').trim().substring(0,55);
+    const buffer = await generarCoverPasarela(engCover, engImg);
     await publicarFotoBuffer(buffer, post);
     console.log('[CRON-ENGAGE] Post engagement publicado — tema:', tema);
   } catch(e) { console.error('[CRON-ENGAGE] Error:', e.message); }
