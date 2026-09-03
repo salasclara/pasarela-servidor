@@ -465,7 +465,15 @@ const server = http.createServer(async (req, res) => {
       const captionFB = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
       let fbId = null;
       if (noticia.imagen) {
-        fbId = await publicarFotoFacebook(noticia.imagen, captionFB);
+        try {
+          const imgBuf = await fetchBuf(noticia.imagen);
+          const fbRes = await publicarFotoBuffer(imgBuf, captionFB);
+          fbId = fbRes?.id || fbRes;
+        } catch(efetch) {
+          console.log('[test-blog-facebook] Imagen RSS no accesible, usando cover canvas:', efetch.message);
+          const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+          fbId = await publicarFotoBuffer(coverBuffer, captionFB);
+        }
       } else {
         const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
         fbId = await publicarFotoBuffer(coverBuffer, captionFB);
@@ -1027,8 +1035,15 @@ setInterval(async () => {
           const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
           const captionFB = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
           if (noticia.imagen) {
-            await publicarFotoFacebook(noticia.imagen, captionFB);
-            console.log('[CRON] Publicado en Facebook con imagen real:', noticia.titulo);
+            try {
+              const imgBuf = await fetchBuf(noticia.imagen);
+              await publicarFotoBuffer(imgBuf, captionFB);
+              console.log('[CRON] Publicado en Facebook con imagen RSS:', noticia.titulo);
+            } catch(efetch) {
+              console.log('[CRON] Imagen RSS no accesible, usando cover canvas:', efetch.message);
+              const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+              await publicarFotoBuffer(coverBuffer, captionFB);
+            }
           } else {
             const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
             await publicarFotoBuffer(coverBuffer, captionFB);
