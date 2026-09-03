@@ -1308,10 +1308,12 @@ async function generarCoverPasarela(titulo = '', imageUrl = null) {
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // Foto editorial de fondo
+  // Foto editorial de fondo — nítida y centrada
   try {
     const buf = await fetchBuf(imageUrl);
     const img = await loadImage(buf);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     const scale = Math.max(W / img.width, H / img.height);
     const sw = img.width * scale, sh = img.height * scale;
     ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
@@ -1320,11 +1322,12 @@ async function generarCoverPasarela(titulo = '', imageUrl = null) {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Gradiente oscuro editorial
+  // Gradiente suave — foto visible, texto legible
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(13,10,11,0.55)');
-  grad.addColorStop(0.35, 'rgba(13,10,11,0.15)');
-  grad.addColorStop(1, 'rgba(13,10,11,0.92)');
+  grad.addColorStop(0, 'rgba(0,0,0,0.42)');
+  grad.addColorStop(0.28, 'rgba(0,0,0,0.06)');
+  grad.addColorStop(0.60, 'rgba(0,0,0,0.22)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.90)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
@@ -1384,11 +1387,23 @@ async function generarCoverGenerico(branding, titulo = '') {
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // Foto de fondo aleatoria
-  const imgUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 999) + 1}/1080/1080`;
+  // Foto de fondo — nítida y centrada
+  const UNSPLASH_EXTRA = [
+    'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=90',
+    'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?w=1080&q=90',
+    'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1080&q=90',
+    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=90',
+    'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=90',
+    'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1080&q=90',
+    'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=90',
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=90',
+  ];
+  const imgUrl = UNSPLASH_EXTRA[Math.floor(Math.random() * UNSPLASH_EXTRA.length)];
   try {
     const buf = await fetchBuf(imgUrl);
     const img = await loadImage(buf);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     const scale = Math.max(W / img.width, H / img.height);
     const sw = img.width * scale, sh = img.height * scale;
     ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
@@ -1397,11 +1412,12 @@ async function generarCoverGenerico(branding, titulo = '') {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Gradiente oscuro
+  // Gradiente suave — foto visible, texto legible
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(13,10,11,0.55)');
-  grad.addColorStop(0.35, 'rgba(13,10,11,0.15)');
-  grad.addColorStop(1, 'rgba(13,10,11,0.92)');
+  grad.addColorStop(0, 'rgba(0,0,0,0.42)');
+  grad.addColorStop(0.28, 'rgba(0,0,0,0.06)');
+  grad.addColorStop(0.60, 'rgba(0,0,0,0.22)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.90)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
