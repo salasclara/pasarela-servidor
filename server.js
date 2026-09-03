@@ -976,22 +976,18 @@ setInterval(async () => {
         console.log('[CRON] Publicado en blog: ' + noticia.titulo);
         // Publicar cover editorial en Facebook
         try {
-          const teaserPayload = JSON.stringify({
-            model: 'claude-sonnet-4-6', max_tokens: 120,
-            system: 'Eres la directora digital de PASARELA™ revista. Escribe SOLO el caption para Facebook: 2 líneas editoriales impactantes sobre el tema, luego 5 hashtags relevantes. Sin comillas, sin asteriscos, sin markdown.',
-            messages: [{ role: 'user', content: 'Caption de revista para Facebook sobre: ' + noticia.titulo }]
-          });
-          const teaser = await new Promise((resolve, reject) => {
-            const opts2 = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(teaserPayload) } };
-            const r2 = https.request(opts2, apiRes2 => { let d2 = ''; apiRes2.on('data', c => { d2 += c; }); apiRes2.on('end', () => { try { resolve(JSON.parse(d2).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
-            r2.on('error', reject); r2.write(teaserPayload); r2.end();
-          });
-          if (teaser) {
+          const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
+          const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
+          const captionFB = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
+          if (noticia.imagen) {
+            await publicarFotoFacebook(noticia.imagen, captionFB);
+            console.log('[CRON] Publicado en Facebook con imagen real:', noticia.titulo);
+          } else {
             const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
-            await publicarFotoBuffer(coverBuffer, teaser);
-            console.log('[CRON] Cover publicado en Facebook:', noticia.titulo);
+            await publicarFotoBuffer(coverBuffer, captionFB);
+            console.log('[CRON] Publicado en Facebook con cover generado:', noticia.titulo);
           }
-        } catch(efb) { console.error('[CRON] Error Facebook cover:', efb.message); }
+        } catch(efb) { console.error('[CRON] Error Facebook:', efb.message); }
         // Publicar mismo artículo en páginas extra con voz adaptada
         if (PAGES_EXTRA.length > 0) {
           for (const page of PAGES_EXTRA) {
