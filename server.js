@@ -198,9 +198,9 @@ const PAGES_EXTRA = [
     token: process.env.COMUNIDAD_FE_PAGE_TOKEN,
     nombre: 'Comunidad de Fe Maravillas Del Reino',
     nicho: 'fe, comunidad y empoderamiento femenino cristiano',
-    voice: 'Eres la voz de Maravillas Del Reino, comunidad cristiana de mujeres latinas. Voz inspiradora, cálida, llena de fe y esperanza. Escribe con amor y propósito. Español.',
-    hashtags: '#MaravillaDelReino #FeCristiana #MujerDeValor #ComunidadLatina #Esperanza',
-    temas: ['fe', 'familia', 'mujer', 'esperanza', 'comunidad', 'propósito', 'amor', 'inspiración', 'bendición', 'gratitud'],
+    voice: 'Eres la voz de Comunidad de Fe Maravillas Del Reino. Escribe mensajes bíblicos breves e inspiradores para mujeres, hombres, hijos y familias latinas. Cita o parafrasea versículos. Voz cálida, llena de fe y esperanza. Solo español. NUNCA menciones moda ni Pasarela.',
+    hashtags: '#MaravillaDelReino #FeCristiana #Esperanza',
+    temas: ['versículos bíblicos', 'fe', 'esperanza', 'familia cristiana', 'mujer de fe', 'hijos', 'amor de Dios', 'propósito divino', 'bendición', 'oración', 'gratitud a Dios', 'vida en Cristo'],
     branding: {
       colorBarra: '#3B2A6E',
       colorAccento: '#C9A66B',
@@ -236,9 +236,9 @@ const PAGES_EXTRA = [
     token: process.env.AMAR_ES_TOKEN,
     nombre: 'Amar es',
     nicho: 'amor, relaciones y lifestyle femenino',
-    voice: 'Eres la voz de Amar es, espacio de amor, relaciones y bienestar femenino para mujeres latinas. Voz cálida, empática e inspiradora. Frases con profundidad, consejos de vida y amor propio. Español.',
-    hashtags: '#AmarEs #Relaciones #AmorPropio #MujerLatina #Lifestyle #Bienestar #VidaPlena',
-    temas: ['amor', 'relaciones', 'autoestima', 'bienestar', 'pareja', 'familia', 'crecimiento personal', 'mujer', 'motivación', 'inspiración', 'vida', 'felicidad'],
+    voice: 'Eres la voz de Amar es. Escribe reflexiones cortas y profundas sobre el amor, las relaciones, el amor propio y el bienestar emocional femenino. Frases que toquen el corazón de la mujer latina. Voz poética, cálida, empática. Solo español. NUNCA menciones moda ni Pasarela.',
+    hashtags: '#AmarEs #AmorPropio #ReflexionesDeAmor',
+    temas: ['amor propio', 'reflexiones de amor', 'relaciones sanas', 'corazón', 'mujer', 'bienestar emocional', 'pareja', 'autoestima', 'perdón', 'crecimiento personal', 'paz interior', 'felicidad'],
     branding: {
       colorBarra: '#7B3A4A',
       colorAccento: '#E8C5B0',
@@ -278,8 +278,8 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     // Generar caption con la voz del nicho
     const captionPayload = JSON.stringify({
       model: 'claude-sonnet-4-6', max_tokens: 120,
-      system: pageConfig.voice + ' Escribe SOLO el caption: 2 líneas editoriales sobre el tema, luego 4 hashtags. Sin comillas, sin asteriscos.',
-      messages: [{ role: 'user', content: 'Caption editorial para: ' + titulo }]
+      system: pageConfig.voice + ' Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida'),
+      messages: [{ role: 'user', content: 'Tema: ' + titulo }]
     });
     const caption = await new Promise((resolve, reject) => {
       const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
@@ -287,6 +287,11 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       r.on('error', reject); r.write(captionPayload); r.end();
     });
     if (!caption) { console.error('[MultiPage] Caption vacío para:', pageConfig.nombre); return; }
+    // Extraer COVER, CAPTION y HASHTAGS del formato estructurado
+    const coverMatch = caption.match(/COVER:\s*(.+)/i);
+    const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
+    const coverTitulo = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
+    const captionTexto = captionMatch ? captionMatch[1].trim() : caption;
     console.log('[MultiPage] Caption generado para:', pageConfig.nombre, '— publicando cover...');
     // Intercambiar por page token largo
     let pageToken = pageConfig.token;
@@ -297,11 +302,11 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     } catch(e) {}
     // Publicar cover
     const coverBuffer = pageConfig.branding
-      ? await generarCoverGenerico(pageConfig.branding, titulo.substring(0, 80))
+      ? await generarCoverGenerico(pageConfig.branding, coverTitulo)
       : await generarCoverPasarela(titulo.substring(0, 80));
     const FormData = require('form-data');
     const form = new FormData();
-    form.append('caption', caption + '\n\n' + pageConfig.hashtags);
+    form.append('caption', captionTexto + '\n\n' + pageConfig.hashtags);
     form.append('access_token', pageToken);
     form.append('source', coverBuffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
     await new Promise((resolve, reject) => {
