@@ -1204,63 +1204,79 @@ async function generarCoverBlogArticulo(imgBuffer, titulo = '', fecha = '') {
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // Foto real del artículo como fondo
+  // Imagen real del artículo — nítida y centrada
   try {
     const img = await loadImage(imgBuffer);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    // Cover-fit centrado perfecto
     const scale = Math.max(W / img.width, H / img.height);
     const sw = img.width * scale, sh = img.height * scale;
-    ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+    const ox = (W - sw) / 2, oy = (H - sh) / 2;
+    ctx.drawImage(img, ox, oy, sw, sh);
   } catch(e) {
     ctx.fillStyle = '#0D0A0B';
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Gradiente editorial: top oscuro, medio claro, bottom muy oscuro
+  // Gradiente: top suave, foto visible en el centro, bottom oscuro para texto
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(13,10,11,0.72)');
-  grad.addColorStop(0.28, 'rgba(13,10,11,0.18)');
-  grad.addColorStop(0.60, 'rgba(13,10,11,0.42)');
-  grad.addColorStop(1, 'rgba(13,10,11,0.97)');
+  grad.addColorStop(0, 'rgba(0,0,0,0.60)');
+  grad.addColorStop(0.22, 'rgba(0,0,0,0.10)');
+  grad.addColorStop(0.55, 'rgba(0,0,0,0.08)');
+  grad.addColorStop(0.72, 'rgba(0,0,0,0.55)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.96)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // HEADER — "PASARELA STUDIO INTERNACIONAL"
-  ctx.fillStyle = '#E8C5B0';
-  ctx.font = '20px PSSans';
+  // HEADER — barra fucsia top
+  ctx.fillStyle = '#FF1493';
+  ctx.fillRect(0, 0, W, 72);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 26px PSSansBold';
   ctx.textAlign = 'center';
-  ctx.fillText('P A S A R E L A  S T U D I O  I N T E R N A C I O N A L', W / 2, 52);
-
-  // Línea gold sutil
-  ctx.strokeStyle = '#C9A66B';
-  ctx.lineWidth = 0.8;
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL', W / 2, 46);
+  // Línea blanca bajo la barra
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(80, 65); ctx.lineTo(W - 80, 65);
+  ctx.moveTo(0, 72); ctx.lineTo(W, 72);
   ctx.stroke();
 
-  // BADGE "EDITORIAL"
-  const badgeY = H - 295;
-  ctx.fillStyle = '#7B2D3E';
-  ctx.fillRect(60, badgeY, 142, 32);
-  ctx.fillStyle = '#E8C5B0';
-  ctx.font = 'bold 14px PSSansBold';
+  // Calcular espacio para título: máx 3 líneas a 48px + badge
+  // Badge arriba, título debajo, footer al final
+  const FOOTER_H = 52;
+  const BADGE_H = 36;
+  const LINE_H = 56;
+  const MAX_LINES = 3;
+  const TITLE_BLOCK = MAX_LINES * LINE_H; // 168px
+  const GAP = 14;
+  // Total bloque inferior: badge + gap + titulo + footer
+  const BLOQUE = BADGE_H + GAP + TITLE_BLOCK + FOOTER_H + 20;
+  const badgeTop = H - BLOQUE;
+
+  // BADGE "EDITORIAL" fucsia
+  ctx.fillStyle = '#FF1493';
+  ctx.fillRect(60, badgeTop, 148, BADGE_H);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 15px PSSansBold';
   ctx.textAlign = 'left';
-  ctx.fillText('E D I T O R I A L', 72, badgeY + 21);
+  ctx.fillText('E D I T O R I A L', 74, badgeTop + 23);
 
   // Fecha junto al badge
   if (fecha) {
-    ctx.fillStyle = '#C9A66B';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.font = '14px PSSans';
-    ctx.fillText(fecha, 218, badgeY + 21);
+    ctx.fillText(fecha, 224, badgeTop + 23);
   }
 
-  // TÍTULO — grande, blanco, con sombra
-  const tituloClean = titulo.length > 100 ? titulo.substring(0, 97) + '...' : titulo;
+  // TÍTULO — blanco, 48px, máx 3 líneas
+  const tituloClean = titulo.length > 110 ? titulo.substring(0, 107) + '...' : titulo;
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 60px PSSerif';
+  ctx.font = 'bold 48px PSSerif';
   ctx.textAlign = 'left';
-  ctx.shadowColor = 'rgba(0,0,0,0.95)';
-  ctx.shadowBlur = 18;
-  // Dibujar línea a línea desde badgeY + 50 hacia abajo
+  ctx.shadowColor = 'rgba(0,0,0,0.98)';
+  ctx.shadowBlur = 20;
   const words = tituloClean.split(' ');
   let line = '', lines = [];
   for (const word of words) {
@@ -1270,14 +1286,17 @@ async function generarCoverBlogArticulo(imgBuffer, titulo = '', fecha = '') {
     } else { line = test; }
   }
   if (line.trim()) lines.push(line.trim());
-  lines.slice(0, 4).forEach((l, i) => ctx.fillText(l, 60, badgeY + 54 + i * 68));
+  const titleY = badgeTop + BADGE_H + GAP + 48;
+  lines.slice(0, MAX_LINES).forEach((l, i) => ctx.fillText(l, 60, titleY + i * LINE_H));
   ctx.shadowBlur = 0;
 
-  // FOOTER
-  ctx.fillStyle = '#C9A66B';
-  ctx.font = 'bold 14px PSSansBold';
+  // FOOTER fucsia
+  ctx.fillStyle = '#FF1493';
+  ctx.fillRect(0, H - FOOTER_H, W, FOOTER_H);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 15px PSSansBold';
   ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  pasarelastudiointer.com', W / 2, H - 18);
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  pasarelastudiointer.com', W / 2, H - FOOTER_H + 32);
 
   return canvas.toBuffer('image/png');
 }
