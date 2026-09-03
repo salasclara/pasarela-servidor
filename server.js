@@ -464,19 +464,22 @@ const server = http.createServer(async (req, res) => {
       const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
       const captionFB = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
       let fbId = null;
+      const fechaTest = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+      const captionCompleto = contenido + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
       if (noticia.imagen) {
         try {
           const imgBuf = await fetchBuf(noticia.imagen);
-          const fbRes = await publicarFotoBuffer(imgBuf, captionFB);
+          const coverBlog = await generarCoverBlogArticulo(imgBuf, noticia.titulo, fechaTest);
+          const fbRes = await publicarFotoBuffer(coverBlog, captionCompleto);
           fbId = fbRes?.id || fbRes;
         } catch(efetch) {
-          console.log('[test-blog-facebook] Imagen RSS no accesible, usando cover canvas:', efetch.message);
+          console.log('[test-blog-facebook] Imagen no accesible, usando cover canvas:', efetch.message);
           const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
-          fbId = await publicarFotoBuffer(coverBuffer, captionFB);
+          fbId = await publicarFotoBuffer(coverBuffer, captionCompleto);
         }
       } else {
         const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
-        fbId = await publicarFotoBuffer(coverBuffer, captionFB);
+        fbId = await publicarFotoBuffer(coverBuffer, captionCompleto);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, titulo: noticia.titulo, imagen: noticia.imagen || null, urlBlog, fb_id: fbId }));
@@ -1034,19 +1037,22 @@ setInterval(async () => {
           const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
           const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
           const captionFB = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
+          const fechaFB = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+          const captionCompleto = contenido + '\n\nLeer más → ' + urlBlog + '\n\n#Pasarela #ModaLatina #DallasFashion';
           if (noticia.imagen) {
             try {
               const imgBuf = await fetchBuf(noticia.imagen);
-              await publicarFotoBuffer(imgBuf, captionFB);
-              console.log('[CRON] Publicado en Facebook con imagen RSS:', noticia.titulo);
+              const coverBlog = await generarCoverBlogArticulo(imgBuf, noticia.titulo, fechaFB);
+              await publicarFotoBuffer(coverBlog, captionCompleto);
+              console.log('[CRON] Publicado en Facebook con cover editorial blog:', noticia.titulo);
             } catch(efetch) {
               console.log('[CRON] Imagen RSS no accesible, usando cover canvas:', efetch.message);
               const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
-              await publicarFotoBuffer(coverBuffer, captionFB);
+              await publicarFotoBuffer(coverBuffer, captionCompleto);
             }
           } else {
             const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
-            await publicarFotoBuffer(coverBuffer, captionFB);
+            await publicarFotoBuffer(coverBuffer, captionCompleto);
             console.log('[CRON] Publicado en Facebook con cover generado:', noticia.titulo);
           }
         } catch(efb) { console.error('[CRON] Error Facebook:', efb.message); }
@@ -1190,6 +1196,90 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   if (line.trim()) lines.push(line.trim());
   const startY = y - ((lines.length - 1) * lineHeight) / 2;
   lines.slice(0, 4).forEach((l, i) => ctx.fillText(l, x, startY + i * lineHeight));
+}
+
+async function generarCoverBlogArticulo(imgBuffer, titulo = '', fecha = '') {
+  await setupFonts();
+  const W = 1080, H = 1080;
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
+
+  // Foto real del artículo como fondo
+  try {
+    const img = await loadImage(imgBuffer);
+    const scale = Math.max(W / img.width, H / img.height);
+    const sw = img.width * scale, sh = img.height * scale;
+    ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+  } catch(e) {
+    ctx.fillStyle = '#0D0A0B';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Gradiente editorial: top oscuro, medio claro, bottom muy oscuro
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(13,10,11,0.72)');
+  grad.addColorStop(0.28, 'rgba(13,10,11,0.18)');
+  grad.addColorStop(0.60, 'rgba(13,10,11,0.42)');
+  grad.addColorStop(1, 'rgba(13,10,11,0.97)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // HEADER — "PASARELA STUDIO INTERNACIONAL"
+  ctx.fillStyle = '#E8C5B0';
+  ctx.font = '20px PSSans';
+  ctx.textAlign = 'center';
+  ctx.fillText('P A S A R E L A  S T U D I O  I N T E R N A C I O N A L', W / 2, 52);
+
+  // Línea gold sutil
+  ctx.strokeStyle = '#C9A66B';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(80, 65); ctx.lineTo(W - 80, 65);
+  ctx.stroke();
+
+  // BADGE "EDITORIAL"
+  const badgeY = H - 295;
+  ctx.fillStyle = '#7B2D3E';
+  ctx.fillRect(60, badgeY, 142, 32);
+  ctx.fillStyle = '#E8C5B0';
+  ctx.font = 'bold 14px PSSansBold';
+  ctx.textAlign = 'left';
+  ctx.fillText('E D I T O R I A L', 72, badgeY + 21);
+
+  // Fecha junto al badge
+  if (fecha) {
+    ctx.fillStyle = '#C9A66B';
+    ctx.font = '14px PSSans';
+    ctx.fillText(fecha, 218, badgeY + 21);
+  }
+
+  // TÍTULO — grande, blanco, con sombra
+  const tituloClean = titulo.length > 100 ? titulo.substring(0, 97) + '...' : titulo;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 60px PSSerif';
+  ctx.textAlign = 'left';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)';
+  ctx.shadowBlur = 18;
+  // Dibujar línea a línea desde badgeY + 50 hacia abajo
+  const words = tituloClean.split(' ');
+  let line = '', lines = [];
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > W - 120 && line) {
+      lines.push(line.trim()); line = word + ' ';
+    } else { line = test; }
+  }
+  if (line.trim()) lines.push(line.trim());
+  lines.slice(0, 4).forEach((l, i) => ctx.fillText(l, 60, badgeY + 54 + i * 68));
+  ctx.shadowBlur = 0;
+
+  // FOOTER
+  ctx.fillStyle = '#C9A66B';
+  ctx.font = 'bold 14px PSSansBold';
+  ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  pasarelastudiointer.com', W / 2, H - 18);
+
+  return canvas.toBuffer('image/png');
 }
 
 async function generarCoverPasarela(titulo = '', imageUrl = null) {
