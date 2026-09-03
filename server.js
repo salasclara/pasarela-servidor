@@ -195,7 +195,7 @@ const PAGES_EXTRA = [
   // ✅ ACTIVA — Comunidad de Fe Maravillas Del Reino
   {
     id: '1402427610030236',
-    token: process.env.COMUNIDAD_FE_PAGE_TOKEN || 'EAAdtfhDFcGgBSRTJ4Xi3NfoR5yg4Dv5douXqGBjxtUw3d71U88rILYEs4gokGCpRSjm9gZBZAsNff7AN8lMCUvWFdCNCPwa06QZBQKjqwmwhdGzIzGMZCyjyeXqXXhUzt2HZCyCeUZBdSavmvnHhaKre48vz3vfNjsu5IASOmEDeUZA04hO7BRqdf6SqteBaoZAa9qgADCqAndRxwMJ9dyN3CwF8kG5raLtI4SIcOwBCQFLZAJ3Wo9dlO',
+    token: process.env.FB_TOKEN_COMUNIDAD_DE_FE || 'EAAdtfhDFcGgBSRTJ4Xi3NfoR5yg4Dv5douXqGBjxtUw3d71U88rILYEs4gokGCpRSjm9gZBZAsNff7AN8lMCUvWFdCNCPwa06QZBQKjqwmwhdGzIzGMZCyjyeXqXXhUzt2HZCyCeUZBdSavmvnHhaKre48vz3vfNjsu5IASOmEDeUZA04hO7BRqdf6SqteBaoZAa9qgADCqAndRxwMJ9dyN3CwF8kG5raLtI4SIcOwBCQFLZAJ3Wo9dlO',
     nombre: 'Comunidad de Fe Maravillas Del Reino',
     nicho: 'fe, comunidad y empoderamiento femenino cristiano',
     voice: 'Eres la voz de Maravillas Del Reino, comunidad cristiana de mujeres latinas. Voz inspiradora, cálida, llena de fe y esperanza. Escribe con amor y propósito. Español.',
@@ -215,7 +215,7 @@ const PAGES_EXTRA = [
   // ✅ ACTIVA — Amar es
   {
     id: '529892146881748',
-    token: process.env.AMAR_ES_PAGE_TOKEN || 'EAAMiSCsCtFEBSc2JNt0kbjNhehR3Rb4ioNZBJhpiQWo3NZBYPQyc2CzdvNO8ZA6TZAE7rlZAbiPP6daOzpcX88BvcAVh0r0ZBZApzFOBwXi8nkmZBy3j6eKgGLCdTo043v4NCBAvimC7uYbzIZCgRMlS5ihkuXmWHpFJVUTE9iZCMr3ZBZCCM38Drl2oYKSzdV5Rya8d0pYZC8vGTeov8nwAnqwlaZCZAj3ZAHNQkckwM1h4FJGkCp90erRVZApqePQZDZD',
+    token: process.env.FB_TOKEN_AMAR_ES || 'EAAMiSCsCtFEBSc2JNt0kbjNhehR3Rb4ioNZBJhpiQWo3NZBYPQyc2CzdvNO8ZA6TZAE7rlZAbiPP6daOzpcX88BvcAVh0r0ZBZApzFOBwXi8nkmZBy3j6eKgGLCdTo043v4NCBAvimC7uYbzIZCgRMlS5ihkuXmWHpFJVUTE9iZCMr3ZBZCCM38Drl2oYKSzdV5Rya8d0pYZC8vGTeov8nwAnqwlaZCZAj3ZAHNQkckwM1h4FJGkCp90erRVZApqePQZDZD',
     nombre: 'Amar es',
     nicho: 'amor, relaciones y lifestyle femenino',
     voice: 'Eres la voz de Amar es, espacio de amor, relaciones y bienestar femenino para mujeres latinas. Voz cálida, empática e inspiradora. Frases con profundidad, consejos de vida y amor propio. Español.',
@@ -226,8 +226,8 @@ const PAGES_EXTRA = [
     id: '321611941644368',
     nombre: 'Trabajando En Casa',
     token: process.env.FB_TOKEN_TRABAJANDO_EN_CASA,
-    voz: 'emprendedora, práctica, motivacional',
-    hashtags: ['#TrabajarDesdeCasa', '#EmprendimientoLatino', '#LibertadFinanciera'],
+    voice: 'Eres la voz de Trabajando En Casa, comunidad de emprendedoras latinas que trabajan desde casa. Voz emprendedora, práctica y motivacional. Inspira con oportunidades reales. Español.',
+    hashtags: '#TrabajarDesdeCasa #EmprendimientoLatino #LibertadFinanciera #NegocioDesdeHouse #EmprendedoraLatina',
     temas: ['oportunidades', 'trabajo remoto', 'emprendimiento']
   }
 ];
