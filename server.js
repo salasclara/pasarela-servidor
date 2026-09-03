@@ -200,7 +200,16 @@ const PAGES_EXTRA = [
     nicho: 'fe, comunidad y empoderamiento femenino cristiano',
     voice: 'Eres la voz de Maravillas Del Reino, comunidad cristiana de mujeres latinas. Voz inspiradora, cálida, llena de fe y esperanza. Escribe con amor y propósito. Español.',
     hashtags: '#MaravillaDelReino #FeCristiana #MujerDeValor #ComunidadLatina #Esperanza',
-    temas: ['fe', 'familia', 'mujer', 'esperanza', 'comunidad', 'propósito', 'amor', 'inspiración', 'bendición', 'gratitud']
+    temas: ['fe', 'familia', 'mujer', 'esperanza', 'comunidad', 'propósito', 'amor', 'inspiración', 'bendición', 'gratitud'],
+    branding: {
+      colorBarra: '#3B2A6E',
+      colorAccento: '#C9A66B',
+      colorTexto: '#F5E6D3',
+      nombreMarca: 'MARAVILLAS DEL REINO',
+      subtituloMarca: 'COMUNIDAD DE FE',
+      footerLinea1: 'Comunidad de Fe Maravillas Del Reino  ·  Dallas, TX',
+      footerLinea2: '@MaravillaDelReino'
+    }
   },
   // ✅ ACTIVA — Fancy by Roxette
   {
@@ -210,7 +219,16 @@ const PAGES_EXTRA = [
     nicho: 'moda y accesorios',
     voice: 'Eres la editora de Fancy by Roxette, boutique de moda y accesorios en Dallas. Voz chic, aspiracional y accesible. Mezcla de español e inglés de moda. Tendencias, outfits y estilo de vida.',
     hashtags: '#FancyByRoxette #ModaAccesorios #Tendencias #StyleLatina #FashionDallas #OOTD #BoutiqueDallas',
-    temas: ['accesorios', 'moda', 'tendencias', 'looks', 'outfit', 'estilo', 'joyería', 'bolsos', 'belleza', 'maquillaje', 'zapatos', 'ropa']
+    temas: ['accesorios', 'moda', 'tendencias', 'looks', 'outfit', 'estilo', 'joyería', 'bolsos', 'belleza', 'maquillaje', 'zapatos', 'ropa'],
+    branding: {
+      colorBarra: '#2C1A2E',
+      colorAccento: '#E8C5B0',
+      colorTexto: '#F9F0E8',
+      nombreMarca: 'FANCY BY ROXETTE',
+      subtituloMarca: 'BOUTIQUE · DALLAS TX',
+      footerLinea1: 'Fancy by Roxette  ·  Dallas, TX',
+      footerLinea2: '@FancyByRoxette'
+    }
   },
   // ✅ ACTIVA — Amar es
   {
@@ -220,7 +238,16 @@ const PAGES_EXTRA = [
     nicho: 'amor, relaciones y lifestyle femenino',
     voice: 'Eres la voz de Amar es, espacio de amor, relaciones y bienestar femenino para mujeres latinas. Voz cálida, empática e inspiradora. Frases con profundidad, consejos de vida y amor propio. Español.',
     hashtags: '#AmarEs #Relaciones #AmorPropio #MujerLatina #Lifestyle #Bienestar #VidaPlena',
-    temas: ['amor', 'relaciones', 'autoestima', 'bienestar', 'pareja', 'familia', 'crecimiento personal', 'mujer', 'motivación', 'inspiración', 'vida', 'felicidad']
+    temas: ['amor', 'relaciones', 'autoestima', 'bienestar', 'pareja', 'familia', 'crecimiento personal', 'mujer', 'motivación', 'inspiración', 'vida', 'felicidad'],
+    branding: {
+      colorBarra: '#7B3A4A',
+      colorAccento: '#E8C5B0',
+      colorTexto: '#FFF5F0',
+      nombreMarca: 'AMAR ES',
+      subtituloMarca: 'AMOR  ·  RELACIONES  ·  BIENESTAR',
+      footerLinea1: 'Amar es  ·  Para la mujer latina',
+      footerLinea2: '@AmarEs'
+    }
   },
   {
     id: '321611941644368',
@@ -228,7 +255,16 @@ const PAGES_EXTRA = [
     token: process.env.FACEBOOK_TRABA_TOKEN,
     voice: 'Eres la voz de Trabajando En Casa, comunidad de emprendedoras latinas que trabajan desde casa. Voz emprendedora, práctica y motivacional. Inspira con oportunidades reales. Español.',
     hashtags: '#TrabajarDesdeCasa #EmprendimientoLatino #LibertadFinanciera #NegocioDesdeHouse #EmprendedoraLatina',
-    temas: ['oportunidades', 'trabajo remoto', 'emprendimiento']
+    temas: ['oportunidades', 'trabajo remoto', 'emprendimiento'],
+    branding: {
+      colorBarra: '#1A3A2E',
+      colorAccento: '#C9A66B',
+      colorTexto: '#F0F5E8',
+      nombreMarca: 'TRABAJANDO EN CASA',
+      subtituloMarca: 'EMPRENDIMIENTO LATINO',
+      footerLinea1: 'Trabajando En Casa  ·  Emprendedoras Latinas',
+      footerLinea2: '@TrabajarDesdeCasa'
+    }
   }
 ];
 
@@ -260,7 +296,9 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       if (td.access_token) pageToken = td.access_token;
     } catch(e) {}
     // Publicar cover
-    const coverBuffer = await generarCoverPasarela(titulo.substring(0, 80));
+    const coverBuffer = pageConfig.branding
+      ? await generarCoverGenerico(pageConfig.branding, titulo.substring(0, 80))
+      : await generarCoverPasarela(titulo.substring(0, 80));
     const FormData = require('form-data');
     const form = new FormData();
     form.append('caption', caption + '\n\n' + pageConfig.hashtags);
@@ -1112,6 +1150,83 @@ async function generarCoverPasarela(titulo = '') {
   ctx.fillStyle = '#E8C5B0';
   ctx.font = '14px PSSans';
   ctx.fillText('pasarelastudiointer.com  ·  @PASARELASTUDIO', W / 2, H - 28);
+
+  return canvas.toBuffer('image/png');
+}
+
+async function generarCoverGenerico(branding, titulo = '') {
+  await setupFonts();
+  const W = 1080, H = 1080;
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
+
+  // Foto de fondo aleatoria
+  const imgUrl = `https://picsum.photos/seed/${Math.floor(Math.random() * 999) + 1}/1080/1080`;
+  try {
+    const buf = await fetchBuf(imgUrl);
+    const img = await loadImage(buf);
+    const scale = Math.max(W / img.width, H / img.height);
+    const sw = img.width * scale, sh = img.height * scale;
+    ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+  } catch(e) {
+    ctx.fillStyle = '#0D0A0B';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Gradiente oscuro
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(13,10,11,0.55)');
+  grad.addColorStop(0.35, 'rgba(13,10,11,0.15)');
+  grad.addColorStop(1, 'rgba(13,10,11,0.92)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Barra superior con color de la marca
+  ctx.fillStyle = branding.colorBarra;
+  ctx.fillRect(0, 0, W, 95);
+
+  // Nombre de la marca
+  ctx.fillStyle = branding.colorTexto;
+  ctx.font = 'bold 48px PSSerif';
+  ctx.textAlign = 'center';
+  ctx.fillText(branding.nombreMarca, W / 2, 60);
+
+  // Subtítulo
+  ctx.fillStyle = branding.colorAccento;
+  ctx.font = '20px PSSans';
+  ctx.fillText(branding.subtituloMarca, W / 2, 86);
+
+  // Línea decorativa
+  ctx.strokeStyle = branding.colorAccento;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(60, 105); ctx.lineTo(W - 60, 105);
+  ctx.stroke();
+
+  // Título principal
+  if (titulo) {
+    const texto = titulo.toUpperCase().split(' ').slice(0, 10).join(' ');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 66px PSSerif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 14;
+    wrapText(ctx, texto, W / 2, H - 230, W - 120, 74);
+    ctx.shadowBlur = 0;
+  }
+
+  // Barra inferior
+  ctx.fillStyle = branding.colorBarra;
+  ctx.fillRect(0, H - 85, W, 85);
+
+  ctx.fillStyle = branding.colorAccento;
+  ctx.font = 'bold 17px PSSansBold';
+  ctx.textAlign = 'center';
+  ctx.fillText(branding.footerLinea1, W / 2, H - 50);
+
+  ctx.fillStyle = branding.colorTexto;
+  ctx.font = '14px PSSans';
+  ctx.fillText(branding.footerLinea2, W / 2, H - 28);
 
   return canvas.toBuffer('image/png');
 }
