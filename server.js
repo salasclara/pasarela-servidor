@@ -431,7 +431,7 @@ if (req.method === 'GET' && req.url.startsWith('/setup-tokens')) {
   })();
   return;
 }
-}
+
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
