@@ -348,56 +348,6 @@ function publicarFotoFacebook(imageUrl, caption) {
   });
 }
 
-// Publicar STORY en Facebook — mayor ingreso de monetizacion
-async function publicarStoryFacebook(imageUrl) {
-  if (!FB_PAGE_TOKEN || !imageUrl) { console.log('[FB Story] Token o imagen faltante'); return null; }
-  const photoId = await new Promise((resolve) => {
-    const postData = new URLSearchParams({ url: imageUrl, published: 'false', access_token: FB_PAGE_TOKEN });
-    const postBody = postData.toString();
-    const opts = {
-      hostname: 'graph.facebook.com',
-      path: '/v19.0/' + FB_PAGE_ID + '/photos',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postBody) },
-    };
-    const r = https.request(opts, res => {
-      let d = '';
-      res.on('data', c => { d += c; });
-      res.on('end', () => {
-        try { const p = JSON.parse(d); resolve(p.id || null); }
-        catch(e) { resolve(null); }
-      });
-    });
-    r.on('error', () => resolve(null));
-    r.write(postBody);
-    r.end();
-  });
-  if (!photoId) { console.error('[FB Story] No se pudo subir la foto'); return null; }
-  return new Promise((resolve) => {
-    const storyData = new URLSearchParams({ photo_id: photoId, access_token: FB_PAGE_TOKEN });
-    const storyBody = storyData.toString();
-    const opts = {
-      hostname: 'graph.facebook.com',
-      path: '/v19.0/' + FB_PAGE_ID + '/photo_stories',
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(storyBody) },
-    };
-    const r = https.request(opts, res => {
-      let d = '';
-      res.on('data', c => { d += c; });
-      res.on('end', () => {
-        try {
-          const parsed = JSON.parse(d);
-          if (parsed.id) { console.log('[FB Story] Publicada OK — ID:', parsed.id); resolve(parsed.id); }
-          else { console.error('[FB Story] Error:', JSON.stringify(parsed)); resolve(null); }
-        } catch(e) { console.error('[FB Story] Parse error:', e.message); resolve(null); }
-      });
-    });
-    r.on('error', e => { console.error('[FB Story] Network error:', e.message); resolve(null); });
-    r.write(storyBody);
-    r.end();
-  });
-}
 // ── SETUP TOKENS PERMANENTES ──────────────────────────────
 if (req.method === 'GET' && req.url.startsWith('/setup-tokens')) {
   const urlObj = new URL(req.url, 'http://localhost');
@@ -886,7 +836,47 @@ INSTRUCCIONES:
     res.end(JSON.stringify({ mensaje: 'Publicando en páginas extra...', paginas: PAGES_EXTRA.map(p => p.nombre), nota: 'Ver logs Railway para resultados' }));
     return;
   }
+  // TEST MULTI-PÁGINA
+  if (req.method === 'GET' && req.url === '/test-multipagina') {
+    // ... (ya existe)
+  }
 
+  // 👇 AGREGA AQUÍ el bloque setup-tokens
+  if (req.method === 'GET' && req.url.startsWith('/setup-tokens')) {
+    const urlObj = new URL(req.url, 'http://localhost');
+    const shortToken = urlObj.searchParams.get('token');
+    if (!shortToken) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Falta ?token=TU_TOKEN_CORTO' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    (async () => {
+      try {
+        const appId     = process.env.FB_APP_ID;
+        const appSecret = process.env.FB_APP_SECRET;
+        const exUrl = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`;
+        const exRes  = await fetch(exUrl);
+        const exData = await exRes.json();
+        if (exData.error) throw new Error('Exchange: ' + exData.error.message);
+        const longToken = exData.access_token;
+        console.log('[setup-tokens] Token largo. Días:', Math.floor(exData.expires_in / 86400));
+        const accRes  = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${longToken}&limit=20`);
+        const accData = await accRes.json();
+        if (accData.error) throw new Error('Accounts: ' + accData.error.message);
+        const paginas = accData.data.map(p => ({ nombre: p.name, id: p.id, token: p.access_token }));
+        console.log('[setup-tokens] Páginas:', paginas.map(p => p.nombre));
+        res.end(JSON.stringify({ ok: true, instruccion: 'Copia cada token a Railway', paginas }));
+      } catch(e) {
+        console.error('[setup-tokens] Error:', e.message);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    })();
+    return;
+  }
+
+  res.writeHead(404);   // ← esta línea ya existe, solo agrega el bloque arriba
+  res.end();
   res.writeHead(404);
   res.end();
 });
