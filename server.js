@@ -407,33 +407,30 @@ if (req.method === 'GET' && req.url.startsWith('/setup-tokens')) {
     res.end(JSON.stringify({ error: 'Falta ?token=TU_TOKEN_CORTO' }));
     return;
   }
-  try {
-    const appId     = process.env.FB_APP_ID;
-    const appSecret = process.env.FB_APP_SECRET;
-    // 1. Intercambiar por token largo (60 días)
-    const exUrl = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`;
-    const exRes  = await fetch(exUrl);
-    const exData = await exRes.json();
-    if (exData.error) throw new Error('Exchange: ' + exData.error.message);
-    const longToken = exData.access_token;
-    console.log('[setup-tokens] Token largo obtenido. Expira en días:', Math.floor(exData.expires_in / 86400));
-    // 2. Obtener tokens de página (permanentes si vienen de token largo)
-    const accRes  = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${longToken}&limit=20`);
-    const accData = await accRes.json();
-    if (accData.error) throw new Error('Accounts: ' + accData.error.message);
-    const paginas = accData.data.map(p => ({
-      nombre: p.nombre || p.name,
-      id: p.id,
-      token: p.access_token
-    }));
-    console.log('[setup-tokens] Páginas encontradas:', paginas.map(p => p.nombre));
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, instruccion: 'Copia cada token a Railway como variable de entorno', paginas }));
-  } catch(e) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: e.message }));
-  }
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  (async () => {
+    try {
+      const appId     = process.env.FB_APP_ID;
+      const appSecret = process.env.FB_APP_SECRET;
+      const exUrl = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`;
+      const exRes  = await fetch(exUrl);
+      const exData = await exRes.json();
+      if (exData.error) throw new Error('Exchange: ' + exData.error.message);
+      const longToken = exData.access_token;
+      console.log('[setup-tokens] Token largo obtenido. Días:', Math.floor(exData.expires_in / 86400));
+      const accRes  = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${longToken}&limit=20`);
+      const accData = await accRes.json();
+      if (accData.error) throw new Error('Accounts: ' + accData.error.message);
+      const paginas = accData.data.map(p => ({ nombre: p.name, id: p.id, token: p.access_token }));
+      console.log('[setup-tokens] Páginas permanentes:', paginas.map(p => p.nombre));
+      res.end(JSON.stringify({ ok: true, instruccion: 'Copia cada token a Railway como variable de entorno', paginas }));
+    } catch(e) {
+      console.error('[setup-tokens] Error:', e.message);
+      res.end(JSON.stringify({ error: e.message }));
+    }
+  })();
   return;
+}
 }
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
