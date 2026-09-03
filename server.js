@@ -279,7 +279,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const captionPayload = JSON.stringify({
       model: 'claude-sonnet-4-6', max_tokens: 120,
       system: pageConfig.voice + ' Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida'),
-      messages: [{ role: 'user', content: 'Tema: ' + titulo }]
+      messages: [{ role: 'user', content: 'Tema: ' + (pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo) }]
     });
     const caption = await new Promise((resolve, reject) => {
       const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
