@@ -226,6 +226,7 @@ const PAGES_EXTRA = [
   {
     id: '2645809545432358',
     token: process.env.FANCY_BY_TOKEN,
+    tipo: 'fancy',
     nombre: 'Fancy by Roxette',
     nicho: 'moda y accesorios',
     voice: 'Eres la editora de Fancy by Roxette, boutique de moda y accesorios en Dallas. Voz chic, aspiracional y accesible. Mezcla de español e inglés de moda. Tendencias, outfits y estilo de vida.',
@@ -308,17 +309,29 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
   }
   try {
     // Generar caption con la voz del nicho
-    const esFe = pageConfig.tipo === 'fe';
-    const esAmor = pageConfig.tipo === 'amor';
+    const esFe    = pageConfig.tipo === 'fe';
+    const esAmor  = pageConfig.tipo === 'amor';
+    const esFancy = pageConfig.tipo === 'fancy';
+    const FANCY_CATEGORIAS = [
+      { tema: 'vestidos elegantes mujer',        searchTerm: 'vestidos mujer elegantes',          emoji: '👗' },
+      { tema: 'zapatos tacones tendencia',        searchTerm: 'tacones mujer moda',                emoji: '👠' },
+      { tema: 'bolsos y carteras de moda',        searchTerm: 'bolso de mano mujer elegante',      emoji: '👜' },
+      { tema: 'joyería collares y aretes',        searchTerm: 'joyeria mujer elegante set',        emoji: '✨' },
+      { tema: 'maquillaje y belleza latina',      searchTerm: 'maquillaje set completo mujer',     emoji: '💄' },
+      { tema: 'ropa casual chic mujer',           searchTerm: 'ropa casual elegante mujer',        emoji: '🛍️' },
+    ];
+    const fancyCat = esFancy ? FANCY_CATEGORIAS[Math.floor(Math.random()*FANCY_CATEGORIAS.length)] : null;
+    const AMAZON_TAG = process.env.AMAZON_TAG || 'fancybyroxette-20';
+    const formatoFancy = 'Eres la editora jefa de Fancy by Roxette, medio digital de moda para la mujer latina en Dallas. Voz: chic, directa, aspiracional. Responde en este formato exacto (sin comillas ni asteriscos):\nTITULAR: [frase de portada de revista, máx 6 palabras en español, mayúsculas, impactante]\nSUBTITULO: [frase editorial corta máx 10 palabras, española, minúsculas]\nCAPTION: [2 a 3 líneas editoriales en español — por qué esta tendencia/producto es indispensable ahora, primera o segunda persona, voz chic]\nCTA: [llamada a acción corta mencionando que el link está en los comentarios — máx 10 palabras]\nHASHTAGS: #FancyByRoxette — añade 2 más relevantes a: ' + (fancyCat ? fancyCat.tema : 'moda');
     console.log('[MultiPage] tipo:', pageConfig.tipo, '| esFe:', esFe, '| esAmor:', esAmor, '| nombre:', pageConfig.nombre);
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
     const formatoAmor = 'Responde en este formato exacto (sin comillas, sin asteriscos, sin texto adicional):\nSCENE: [describe in English a specific romantic scene for the Amor Es chibi couple — location, lighting, specific action, emotion — max 200 chars]\nGANCHO: [frase gancho max 7 palabras en español, mayúsculas, impactante, 2ª persona]\nREFLEXION: [una sola línea poética emotiva max 12 palabras, español, minúsculas]\nMICROHISTORIA: [2 a 3 líneas en segunda persona, emotivas, sin hashtags — narra el momento como si le hablaras directamente a ella]\nCTA: [pregunta conversacional corta para invitar a comentar, español]\nPILAR: [elige uno: amor de pareja | amor propio | relaciones sanas | pequeños gestos cotidianos | sanar y dejar ir | familia y complicidad]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio') + ' — escoge máximo 3 hashtags relevantes al pilar elegido, sin repetición';
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
-    const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
+    const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase de MÁXIMO 4 PALABRAS en español — solo sustantivos/adjetivos poderosos]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const captionPayload = JSON.stringify({
       model: 'claude-sonnet-4-6', max_tokens: 180,
-      system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : formatoGenerico),
-      messages: [{ role: 'user', content: 'Tema: ' + temaActual }]
+      system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : esFancy ? formatoFancy : formatoGenerico),
+      messages: [{ role: 'user', content: esFancy && fancyCat ? 'Tendencia del día: ' + fancyCat.tema + ' ' + fancyCat.emoji : 'Tema: ' + temaActual }]
     });
     const caption = await new Promise((resolve, reject) => {
       const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
@@ -362,6 +375,21 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       console.log('[AmarEs] GANCHO:', gancho);
       console.log('[AmarEs] Llamando gpt-image-1...');
       coverBuffer = await generarCoverAmarEs(pageConfig.branding, gancho, reflexion, dallePrompt);
+    } else if (esFancy) {
+      const titularMatch  = caption.match(/TITULAR:\s*(.+)/i);
+      const subMatch      = caption.match(/SUBTITULO:\s*(.+)/i);
+      const capMatch      = caption.match(/CAPTION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
+      const ctaMatch      = caption.match(/CTA:\s*(.+)/i);
+      const hashMatch     = caption.match(/HASHTAGS:\s*(.+)/i);
+      const titular       = titularMatch ? titularMatch[1].trim() : (fancyCat ? fancyCat.tema.toUpperCase() : titulo);
+      const subtitulo     = subMatch     ? subMatch[1].trim()     : '';
+      const capTexto      = capMatch     ? capMatch[1].trim()     : '';
+      const ctaTexto      = ctaMatch     ? ctaMatch[1].trim()     : 'El link está en los comentarios 👇';
+      const hashArr       = [...new Set((hashMatch ? hashMatch[1].trim() : '#FancyByRoxette #Moda').split(/\s+/).filter(h => h.startsWith('#')))].slice(0,4).join(' ');
+      const amazonLink    = fancyCat ? 'https://www.amazon.com/s?k=' + encodeURIComponent(fancyCat.searchTerm) + '&tag=' + AMAZON_TAG : '';
+      captionTexto = capTexto + '\n\n' + ctaTexto + (amazonLink ? '\n🔗 ' + amazonLink + '\n*(enlace de afiliado)' : '') + '\n\n— Fancy by Roxette ✨\n\n' + hashArr;
+      console.log('[Fancy] TITULAR:', titular, '| CAT:', fancyCat ? fancyCat.tema : 'genérico');
+      coverBuffer = await generarCoverFancy(pageConfig.branding, titular, subtitulo);
     } else {
       const coverMatch  = caption.match(/COVER:\s*(.+)/i);
       const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
@@ -549,11 +577,11 @@ const server = http.createServer(async (req, res) => {
           fbId = fbRes?.id || fbRes;
         } catch(efetch) {
           console.log('[test-blog-facebook] Imagen no accesible, usando cover canvas:', efetch.message);
-          const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+          const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
           fbId = await publicarFotoBuffer(coverBuffer, captionCompleto);
         }
       } else {
-        const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+        const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
         fbId = await publicarFotoBuffer(coverBuffer, captionCompleto);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1152,11 +1180,11 @@ setInterval(async () => {
               console.log('[CRON] Publicado en Facebook con cover editorial blog:', noticia.titulo);
             } catch(efetch) {
               console.log('[CRON] Imagen RSS no accesible, usando cover canvas:', efetch.message);
-              const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+              const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
               await publicarFotoBuffer(coverBuffer, captionCompleto);
             }
           } else {
-            const coverBuffer = await generarCoverPasarela(noticia.titulo.substring(0, 80));
+            const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
             await publicarFotoBuffer(coverBuffer, captionCompleto);
             console.log('[CRON] Publicado en Facebook con cover generado:', noticia.titulo);
           }
@@ -1209,6 +1237,7 @@ const FormData = require('form-data');
 // ── Pool de imágenes curado por categoría — moda, belleza, talento ────────────
 const FASHION_POOLS = {
   MODA: [
+    // Pool curado: SOLO runway, modelos profesionales, moda editorial, backstage
     'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=85',
     'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=1080&q=85',
     'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=85',
@@ -1216,24 +1245,19 @@ const FASHION_POOLS = {
     'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=85',
     'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1080&q=85',
     'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1080&q=85',
-    'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=1080&q=85',
-    'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1080&q=85',
     'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1080&q=85',
     'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=1080&q=85',
     'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1080&q=85',
     'https://images.unsplash.com/photo-1485518882345-15568b007407?w=1080&q=85',
     'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=1080&q=85',
     'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=1080&q=85',
-    'https://images.unsplash.com/photo-1537832816519-689ad163239b?w=1080&q=85',
-    'https://images.unsplash.com/photo-1614251056216-f748f76cd228?w=1080&q=85',
-    'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=1080&q=85',
-    'https://images.unsplash.com/photo-1585914641050-fa5466c2e3d0?w=1080&q=85',
-    'https://images.unsplash.com/photo-1566206091558-7f218b696731?w=1080&q=85',
-    'https://images.unsplash.com/photo-1469460340997-2f854421e72f?w=1080&q=85',
-    'https://images.unsplash.com/photo-1509695507497-903c140c43b0?w=1080&q=85',
-    'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=85',
-    'https://images.unsplash.com/photo-1581338834647-b0fb40704e21?w=1080&q=85',
     'https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?w=1080&q=85',
+    'https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=1080&q=85',
+    'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1080&q=85',
+    'https://images.unsplash.com/photo-1583001931096-959e9a1a6223?w=1080&q=85',
+    'https://images.unsplash.com/photo-1523359346063-d879354c0ea5?w=1080&q=85',
+    'https://images.unsplash.com/photo-1550614000-4895a10e1bfd?w=1080&q=85',
+    'https://images.unsplash.com/photo-1567401893571-d7379dbff6d3?w=1080&q=85',
   ],
   BELLEZA: [
     'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1080&q=85',
@@ -1458,7 +1482,7 @@ async function generarCoverPasarela(titulo = '', imageUrl = null) {
 
   // Título principal con sombra fuerte para legibilidad
   if (titulo) {
-    const texto = titulo.toUpperCase().split(' ').slice(0, 10).join(' ');
+    const texto = titulo.toUpperCase().split(' ').slice(0, 5).join(' ');
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 64px PSSerif';
     ctx.textAlign = 'center';
@@ -1775,6 +1799,112 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   return canvas.toBuffer('image/png');
 }
 
+
+async function generarCoverFancy(branding, titular, subtitulo = '') {
+  await setupFonts();
+  const W = 1080, H = 1080;
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
+
+  // Pool de imágenes de moda editorial (Unsplash)
+  const FANCY_POOL = [
+    'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=90',
+    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=90',
+    'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=90',
+    'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1080&q=90',
+    'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=90',
+    'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1080&q=90',
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=90',
+    'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?w=1080&q=90',
+    'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1080&q=90',
+    'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1080&q=90',
+  ];
+  const pool = (branding.imagePool && branding.imagePool.length) ? branding.imagePool : FANCY_POOL;
+  const imgUrl = pool[Math.floor(Math.random() * pool.length)];
+
+  // Fondo — foto editorial
+  try {
+    const buf = await fetchBuf(imgUrl);
+    const img = await loadImage(buf);
+    const scale = Math.max(W / img.width, H / img.height);
+    const dw = img.width * scale, dh = img.height * scale;
+    ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  } catch(e) {
+    ctx.fillStyle = branding.colorBarra || '#2C1A2E';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Overlay: sutil en top, oscuro en bottom 40%
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0,    'rgba(0,0,0,0.55)');
+  grad.addColorStop(0.15, 'rgba(0,0,0,0.08)');
+  grad.addColorStop(0.50, 'rgba(0,0,0,0.02)');
+  grad.addColorStop(0.58, 'rgba(0,0,0,0.30)');
+  grad.addColorStop(0.80, 'rgba(0,0,0,0.72)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.88)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Marca flotante — top center
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10;
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0';
+  ctx.font = 'bold 32px PSSerif';
+  ctx.fillText(branding.nombreMarca, W / 2, 52);
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.font = '12px PSSans';
+  ctx.fillText((branding.subtituloMarca || 'BOUTIQUE · DALLAS TX').toUpperCase(), W / 2, 72);
+  ctx.shadowBlur = 0;
+
+  // Titular — grande, zona baja
+  const titularUpper = (titular || '').toUpperCase();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 68px PSSerif';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 22;
+  const tWords = titularUpper.split(' ');
+  let tLine = '', tLines = [];
+  for (const w of tWords) {
+    const test = tLine + w + ' ';
+    if (ctx.measureText(test).width > W - 100 && tLine) { tLines.push(tLine.trim()); tLine = w + ' '; }
+    else tLine = test;
+  }
+  if (tLine.trim()) tLines.push(tLine.trim());
+  const lineH = 76;
+  const tStartY = 790 - ((tLines.length - 1) * lineH) / 2;
+  tLines.slice(0, 3).forEach((l, i) => ctx.fillText(l, W / 2, tStartY + i * lineH));
+  ctx.shadowBlur = 0;
+
+  // Línea decorativa ciruela/gold
+  const tEndY = tStartY + tLines.length * lineH - 18;
+  ctx.strokeStyle = branding.colorAccento || '#E8C5B0';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - 100, tEndY + 6);
+  ctx.lineTo(W / 2 + 100, tEndY + 6);
+  ctx.stroke();
+
+  // Subtítulo — italic pequeño
+  if (subtitulo) {
+    ctx.fillStyle = 'rgba(232,197,176,0.92)';
+    ctx.font = 'italic 24px PSSerif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 8;
+    ctx.fillText(subtitulo, W / 2, tEndY + 36);
+    ctx.shadowBlur = 0;
+  }
+
+  // Footer mínimo
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '13px PSSans';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
+  ctx.fillText((branding.footerLinea2 || '@FancyByRoxette').toUpperCase(), W / 2, H - 18);
+  ctx.shadowBlur = 0;
+
+  return canvas.toBuffer('image/png');
+}
+
 async function generarCoverGenerico(branding, titulo = '') {
   await setupFonts();
   const W = 1080, H = 1080;
@@ -1845,7 +1975,7 @@ async function generarCoverGenerico(branding, titulo = '') {
 
   // Título principal
   if (titulo) {
-    const texto = titulo.toUpperCase().split(' ').slice(0, 10).join(' ');
+    const texto = titulo.toUpperCase().split(' ').slice(0, 5).join(' ');
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 66px PSSerif';
     ctx.textAlign = 'center';
