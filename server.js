@@ -1295,9 +1295,52 @@ const FASHION_POOLS = {
   ],
 };
 
-function getImagenCategoria(cat) {
-  const pool = FASHION_POOLS[cat] || FASHION_POOLS.MODA;
-  return pool[Math.floor(Math.random() * pool.length)];
+// Pexels — keywords por categoría
+const PEXELS_QUERIES = {
+  MODA:          'fashion runway model editorial elegant',
+  BELLEZA:       'beauty makeup model professional portrait',
+  TALENTO:       'professional model fashion portrait studio',
+  EMPRENDIMIENTO:'latina entrepreneur business woman professional',
+};
+
+// Cache Pexels por categoría — batch de 15, sin repetición
+const _pexelsQueues = {};
+const _localQueues  = {};
+
+async function getImagenCategoria(cat) {
+  const key = cat || 'MODA';
+
+  // 1) Intentar Pexels si hay API key
+  const PEXELS_KEY = process.env.PEXELS_API_KEY;
+  if (PEXELS_KEY) {
+    if (!_pexelsQueues[key] || _pexelsQueues[key].length === 0) {
+      try {
+        const query = PEXELS_QUERIES[key] || PEXELS_QUERIES.MODA;
+        const page  = Math.floor(Math.random() * 5) + 1;
+        const pUrl  = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&page=${page}&orientation=square`;
+        const pRes  = await fetch(pUrl, { headers: { 'Authorization': PEXELS_KEY } });
+        if (pRes.ok) {
+          const data = await pRes.json();
+          if (data.photos && data.photos.length > 0) {
+            const urls = data.photos.map(p => p.src.large2x || p.src.large || p.src.original);
+            _pexelsQueues[key] = urls.sort(() => Math.random() - 0.5);
+            console.log(`[Pexels] Batch ${key} — ${urls.length} fotos frescas (pág ${page})`);
+          }
+        }
+      } catch(e) { console.error('[Pexels] Error:', e.message); }
+    }
+    if (_pexelsQueues[key] && _pexelsQueues[key].length > 0) {
+      return _pexelsQueues[key].shift();
+    }
+  }
+
+  // 2) Fallback: pool local sin repetición
+  const pool = FASHION_POOLS[key] || FASHION_POOLS.MODA;
+  if (!_localQueues[key] || _localQueues[key].length === 0) {
+    _localQueues[key] = [...pool].sort(() => Math.random() - 0.5);
+    console.log(`[ImageQueue] Ciclo local ${key} — ${pool.length} fotos`);
+  }
+  return _localQueues[key].shift();
 }
 
 async function fetchBuf(url) {
@@ -1431,7 +1474,7 @@ async function generarCoverBlogArticulo(imgBuffer, titulo = '', fecha = '') {
 }
 
 async function generarCoverPasarela(titulo = '', imageUrl = null) {
-  if (!imageUrl) imageUrl = getImagenCategoria('MODA');
+  if (!imageUrl) imageUrl = await getImagenCategoria('MODA');
   await setupFonts();
   const W = 1080, H = 1080;
   const canvas = createCanvas(W, H);
@@ -1912,18 +1955,14 @@ async function generarCoverGenerico(branding, titulo = '') {
   const ctx = canvas.getContext('2d');
 
   // Foto de fondo — nítida y centrada
-  const UNSPLASH_MODA = [
-    'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=90',
-    'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?w=1080&q=90',
-    'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1080&q=90',
-    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&q=90',
-    'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=1080&q=90',
-    'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=1080&q=90',
-    'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=90',
-    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=90',
-  ];
-  const pool = (branding.imagePool && branding.imagePool.length) ? branding.imagePool : UNSPLASH_MODA;
-  const imgUrl = pool[Math.floor(Math.random() * pool.length)];
+  // Imagen: pool de marca si existe, si no → Pexels (categoría MODA)
+  let imgUrl;
+  if (branding.imagePool && branding.imagePool.length) {
+    const bp = branding.imagePool;
+    imgUrl = bp[Math.floor(Math.random() * bp.length)];
+  } else {
+    imgUrl = await getImagenCategoria('MODA');
+  }
   try {
     const buf = await fetchBuf(imgUrl);
     const img = await loadImage(buf);
@@ -2036,7 +2075,7 @@ async function publicarFotoBuffer(buffer, caption) {
     });
   });
 }
-function getImagenPasarela() { return getImagenCategoria('MODA'); }
+async function getImagenPasarela() { return await getImagenCategoria('MODA'); }
 
 // CRON FOTOS — cada 4 horas, 2 fotos con caption editorial AI
 setInterval(async () => {
@@ -2078,7 +2117,7 @@ setInterval(async () => {
         const captionText = captionMatch ? captionMatch[1].trim() : temaObj.tema;
         const hashText = hashMatch ? hashMatch[1].trim() : '#ModaLatina #PasarelaStudio #DallasFashion';
         const fullCaption = captionText + '\n\n' + hashText;
-        const imgUrl = getImagenCategoria(temaObj.cat);
+        const imgUrl = await getImagenCategoria(temaObj.cat);
         const buffer = await generarCoverPasarela(coverText, imgUrl);
         await publicarFotoBuffer(buffer, fullCaption);
         console.log('[CRON-FOTO] Foto publicada OK');
@@ -2103,7 +2142,7 @@ setInterval(async () => {
   console.log('[CRON-STORY] Iniciando Story...');
   if (!FB_PAGE_TOKEN) { console.log('[CRON-STORY] Sin token Facebook, saltando'); return; }
    try {
-    const imgUrl = getImagenCategoria('MODA');
+    const imgUrl = await getImagenCategoria('MODA');
     await publicarStoryFacebook(imgUrl);
     console.log('[CRON-STORY] Story publicada OK');
   } catch(e) { console.error('[CRON-STORY] Error:', e.message); }
@@ -2127,7 +2166,7 @@ setInterval(async () => {
       r.on('error', reject); r.write(engagePayload); r.end();
     });
     if (!post) return;
-    const engImg = getImagenCategoria('TALENTO');
+    const engImg = await getImagenCategoria('TALENTO');
     const engCover = post.split('\n')[0].replace(/[#@✨💫🌟]/g,'').trim().substring(0,55);
     const buffer = await generarCoverPasarela(engCover, engImg);
     await publicarFotoBuffer(buffer, post);
