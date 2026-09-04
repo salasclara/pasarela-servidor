@@ -208,7 +208,17 @@ const PAGES_EXTRA = [
       nombreMarca: 'MARAVILLAS DEL REINO',
       subtituloMarca: 'COMUNIDAD DE FE',
       footerLinea1: 'Comunidad de Fe Maravillas Del Reino  ·  Dallas, TX',
-      footerLinea2: '@MaravillaDelReino'
+      footerLinea2: '@MaravillaDelReino',
+      imagePool: [
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=90',
+        'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=1080&q=90',
+        'https://images.unsplash.com/photo-1506929562872-bb421503ef21?w=1080&q=90',
+        'https://images.unsplash.com/photo-1511895426328-dc8714191011?w=1080&q=90',
+        'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1080&q=90',
+        'https://images.unsplash.com/photo-1475483768296-6163e08872a1?w=1080&q=90',
+        'https://images.unsplash.com/photo-1490750967868-88df5691cc5e?w=1080&q=90',
+        'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=1080&q=90',
+      ]
     }
   },
   // ✅ ACTIVA — Fancy by Roxette
@@ -246,7 +256,17 @@ const PAGES_EXTRA = [
       nombreMarca: 'AMAR ES',
       subtituloMarca: 'AMOR  ·  RELACIONES  ·  BIENESTAR',
       footerLinea1: 'Amar es  ·  Para la mujer latina',
-      footerLinea2: '@AmarEs'
+      footerLinea2: '@AmarEs',
+      imagePool: [
+        'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=1080&q=90',
+        'https://images.unsplash.com/photo-1501901609772-df0848060b33?w=1080&q=90',
+        'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=1080&q=90',
+        'https://images.unsplash.com/photo-1474552226712-ac0f0961a954?w=1080&q=90',
+        'https://images.unsplash.com/photo-1529467770800-a80e6c2efb42?w=1080&q=90',
+        'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=1080&q=90',
+        'https://images.unsplash.com/photo-1494774157365-9e04c6720e47?w=1080&q=90',
+        'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=1080&q=90',
+      ]
     }
   },
   {
@@ -263,7 +283,17 @@ const PAGES_EXTRA = [
       nombreMarca: 'TRABAJANDO EN CASA',
       subtituloMarca: 'EMPRENDIMIENTO LATINO',
       footerLinea1: 'Trabajando En Casa  ·  Emprendedoras Latinas',
-      footerLinea2: '@TrabajarDesdeCasa'
+      footerLinea2: '@TrabajarDesdeCasa',
+      imagePool: [
+        'https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=1080&q=90',
+        'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=1080&q=90',
+        'https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=1080&q=90',
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=1080&q=90',
+        'https://images.unsplash.com/photo-1556761175-b413da4baf72?w=1080&q=90',
+        'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1080&q=90',
+        'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1080&q=90',
+        'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1080&q=90',
+      ]
     }
   }
 ];
@@ -1386,7 +1416,7 @@ async function generarCoverGenerico(branding, titulo = '') {
   const ctx = canvas.getContext('2d');
 
   // Foto de fondo — nítida y centrada
-  const UNSPLASH_EXTRA = [
+  const UNSPLASH_MODA = [
     'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1080&q=90',
     'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?w=1080&q=90',
     'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1080&q=90',
@@ -1396,7 +1426,8 @@ async function generarCoverGenerico(branding, titulo = '') {
     'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=1080&q=90',
     'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=90',
   ];
-  const imgUrl = UNSPLASH_EXTRA[Math.floor(Math.random() * UNSPLASH_EXTRA.length)];
+  const pool = (branding.imagePool && branding.imagePool.length) ? branding.imagePool : UNSPLASH_MODA;
+  const imgUrl = pool[Math.floor(Math.random() * pool.length)];
   try {
     const buf = await fetchBuf(imgUrl);
     const img = await loadImage(buf);
