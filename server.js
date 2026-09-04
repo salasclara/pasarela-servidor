@@ -397,7 +397,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       captionTexto      = captionMatch ? captionMatch[1].trim() : caption;
       coverBuffer = pageConfig.branding
         ? await generarCoverGenerico(pageConfig.branding, coverTitulo)
-        : await generarCoverPasarela(titulo.substring(0, 80));
+        : await generarCoverPasarela(titulo.split(' ').slice(0,5).join(' '), await getImagenCategoria('MODA', titulo.split(' ').slice(0,3).join(' ')));
     }
     console.log('[MultiPage] Caption generado para:', pageConfig.nombre, '— publicando cover...');
     // Intercambiar por page token largo
@@ -595,11 +595,13 @@ const server = http.createServer(async (req, res) => {
           fbId = fbRes?.id || fbRes;
         } catch(efetch) {
           console.log('[test-blog-facebook] Imagen no accesible, usando cover canvas:', efetch.message);
-          const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
+          const _ct_1275 = noticia.titulo.split(' ').slice(0,5).join(' ');
+          const coverBuffer = await generarCoverPasarela(_ct_1275, await getImagenCategoria('MODA', _ct_1275));
           fbId = await publicarFotoBuffer(coverBuffer, captionCompleto);
         }
       } else {
-        const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
+        const _ct_1275 = noticia.titulo.split(' ').slice(0,5).join(' ');
+        const coverBuffer = await generarCoverPasarela(_ct_1275, await getImagenCategoria('MODA', _ct_1275));
         fbId = await publicarFotoBuffer(coverBuffer, captionCompleto);
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -1198,11 +1200,13 @@ setInterval(async () => {
               console.log('[CRON] Publicado en Facebook con cover editorial blog:', noticia.titulo);
             } catch(efetch) {
               console.log('[CRON] Imagen RSS no accesible, usando cover canvas:', efetch.message);
-              const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
+              const _ct_1275 = noticia.titulo.split(' ').slice(0,5).join(' ');
+              const coverBuffer = await generarCoverPasarela(_ct_1275, await getImagenCategoria('MODA', _ct_1275));
               await publicarFotoBuffer(coverBuffer, captionCompleto);
             }
           } else {
-            const coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '));
+            const _ct_1275 = noticia.titulo.split(' ').slice(0,5).join(' ');
+            const coverBuffer = await generarCoverPasarela(_ct_1275, await getImagenCategoria('MODA', _ct_1275));
             await publicarFotoBuffer(coverBuffer, captionCompleto);
             console.log('[CRON] Publicado en Facebook con cover generado:', noticia.titulo);
           }
@@ -1313,27 +1317,33 @@ const FASHION_POOLS = {
   ],
 };
 
-// Pexels — keywords por categoría
+// Pexels — keywords por categoría — SIEMPRE con persona/modelo, nunca productos
 const PEXELS_QUERIES = {
-  MODA:          'fashion runway model editorial elegant',
-  BELLEZA:       'beauty makeup model professional portrait',
-  TALENTO:       'professional model fashion portrait studio',
-  EMPRENDIMIENTO:'latina entrepreneur business woman professional',
+  MODA:          'fashion model woman portrait professional elegant',
+  BELLEZA:       'beauty model woman portrait glamour studio',
+  TALENTO:       'fashion model woman studio portrait professional',
+  EMPRENDIMIENTO:'latina entrepreneur woman professional confident portrait',
 };
 
 // Cache Pexels por categoría — batch de 15, sin repetición
 const _pexelsQueues = {};
 const _localQueues  = {};
 
-async function getImagenCategoria(cat) {
+async function getImagenCategoria(cat, topic = null) {
   const key = cat || 'MODA';
 
   // 1) Intentar Pexels si hay API key
   const PEXELS_KEY = process.env.PEXELS_API_KEY;
   if (PEXELS_KEY) {
-    if (!_pexelsQueues[key] || _pexelsQueues[key].length === 0) {
+    // Con topic: no usa cache (busqueda especifica por contenido del post)
+    // Sin topic: usa cache por categoria
+    const useCache = !topic;
+    if (!useCache || !_pexelsQueues[key] || _pexelsQueues[key].length === 0) {
       try {
-        const query = PEXELS_QUERIES[key] || PEXELS_QUERIES.MODA;
+        const baseQuery = topic
+          ? `${topic} fashion model woman portrait`
+          : (PEXELS_QUERIES[key] || PEXELS_QUERIES.MODA);
+        const query = baseQuery;
         const page  = Math.floor(Math.random() * 5) + 1;
         const pUrl  = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&page=${page}&orientation=square`;
         const pRes  = await fetch(pUrl, { headers: { 'Authorization': PEXELS_KEY } });
@@ -1341,7 +1351,13 @@ async function getImagenCategoria(cat) {
           const data = await pRes.json();
           if (data.photos && data.photos.length > 0) {
             const urls = data.photos.map(p => p.src.large2x || p.src.large || p.src.original);
-            _pexelsQueues[key] = urls.sort(() => Math.random() - 0.5);
+            const shuffled = urls.sort(() => Math.random() - 0.5);
+            if (!useCache) {
+              // Búsqueda por topic: retornar directo sin cachear
+              console.log(`[Pexels] Topic "${topic}" — ${urls.length} fotos`);
+              return shuffled[0];
+            }
+            _pexelsQueues[key] = shuffled;
             console.log(`[Pexels] Batch ${key} — ${urls.length} fotos frescas (pág ${page})`);
           }
         }
