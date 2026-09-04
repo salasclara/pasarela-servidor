@@ -1460,11 +1460,11 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 
   // Gradiente: oscuro arriba/abajo, claro al centro
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0,    'rgba(0,0,0,0.72)');
-  grad.addColorStop(0.18, 'rgba(0,0,0,0.18)');
-  grad.addColorStop(0.50, 'rgba(0,0,0,0.10)');
-  grad.addColorStop(0.72, 'rgba(0,0,0,0.45)');
-  grad.addColorStop(1,    'rgba(0,0,0,0.90)');
+  grad.addColorStop(0,    'rgba(0,0,0,0.55)');
+  grad.addColorStop(0.18, 'rgba(0,0,0,0.08)');
+  grad.addColorStop(0.50, 'rgba(0,0,0,0.02)');
+  grad.addColorStop(0.72, 'rgba(0,0,0,0.28)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.72)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
