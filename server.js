@@ -1590,21 +1590,21 @@ async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
   // Fondo: DALL-E o imagePool fallback
   if (imgBuf) {
     try {
-      const img = new Image();
-      img.src = imgBuf;
-      const scale = Math.max(W/1024, H/1024);
-      const dw = 1024*scale, dh = 1024*scale;
-      ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
-    } catch(e) { imgBuf = null; }
+      const img = await loadImage(imgBuf);
+      const scale = Math.max(W / img.width, H / img.height);
+      const dw = img.width * scale, dh = img.height * scale;
+      ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    } catch(e) { console.error('[AmarEs] drawImage DALL-E error:', e.message); imgBuf = null; }
   }
   if (!imgBuf) {
     const pool = (branding.imagePool && branding.imagePool.length) ? branding.imagePool : [];
     if (pool.length) {
       try {
         const fb = await fetchBuf(pool[Math.floor(Math.random()*pool.length)]);
-        const img = new Image();
-        img.src = fb;
-        ctx.drawImage(img, 0, 0, W, H);
+        const img = await loadImage(fb);
+        const scale = Math.max(W / img.width, H / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
       } catch(e) {}
     } else {
       ctx.fillStyle = branding.colorBarra || '#7B3A4A';
