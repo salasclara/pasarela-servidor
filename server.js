@@ -2,6 +2,18 @@ const http = require('http');
 const https = require('https');
 const { Pool } = require('pg');
 
+// ============================================================
+// GLOBAL ERROR HANDLERS — captura crashes silenciosos
+// ============================================================
+process.on('uncaughtException', (err) => {
+  console.error('[CRASH] uncaughtException:', err.message);
+  console.error(err.stack);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRASH] unhandledRejection:', reason);
+});
+
+
 try {
   const { ThinkingEngine } = require('./src/services/ThinkingEngine');
   const t = new ThinkingEngine();
