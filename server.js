@@ -312,7 +312,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const esAmor = pageConfig.tipo === 'amor';
     console.log('[MultiPage] tipo:', pageConfig.tipo, '| esFe:', esFe, '| esAmor:', esAmor, '| nombre:', pageConfig.nombre);
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
-    const formatoAmor = 'Responde en este formato exacto (sin comillas ni asteriscos):\nSCENE: [describe in English a specific romantic scene for the recurring Amor Es chibi couple — include: location, weather/lighting, specific action or interaction between the two characters, emotion expressed, season if relevant — be specific and visual, max 200 chars]\nCOVER: [frase poética corta máx 7 palabras, español]\nCAPTION: [2 o 3 líneas reflexivas para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
+    const formatoAmor = 'Responde en este formato exacto (sin comillas, sin asteriscos, sin texto adicional):\nSCENE: [describe in English a specific romantic scene for the Amor Es chibi couple — location, lighting, specific action, emotion — max 200 chars]\nGANCHO: [frase gancho max 7 palabras en español, mayúsculas, impactante, 2ª persona]\nREFLEXION: [una sola línea poética emotiva max 12 palabras, español, minúsculas]\nMICROHISTORIA: [2 a 3 líneas en segunda persona, emotivas, sin hashtags — narra el momento como si le hablaras directamente a ella]\nCTA: [pregunta conversacional corta para invitar a comentar, español]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const captionPayload = JSON.stringify({
@@ -344,14 +344,22 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       coverBuffer = await generarCoverFe(pageConfig.branding, afirmacion, hero, versiculo, referencia);
     } else if (esAmor) {
       const sceneMatch   = caption.match(/SCENE:\s*(.+)/i);
-      const coverMatch   = caption.match(/COVER:\s*(.+)/i);
-      const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
-      const dallePrompt  = sceneMatch ? sceneMatch[1].trim() : 'cute chibi couple sharing a tender moment, park, warm afternoon';
-      const coverTitulo  = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
-      captionTexto       = captionMatch ? captionMatch[1].trim() : caption;
+      const ganchoMatch  = caption.match(/GANCHO:\s*(.+)/i);
+      const reflexMatch  = caption.match(/REFLEXION:\s*(.+)/i);
+      const mhMatch      = caption.match(/MICROHISTORIA:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
+      const ctaMatch     = caption.match(/CTA:\s*(.+)/i);
+      const hashMatch    = caption.match(/HASHTAGS:\s*(.+)/i);
+      const dallePrompt  = sceneMatch  ? sceneMatch[1].trim()  : 'cute chibi couple sharing a tender moment, park, warm afternoon';
+      const gancho       = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 40);
+      const reflexion    = reflexMatch ? reflexMatch[1].trim() : '';
+      const microhistoria = mhMatch   ? mhMatch[1].trim()     : '';
+      const ctaTexto     = ctaMatch   ? ctaMatch[1].trim()    : '';
+      const hashTexto    = hashMatch  ? hashMatch[1].trim()   : pageConfig.hashtags || '#AmarEs #AmorSano';
+      captionTexto = microhistoria + (ctaTexto ? '\n\n' + ctaTexto : '') + '\n\n— ' + (pageConfig.branding.footerLinea1 || 'Amar es') + ' ✨\n\n' + hashTexto;
       console.log('[AmarEs] SCENE:', dallePrompt);
+      console.log('[AmarEs] GANCHO:', gancho);
       console.log('[AmarEs] Llamando gpt-image-1...');
-      coverBuffer = await generarCoverAmarEs(pageConfig.branding, coverTitulo, dallePrompt);
+      coverBuffer = await generarCoverAmarEs(pageConfig.branding, gancho, reflexion, dallePrompt);
     } else {
       const coverMatch  = caption.match(/COVER:\s*(.+)/i);
       const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
@@ -1605,7 +1613,7 @@ COMPOSITION: Square 1:1 composition optimized for a Facebook post. Only ONE coup
 IMPORTANT — NO: text, words, letters, captions, quotes, typography, logos, watermark, watercolor texture, photorealism, photographic people, realistic skin, 3D render, hyperrealistic background, excessive background detail, additional couples.
 FINAL OBJECTIVE: The viewer should immediately recognize this is another AMOR ES illustration featuring the same couple, but discover a NEW romantic moment in every post.`;
 
-async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
+async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   await setupFonts();
   const W = 1080, H = 1080;
   const canvas = createCanvas(W, H);
@@ -1664,11 +1672,12 @@ async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
 
   // Gradiente suave
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0,    'rgba(0,0,0,0.52)');
-  grad.addColorStop(0.20, 'rgba(0,0,0,0.08)');
-  grad.addColorStop(0.50, 'rgba(0,0,0,0.04)');
-  grad.addColorStop(0.72, 'rgba(0,0,0,0.28)');
-  grad.addColorStop(1,    'rgba(0,0,0,0.75)');
+  grad.addColorStop(0,    'rgba(0,0,0,0.50)');
+  grad.addColorStop(0.18, 'rgba(0,0,0,0.06)');
+  grad.addColorStop(0.45, 'rgba(0,0,0,0.04)');
+  grad.addColorStop(0.60, 'rgba(0,0,0,0.38)');
+  grad.addColorStop(0.80, 'rgba(0,0,0,0.68)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.85)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
@@ -1685,31 +1694,42 @@ async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
   ctx.fillText(branding.subtituloMarca, W/2, 78);
   ctx.shadowBlur = 0;
 
-  // Título central (blanco, grande)
-  const tituloUpper = (coverTitulo || '').toUpperCase();
+  // GANCHO — grande, zona baja de la ilustración
+  const ganchoUpper = (gancho || '').toUpperCase();
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 72px PSSerif';
+  ctx.font = 'bold 62px PSSerif';
   ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 22;
-  const words = tituloUpper.split(' ');
-  let line = '', lines2 = [];
-  for (const w of words) {
-    const test = line + w + ' ';
-    if (ctx.measureText(test).width > W-120 && line) { lines2.push(line.trim()); line = w+' '; }
-    else line = test;
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 20;
+  const gWords = ganchoUpper.split(' ');
+  let gLine = '', gLines = [];
+  for (const w of gWords) {
+    const test = gLine + w + ' ';
+    if (ctx.measureText(test).width > W-120 && gLine) { gLines.push(gLine.trim()); gLine = w+' '; }
+    else gLine = test;
   }
-  if (line.trim()) lines2.push(line.trim());
-  const startY = H/2 + 60 - ((lines2.length-1)*80)/2;
-  lines2.slice(0,3).forEach((l,i) => ctx.fillText(l, W/2, startY + i*80));
+  if (gLine.trim()) gLines.push(gLine.trim());
+  const gStartY = 720 - ((gLines.length-1)*70)/2;
+  gLines.slice(0,3).forEach((l,i) => ctx.fillText(l, W/2, gStartY + i*70));
   ctx.shadowBlur = 0;
 
-  // Línea decorativa
-  ctx.strokeStyle = branding.colorAccento;
+  // Línea decorativa bajo el GANCHO
+  const gEndY = gStartY + gLines.length * 70 - 20;
+  ctx.strokeStyle = branding.colorAccento || '#C9A66B';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(W/2-100, startY + lines2.length*80+14);
-  ctx.lineTo(W/2+100, startY + lines2.length*80+14);
+  ctx.moveTo(W/2 - 90, gEndY + 8);
+  ctx.lineTo(W/2 + 90, gEndY + 8);
   ctx.stroke();
+
+  // REFLEXION — pequeña, italic, debajo del gancho
+  if (reflexion) {
+    ctx.fillStyle = 'rgba(255,255,255,0.90)';
+    ctx.font = 'italic 26px PSSerif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10;
+    ctx.fillText(reflexion, W/2, gEndY + 42);
+    ctx.shadowBlur = 0;
+  }
 
   // Barra inferior
   ctx.fillStyle = branding.colorBarra;
