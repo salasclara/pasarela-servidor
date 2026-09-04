@@ -202,9 +202,9 @@ const PAGES_EXTRA = [
     hashtags: '#MaravillaDelReino #FeCristiana #Esperanza',
     temas: ['versículos bíblicos', 'fe', 'esperanza', 'familia cristiana', 'mujer de fe', 'hijos', 'amor de Dios', 'propósito divino', 'bendición', 'oración', 'gratitud a Dios', 'vida en Cristo'],
     branding: {
-      colorBarra: '#3B2A6E',
+      colorBarra: '#0D2E6E',
       colorAccento: '#C9A66B',
-      colorTexto: '#F5E6D3',
+      colorTexto: '#C9A66B',
       nombreMarca: 'MARAVILLAS DEL REINO',
       subtituloMarca: 'COMUNIDAD DE FE',
       footerLinea1: 'Comunidad de Fe Maravillas Del Reino  ·  Dallas, TX',
@@ -1437,7 +1437,11 @@ async function generarCoverGenerico(branding, titulo = '') {
     const sw = img.width * scale, sh = img.height * scale;
     ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
   } catch(e) {
-    ctx.fillStyle = '#0D0A0B';
+    // Fallback: gradiente con el color de marca
+    const fbGrad = ctx.createLinearGradient(0, 0, 0, H);
+    fbGrad.addColorStop(0, branding.colorBarra || '#0D0A0B');
+    fbGrad.addColorStop(1, '#0D0A0B');
+    ctx.fillStyle = fbGrad;
     ctx.fillRect(0, 0, W, H);
   }
 
@@ -1451,8 +1455,8 @@ async function generarCoverGenerico(branding, titulo = '') {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Barra superior fucsia
-  ctx.fillStyle = '#FF1493';
+  // Barra superior con color de la marca
+  ctx.fillStyle = branding.colorBarra;
   ctx.fillRect(0, 0, W, 95);
 
   // Nombre de la marca
@@ -1485,18 +1489,18 @@ async function generarCoverGenerico(branding, titulo = '') {
     ctx.shadowBlur = 0;
   }
 
-  // Barra inferior fucsia
-  ctx.fillStyle = '#FF1493';
-  ctx.fillRect(0, H - 85, W, 85);
+  // Barra inferior con color de la marca
+  ctx.fillStyle = branding.colorBarra;
+  ctx.fillRect(0, H - 90, W, 90);
 
   ctx.fillStyle = branding.colorAccento;
-  ctx.font = 'bold 17px PSSansBold';
+  ctx.font = 'bold 22px PSSansBold';
   ctx.textAlign = 'center';
-  ctx.fillText(branding.footerLinea1, W / 2, H - 50);
+  ctx.fillText(branding.footerLinea1, W / 2, H - 52);
 
   ctx.fillStyle = branding.colorTexto;
-  ctx.font = '14px PSSans';
-  ctx.fillText(branding.footerLinea2, W / 2, H - 28);
+  ctx.font = '17px PSSans';
+  ctx.fillText(branding.footerLinea2, W / 2, H - 26);
 
   return canvas.toBuffer('image/png');
 }
