@@ -314,6 +314,256 @@ const PAGES_EXTRA = [
 ];
 
 // Función genérica: publica cover editorial en cualquier página
+
+// ============================================================
+// CANVAS + COVER GENERATORS
+// ============================================================
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
+
+async function descargarImagen(url) {
+  if (!url) return null;
+  return new Promise((resolve) => {
+    const mod = url.startsWith('https') ? https : http;
+    mod.get(url, { headers: { 'User-Agent': 'PasarelaBot/1.0' } }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+    }).on('error', () => resolve(null));
+  });
+}
+
+const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
+async function getImagenCategoria(categoria, query) {
+  const QUERIES = {
+    'MODA': ['fashion editorial woman', 'elegant fashion latina', 'runway model', 'luxury fashion'],
+    'BELLEZA': ['beauty makeup latina', 'skincare beauty', 'cosmetics'],
+    'TALENTO': ['model photoshoot', 'fashion photography'],
+    'DEFAULT': ['fashion elegance', 'luxury lifestyle'],
+  };
+  const q = query || (QUERIES[categoria] || QUERIES['DEFAULT'])[Math.floor(Math.random() * 4)];
+  try {
+    const pexUrl = 'https://api.pexels.com/v1/search?query=' + encodeURIComponent(q) + '&per_page=15&orientation=square';
+    const data = await new Promise((resolve, reject) => {
+      const opts = new URL(pexUrl);
+      const r = https.request({ hostname: opts.hostname, path: opts.pathname + opts.search, headers: { Authorization: PEXELS_API_KEY } }, res => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      });
+      r.on('error', reject); r.end();
+    });
+    const fotos = data.photos || [];
+    if (!fotos.length) return null;
+    return fotos[Math.floor(Math.random() * fotos.length)].src.large;
+  } catch(e) { console.error('[Pexels] Error:', e.message); return null; }
+}
+
+const MASTER_PROMPT_AMOR = 'Cute chibi anime couple, kawaii style illustration. Scene: {{SCENE}}. Soft pastel pink and lavender colors, romantic atmosphere, heart decorations, warm lighting. No text in image.';
+
+async function generarCoverPasarela(titulo, imgUrl) {
+  const canvas = createCanvas(1080, 1080);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0D0A0B';
+  ctx.fillRect(0, 0, 1080, 1080);
+  if (imgUrl) {
+    try {
+      const buf = await descargarImagen(imgUrl);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.45; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) { console.error('[Cover] img error:', e.message); }
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
+  grad.addColorStop(0, 'rgba(13,10,11,0.3)');
+  grad.addColorStop(0.6, 'rgba(13,10,11,0.7)');
+  grad.addColorStop(1, 'rgba(13,10,11,0.95)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
+  ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, 6);
+  ctx.fillStyle = '#C9A66B'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('PASARELA\u2122 STUDIO INTERNACIONAL', 540, 55);
+  ctx.fillStyle = 'rgba(201,166,107,0.4)'; ctx.fillRect(80, 68, 920, 1);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 72px sans-serif';
+  const words = titulo.toUpperCase().split(' ');
+  let line = ''; let y = 580;
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > 880) { ctx.fillText(line, 540, y); line = w; y += 85; } else line = test;
+  }
+  if (line) ctx.fillText(line, 540, y);
+  ctx.fillStyle = '#C9A66B'; ctx.fillRect(80, y + 30, 920, 3);
+  ctx.fillStyle = '#C4826A'; ctx.font = '20px sans-serif';
+  ctx.fillText('pasarelastudiointer.com  \u00b7  Dallas, TX', 540, 1045);
+  return canvas.toBuffer('image/png');
+}
+
+async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia) {
+  const canvas = createCanvas(1080, 1080);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = branding.colorBarra || '#0D2E6E'; ctx.fillRect(0, 0, 1080, 1080);
+  const imgPool = branding.imagePool || [];
+  if (imgPool.length) {
+    try {
+      const buf = await descargarImagen(imgPool[Math.floor(Math.random() * imgPool.length)]);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.28; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) {}
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
+  grad.addColorStop(0, 'rgba(13,46,110,0.5)'); grad.addColorStop(1, 'rgba(13,46,110,0.92)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 8);
+  ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText((branding.subtituloMarca || '').toUpperCase(), 540, 55);
+  ctx.font = 'bold 34px sans-serif'; ctx.fillText(branding.nombreMarca || 'MARAVILLAS DEL REINO', 540, 94);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 78px sans-serif';
+  ctx.fillText(afirmacion.toUpperCase().substring(0, 18), 540, 420);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 108px sans-serif';
+  ctx.fillText(hero.toUpperCase().substring(0, 12), 540, 560);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = 'italic 26px sans-serif';
+  const vw = versiculo.split(' '); let vl = ''; let vy = 660;
+  for (const w of vw) { const t = vl ? vl+' '+w : w; if (ctx.measureText(t).width > 860) { ctx.fillText(vl, 540, vy); vl = w; vy += 36; } else vl = t; }
+  if (vl) ctx.fillText(vl, 540, vy);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 26px sans-serif';
+  ctx.fillText('\u2014 ' + referencia + ' \u2014', 540, vy + 46);
+  ctx.fillRect(0, 1072, 1080, 8);
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillText(branding.footerLinea1 || '', 540, 1054);
+  return canvas.toBuffer('image/png');
+}
+
+async function generarCoverFancy(branding, titular, subtitulo) {
+  const canvas = createCanvas(1080, 1080);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = branding.colorBarra || '#2C1A2E'; ctx.fillRect(0, 0, 1080, 1080);
+  const imgUrl = await getImagenCategoria('MODA', 'fashion accessories elegant woman');
+  if (imgUrl) {
+    try {
+      const buf = await descargarImagen(imgUrl);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.4; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) {}
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
+  grad.addColorStop(0, 'rgba(44,26,46,0.35)'); grad.addColorStop(0.5, 'rgba(44,26,46,0.6)'); grad.addColorStop(1, 'rgba(44,26,46,0.95)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 5);
+  ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(branding.subtituloMarca || 'BOUTIQUE \u00b7 DALLAS TX', 540, 52);
+  ctx.font = 'bold 40px sans-serif'; ctx.fillText(branding.nombreMarca || 'FANCY BY ROXETTE', 540, 100);
+  ctx.fillStyle = 'rgba(232,197,176,0.35)'; ctx.fillRect(80, 115, 920, 1);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 86px sans-serif';
+  const tw = titular.toUpperCase().split(' '); let tl = ''; let ty = 550;
+  for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(tl, 540, ty); tl = w; ty += 98; } else tl = t; }
+  if (tl) ctx.fillText(tl, 540, ty);
+  if (subtitulo) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 30px sans-serif'; ctx.fillText(subtitulo, 540, ty + 52); }
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 1073, 1080, 5);
+  ctx.fillStyle = 'rgba(249,240,232,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillText(branding.footerLinea1 || 'Fancy by Roxette \u00b7 Dallas, TX', 540, 1051);
+  return canvas.toBuffer('image/png');
+}
+
+async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
+  const canvas = createCanvas(1080, 1080);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = branding.colorBarra || '#7B3A4A'; ctx.fillRect(0, 0, 1080, 1080);
+  let usedAI = false;
+  if (process.env.OPENAI_API_KEY && dallePrompt) {
+    try {
+      const aiPrompt = 'Cute chibi anime couple, kawaii style illustration. Scene: ' + dallePrompt + '. Soft pastel pink and lavender colors, romantic atmosphere, heart decorations, warm lighting. No text in image.';
+      const body = JSON.stringify({ model: 'gpt-image-1', prompt: aiPrompt, n: 1, size: '1024x1024', quality: 'medium' });
+      const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
+      const j = await r.json();
+      if (j.data && j.data[0] && j.data[0].b64_json) {
+        const imgBuf = Buffer.from(j.data[0].b64_json, 'base64');
+        const img = await loadImage(imgBuf);
+        ctx.globalAlpha = 0.55; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1;
+        usedAI = true; console.log('[AmarEs] AI image OK');
+      }
+    } catch(e) { console.error('[AmarEs] gpt-image error:', e.message); }
+  }
+  if (!usedAI && branding.imagePool && branding.imagePool.length) {
+    try {
+      const buf = await descargarImagen(branding.imagePool[Math.floor(Math.random() * branding.imagePool.length)]);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.35; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) {}
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
+  grad.addColorStop(0, 'rgba(123,58,74,0.3)'); grad.addColorStop(0.6, 'rgba(123,58,74,0.65)'); grad.addColorStop(1, 'rgba(123,58,74,0.95)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 6);
+  ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(branding.subtituloMarca || 'AMOR \u00b7 RELACIONES \u00b7 BIENESTAR', 540, 52);
+  ctx.font = 'bold 44px sans-serif'; ctx.fillText(branding.nombreMarca || 'AMAR ES', 540, 102);
+  ctx.font = '46px sans-serif'; ctx.fillText('\u2665', 540, 170);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 76px sans-serif';
+  const gw = gancho.toUpperCase().split(' '); let gl = ''; let gy = 520;
+  for (const w of gw) { const t = gl ? gl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(gl, 540, gy); gl = w; gy += 86; } else gl = t; }
+  if (gl) ctx.fillText(gl, 540, gy);
+  if (reflexion) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 29px sans-serif'; ctx.fillText('"' + reflexion + '"', 540, gy + 58); }
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 1073, 1080, 6);
+  ctx.fillStyle = 'rgba(255,245,240,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillText(branding.footerLinea1 || 'Amar es \u00b7 Para la mujer latina', 540, 1051);
+  return canvas.toBuffer('image/png');
+}
+
+async function generarCoverGenerico(branding, coverTitulo) {
+  const canvas = createCanvas(1080, 1080);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = branding.colorBarra || '#1A3A2E'; ctx.fillRect(0, 0, 1080, 1080);
+  if (branding.imagePool && branding.imagePool.length) {
+    try {
+      const buf = await descargarImagen(branding.imagePool[Math.floor(Math.random() * branding.imagePool.length)]);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.3; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) {}
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
+  grad.addColorStop(0, 'rgba(26,58,46,0.4)'); grad.addColorStop(1, 'rgba(26,58,46,0.92)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 6);
+  ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(branding.subtituloMarca || '', 540, 52);
+  ctx.font = 'bold 36px sans-serif'; ctx.fillText(branding.nombreMarca || '', 540, 96);
+  ctx.fillStyle = branding.colorTexto || '#F0F5E8'; ctx.font = 'bold 80px sans-serif';
+  const cw = coverTitulo.toUpperCase().split(' '); let cl = ''; let cy = 550;
+  for (const w of cw) { const t = cl ? cl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(cl, 540, cy); cl = w; cy += 93; } else cl = t; }
+  if (cl) ctx.fillText(cl, 540, cy);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 1073, 1080, 6);
+  ctx.fillStyle = 'rgba(240,245,232,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillText(branding.footerLinea1 || '', 540, 1051);
+  return canvas.toBuffer('image/png');
+}
+
+async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
+  const canvas = createCanvas(1080, 566);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0D0A0B'; ctx.fillRect(0, 0, 1080, 566);
+  if (imgBuf) {
+    try { const img = await loadImage(imgBuf); ctx.globalAlpha = 0.5; ctx.drawImage(img, 0, 0, 1080, 566); ctx.globalAlpha = 1; } catch(e) {}
+  }
+  const grad = ctx.createLinearGradient(0, 0, 0, 566);
+  grad.addColorStop(0, 'rgba(13,10,11,0.2)'); grad.addColorStop(1, 'rgba(13,10,11,0.9)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 566);
+  ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, 4);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 50px sans-serif'; ctx.textAlign = 'center';
+  const tw = titulo.split(' '); let tl = ''; let ty = 330;
+  for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 940) { ctx.fillText(tl, 540, ty); tl = w; ty += 60; } else tl = t; }
+  if (tl) ctx.fillText(tl, 540, ty);
+  ctx.fillStyle = '#C9A66B'; ctx.font = '19px sans-serif';
+  ctx.fillText('PASARELA\u2122  \u00b7  ' + (fecha || new Date().toLocaleDateString('es-US')), 540, ty + 40);
+  return canvas.toBuffer('image/png');
+}
+
+function publicarStoryFacebook(imageUrl) {
+  if (!FB_PAGE_TOKEN || !imageUrl) return Promise.resolve(null);
+  const postData = new URLSearchParams({ url: imageUrl, access_token: FB_PAGE_TOKEN });
+  return new Promise((resolve) => {
+    const postBody = postData.toString();
+    const opts = { hostname: 'graph.facebook.com', path: '/v19.0/' + FB_PAGE_ID + '/photo_stories', method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Content-Length': Buffer.byteLength(postBody) } };
+    const r = https.request(opts, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { const p = JSON.parse(d); if (p.id) { console.log('[Story] OK:', p.id); resolve(p.id); } else { console.error('[Story] Error:', JSON.stringify(p)); resolve(null); } } catch(e) { resolve(null); } });
+    });
+    r.on('error', () => resolve(null));
+    r.write(postBody); r.end();
+  });
+}
+
+
 async function publicarCoverParaPagina(pageConfig, titulo) {
   if (!pageConfig.token || !pageConfig.id) {
     console.log('[MultiPage] Token o ID faltante para:', pageConfig.nombre);
