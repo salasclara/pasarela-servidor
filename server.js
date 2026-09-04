@@ -245,6 +245,7 @@ const PAGES_EXTRA = [
   {
     id: '529892146881748',
     token: process.env.AMAR_ES_TOKEN,
+    tipo: 'amor',
     nombre: 'Amar es',
     nicho: 'amor, relaciones y lifestyle femenino',
     voice: 'Eres la voz de Amar es. Escribe reflexiones cortas y profundas sobre el amor, las relaciones, el amor propio y el bienestar emocional femenino. Frases que toquen el corazón de la mujer latina. Voz poética, cálida, empática. Solo español. NUNCA menciones moda ni Pasarela.',
@@ -308,12 +309,14 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
   try {
     // Generar caption con la voz del nicho
     const esFe = pageConfig.tipo === 'fe';
+    const esAmor = pageConfig.tipo === 'amor';
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
+    const formatoAmor = 'Responde en este formato exacto (sin comillas ni asteriscos):\nDALLE_PROMPT: [describe romantic chibi anime scene in English matching the topic, max 200 chars, cute couple or woman, soft watercolor, no text]\nCOVER: [frase poética corta máx 7 palabras, español]\nCAPTION: [2 o 3 líneas reflexivas para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const captionPayload = JSON.stringify({
       model: 'claude-sonnet-4-6', max_tokens: 180,
-      system: pageConfig.voice + ' ' + (esFe ? formatoFe : formatoGenerico),
+      system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : formatoGenerico),
       messages: [{ role: 'user', content: 'Tema: ' + temaActual }]
     });
     const caption = await new Promise((resolve, reject) => {
@@ -338,6 +341,15 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       captionTexto        = capMatch    ? capMatch[1].trim()    : '';
       console.log('[MultiPage-FE] Afirmacion:', afirmacion, '| Hero:', hero, '| Ref:', referencia);
       coverBuffer = await generarCoverFe(pageConfig.branding, afirmacion, hero, versiculo, referencia);
+    } else if (esAmor) {
+      const dalleMatch   = caption.match(/DALLE_PROMPT:\s*(.+)/i);
+      const coverMatch   = caption.match(/COVER:\s*(.+)/i);
+      const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
+      const dallePrompt  = dalleMatch ? dalleMatch[1].trim() : 'cute anime chibi couple in love, romantic watercolor';
+      const coverTitulo  = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
+      captionTexto       = captionMatch ? captionMatch[1].trim() : caption;
+      console.log('[AmarEs] DALLE_PROMPT:', dallePrompt);
+      coverBuffer = await generarCoverAmarEs(pageConfig.branding, coverTitulo, dallePrompt);
     } else {
       const coverMatch  = caption.match(/COVER:\s*(.+)/i);
       const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
@@ -1542,6 +1554,124 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   ctx.fillStyle = 'rgba(201,166,107,0.80)';
   ctx.font = '17px PSSans';
   ctx.fillText(branding.footerLinea2, W / 2, H - 26);
+
+  return canvas.toBuffer('image/png');
+}
+
+
+async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
+  await setupFonts();
+  const W = 1080, H = 1080;
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
+
+  // Llamar DALL-E 3
+  let imgBuf = null;
+  try {
+    const dalleBody = JSON.stringify({
+      model: 'dall-e-3',
+      prompt: dallePrompt + ' Anime chibi illustration, soft watercolor style, pastel pink rose gold palette, warm romantic lighting, no text, no letters, square format.',
+      n: 1, size: '1024x1024', quality: 'standard', response_format: 'url'
+    });
+    const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY },
+      body: dalleBody
+    });
+    const dalleJson = await dalleRes.json();
+    if (dalleJson.data && dalleJson.data[0] && dalleJson.data[0].url) {
+      imgBuf = await fetchBuf(dalleJson.data[0].url);
+      console.log('[AmarEs] DALL-E OK');
+    } else {
+      console.error('[AmarEs] DALL-E error:', JSON.stringify(dalleJson).substring(0,200));
+    }
+  } catch(e) { console.error('[AmarEs] DALL-E catch:', e.message); }
+
+  // Fondo: DALL-E o imagePool fallback
+  if (imgBuf) {
+    try {
+      const img = new Image();
+      img.src = imgBuf;
+      const scale = Math.max(W/1024, H/1024);
+      const dw = 1024*scale, dh = 1024*scale;
+      ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
+    } catch(e) { imgBuf = null; }
+  }
+  if (!imgBuf) {
+    const pool = (branding.imagePool && branding.imagePool.length) ? branding.imagePool : [];
+    if (pool.length) {
+      try {
+        const fb = await fetchBuf(pool[Math.floor(Math.random()*pool.length)]);
+        const img = new Image();
+        img.src = fb;
+        ctx.drawImage(img, 0, 0, W, H);
+      } catch(e) {}
+    } else {
+      ctx.fillStyle = branding.colorBarra || '#7B3A4A';
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  // Gradiente suave
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0,    'rgba(0,0,0,0.52)');
+  grad.addColorStop(0.20, 'rgba(0,0,0,0.08)');
+  grad.addColorStop(0.50, 'rgba(0,0,0,0.04)');
+  grad.addColorStop(0.72, 'rgba(0,0,0,0.28)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.75)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Barra superior
+  ctx.fillStyle = branding.colorBarra;
+  ctx.fillRect(0, 0, W, 88);
+  ctx.fillStyle = branding.colorAccento;
+  ctx.font = 'bold 38px PSSerif';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
+  ctx.fillText(branding.nombreMarca, W/2, 54);
+  ctx.fillStyle = 'rgba(232,197,176,0.75)';
+  ctx.font = '15px PSSans';
+  ctx.fillText(branding.subtituloMarca, W/2, 78);
+  ctx.shadowBlur = 0;
+
+  // Título central (blanco, grande)
+  const tituloUpper = (coverTitulo || '').toUpperCase();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 72px PSSerif';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 22;
+  const words = tituloUpper.split(' ');
+  let line = '', lines2 = [];
+  for (const w of words) {
+    const test = line + w + ' ';
+    if (ctx.measureText(test).width > W-120 && line) { lines2.push(line.trim()); line = w+' '; }
+    else line = test;
+  }
+  if (line.trim()) lines2.push(line.trim());
+  const startY = H/2 + 60 - ((lines2.length-1)*80)/2;
+  lines2.slice(0,3).forEach((l,i) => ctx.fillText(l, W/2, startY + i*80));
+  ctx.shadowBlur = 0;
+
+  // Línea decorativa
+  ctx.strokeStyle = branding.colorAccento;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W/2-100, startY + lines2.length*80+14);
+  ctx.lineTo(W/2+100, startY + lines2.length*80+14);
+  ctx.stroke();
+
+  // Barra inferior
+  ctx.fillStyle = branding.colorBarra;
+  ctx.fillRect(0, H-88, W, 88);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 22px PSSansBold';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6;
+  ctx.fillText(branding.footerLinea1, W/2, H-52);
+  ctx.font = '17px PSSans';
+  ctx.fillText(branding.footerLinea2, W/2, H-26);
+  ctx.shadowBlur = 0;
 
   return canvas.toBuffer('image/png');
 }
