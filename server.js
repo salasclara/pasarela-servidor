@@ -521,6 +521,24 @@ const server = http.createServer(async (req, res) => {
       });
     return;
   }
+  // GET /test-pexels — verifica Pexels API y muestra imagen generada (sin publicar)
+  if (req.method === 'GET' && req.url.startsWith('/test-pexels')) {
+    try {
+      const params = new URL(req.url, 'http://localhost').searchParams;
+      const cat    = (params.get('cat') || 'MODA').toUpperCase();
+      const titulo = params.get('titulo') || 'ELEGANCIA LATINA';
+      const imgUrl = await getImagenCategoria(cat);
+      const buffer = await generarCoverPasarela(titulo, imgUrl);
+      console.log('[test-pexels] imagen:', imgUrl.substring(0, 80));
+      res.writeHead(200, { 'Content-Type': 'image/png', 'X-Pexels-Url': imgUrl.substring(0, 120) });
+      res.end(buffer);
+    } catch(e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
+    return;
+  }
+
   // GET /test-cover — publicar cover editorial manual
   if (req.method === 'GET' && req.url === '/test-cover') {
    try {
