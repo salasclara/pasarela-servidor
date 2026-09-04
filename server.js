@@ -355,7 +355,9 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       const microhistoria = mhMatch   ? mhMatch[1].trim()     : '';
       const ctaTexto     = ctaMatch   ? ctaMatch[1].trim()    : '';
       const hashTexto    = hashMatch  ? hashMatch[1].trim()   : pageConfig.hashtags || '#AmarEs #AmorPropio';
-      captionTexto = microhistoria + (ctaTexto ? '\n\n' + ctaTexto : '') + '\n\n— ' + (pageConfig.branding.footerLinea1 || 'Amar es') + ' ✨\n\n' + hashTexto;
+      // Deduplicar hashtags — evitar repetición
+      const hashArr = [...new Set((hashTexto || '').split(/\s+/).filter(h => h.startsWith('#')))].slice(0,4).join(' ');
+      captionTexto = microhistoria + (ctaTexto ? '\n\n' + ctaTexto : '') + '\n\n— ' + (pageConfig.branding.footerLinea1 || 'Amar es') + ' ✨\n\n' + hashArr;
       console.log('[AmarEs] SCENE:', dallePrompt);
       console.log('[AmarEs] GANCHO:', gancho);
       console.log('[AmarEs] Llamando gpt-image-1...');
@@ -1720,12 +1722,8 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   ctx.textAlign = 'center';
   ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8;
   ctx.fillStyle = branding.colorAccento || '#C9A66B';
-  ctx.font = 'bold 44px PSSerif';
-  ctx.fillText(branding.nombreMarca, W/2, 56);
-  ctx.fillStyle = 'rgba(255,255,255,0.78)';
-  ctx.font = '15px PSSans';
-  ctx.letterSpacing = '3px';
-  ctx.fillText((branding.subtituloMarca || 'AMOR · RELACIONES · BIENESTAR').toUpperCase(), W/2, 80);
+  ctx.font = 'bold 56px PSSerif';
+  ctx.fillText(branding.nombreMarca, W/2, 60);
   ctx.shadowBlur = 0;
 
   // GANCHO — bold, zona baja
