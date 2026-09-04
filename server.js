@@ -946,6 +946,36 @@ INSTRUCCIONES:
 
 
   // TEST MULTI-PÁGINA — dispara publicarCoverParaPagina en todas las páginas extra
+
+  // TEST gpt-image-1
+  if (req.method === 'GET' && req.url === '/test-imagen-amor') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    (async () => {
+      const testScene = 'Cute chibi couple sitting on a park bench sharing an ice cream cone on a sunny afternoon, the girl has long dark wavy hair with white flower accessories, the boy has short tousled dark hair, both smiling happily';
+      const promptFinal = MASTER_PROMPT_AMOR.replace('{{SCENE}}', testScene);
+      console.log('[test-imagen] OPENAI_API_KEY SET:', !!process.env.OPENAI_API_KEY);
+      console.log('[test-imagen] Prompt length:', promptFinal.length);
+      try {
+        const body = JSON.stringify({ model: 'gpt-image-1', prompt: promptFinal, n: 1, size: '1024x1024', quality: 'medium' });
+        const r = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY },
+          body
+        });
+        const j = await r.json();
+        console.log('[test-imagen] Status:', r.status);
+        console.log('[test-imagen] Respuesta:', JSON.stringify(j).substring(0, 400));
+        if (j.data && j.data[0] && j.data[0].b64_json) {
+          console.log('[test-imagen] ✅ b64_json recibido, length:', j.data[0].b64_json.length);
+        }
+      } catch(e) {
+        console.error('[test-imagen] ERROR:', e.message);
+      }
+    })();
+    res.end(JSON.stringify({ mensaje: 'Generando imagen de prueba — ver logs Railway' }));
+    return;
+  }
+
   if (req.method === 'GET' && req.url === '/test-multipagina') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     const resultados = [];
