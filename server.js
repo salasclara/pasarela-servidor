@@ -312,7 +312,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const esAmor = pageConfig.tipo === 'amor';
     console.log('[MultiPage] tipo:', pageConfig.tipo, '| esFe:', esFe, '| esAmor:', esAmor, '| nombre:', pageConfig.nombre);
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
-    const formatoAmor = 'Responde en este formato exacto (sin comillas, sin asteriscos, sin texto adicional):\nSCENE: [describe in English a specific romantic scene for the Amor Es chibi couple — location, lighting, specific action, emotion — max 200 chars]\nGANCHO: [frase gancho max 7 palabras en español, mayúsculas, impactante, 2ª persona]\nREFLEXION: [una sola línea poética emotiva max 12 palabras, español, minúsculas]\nMICROHISTORIA: [2 a 3 líneas en segunda persona, emotivas, sin hashtags — narra el momento como si le hablaras directamente a ella]\nCTA: [pregunta conversacional corta para invitar a comentar, español]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
+    const formatoAmor = 'Responde en este formato exacto (sin comillas, sin asteriscos, sin texto adicional):\nSCENE: [describe in English a specific romantic scene for the Amor Es chibi couple — location, lighting, specific action, emotion — max 200 chars]\nGANCHO: [frase gancho max 7 palabras en español, mayúsculas, impactante, 2ª persona]\nREFLEXION: [una sola línea poética emotiva max 12 palabras, español, minúsculas]\nMICROHISTORIA: [2 a 3 líneas en segunda persona, emotivas, sin hashtags — narra el momento como si le hablaras directamente a ella]\nCTA: [pregunta conversacional corta para invitar a comentar, español]\nPILAR: [elige uno: amor de pareja | amor propio | relaciones sanas | pequeños gestos cotidianos | sanar y dejar ir | familia y complicidad]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio') + ' — escoge máximo 3 hashtags relevantes al pilar elegido, sin repetición';
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const captionPayload = JSON.stringify({
@@ -354,7 +354,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       const reflexion    = reflexMatch ? reflexMatch[1].trim() : '';
       const microhistoria = mhMatch   ? mhMatch[1].trim()     : '';
       const ctaTexto     = ctaMatch   ? ctaMatch[1].trim()    : '';
-      const hashTexto    = hashMatch  ? hashMatch[1].trim()   : pageConfig.hashtags || '#AmarEs #AmorSano';
+      const hashTexto    = hashMatch  ? hashMatch[1].trim()   : pageConfig.hashtags || '#AmarEs #AmorPropio';
       captionTexto = microhistoria + (ctaTexto ? '\n\n' + ctaTexto : '') + '\n\n— ' + (pageConfig.branding.footerLinea1 || 'Amar es') + ' ✨\n\n' + hashTexto;
       console.log('[AmarEs] SCENE:', dallePrompt);
       console.log('[AmarEs] GANCHO:', gancho);
@@ -1720,12 +1720,12 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   ctx.textAlign = 'center';
   ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8;
   ctx.fillStyle = branding.colorAccento || '#C9A66B';
-  ctx.font = 'bold 30px PSSerif';
-  ctx.fillText(branding.nombreMarca, W/2, 52);
-  ctx.fillStyle = 'rgba(255,255,255,0.70)';
-  ctx.font = '13px PSSans';
-  ctx.letterSpacing = '2px';
-  ctx.fillText((branding.subtituloMarca || '').toUpperCase(), W/2, 72);
+  ctx.font = 'bold 44px PSSerif';
+  ctx.fillText(branding.nombreMarca, W/2, 56);
+  ctx.fillStyle = 'rgba(255,255,255,0.78)';
+  ctx.font = '15px PSSans';
+  ctx.letterSpacing = '3px';
+  ctx.fillText((branding.subtituloMarca || 'AMOR · RELACIONES · BIENESTAR').toUpperCase(), W/2, 80);
   ctx.shadowBlur = 0;
 
   // GANCHO — bold, zona baja
@@ -1759,7 +1759,7 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   // REFLEXION — italic, debajo de la línea
   if (reflexion) {
     ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.font = 'italic 25px PSSerif';
+    ctx.font = 'italic 31px PSSerif';
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10;
     ctx.fillText(reflexion, W / 2, gEndY + 38);
@@ -1771,7 +1771,7 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   ctx.font = '14px PSSans';
   ctx.textAlign = 'center';
   ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
-  ctx.fillText((branding.footerLinea2 || '@AmarEs'), W / 2, H - 18);
+  ctx.fillText((branding.subtituloMarca || 'AMOR · RELACIONES · BIENESTAR').toUpperCase(), W / 2, H - 18);
   ctx.shadowBlur = 0;
 
   return canvas.toBuffer('image/png');
