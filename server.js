@@ -198,7 +198,8 @@ const PAGES_EXTRA = [
     token: process.env.COMUNIDAD_FE_PAGE_TOKEN,
     nombre: 'Comunidad de Fe Maravillas Del Reino',
     nicho: 'fe, comunidad y empoderamiento femenino cristiano',
-    voice: 'Eres la voz de Comunidad de Fe Maravillas Del Reino. Escribe mensajes bíblicos breves e inspiradores para mujeres, hombres, hijos y familias latinas. Cita o parafrasea versículos. Voz cálida, llena de fe y esperanza. Solo español. NUNCA menciones moda ni Pasarela.',
+    tipo: 'fe',
+    voice: 'Eres la voz de Comunidad de Fe Maravillas Del Reino. Escribe declaraciones bíblicas de identidad para familias latinas. Voz cálida, llena de fe. Solo español. NUNCA menciones moda ni Pasarela.',
     hashtags: '#MaravillaDelReino #FeCristiana #Esperanza',
     temas: ['versículos bíblicos', 'fe', 'esperanza', 'familia cristiana', 'mujer de fe', 'hijos', 'amor de Dios', 'propósito divino', 'bendición', 'oración', 'gratitud a Dios', 'vida en Cristo'],
     branding: {
@@ -306,10 +307,14 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
   }
   try {
     // Generar caption con la voz del nicho
+    const esFe = pageConfig.tipo === 'fe';
+    const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
+    const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
+    const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const captionPayload = JSON.stringify({
-      model: 'claude-sonnet-4-6', max_tokens: 120,
-      system: pageConfig.voice + ' Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida'),
-      messages: [{ role: 'user', content: 'Tema: ' + (pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo) }]
+      model: 'claude-sonnet-4-6', max_tokens: 180,
+      system: pageConfig.voice + ' ' + (esFe ? formatoFe : formatoGenerico),
+      messages: [{ role: 'user', content: 'Tema: ' + temaActual }]
     });
     const caption = await new Promise((resolve, reject) => {
       const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
@@ -317,11 +322,31 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       r.on('error', reject); r.write(captionPayload); r.end();
     });
     if (!caption) { console.error('[MultiPage] Caption vacío para:', pageConfig.nombre); return; }
-    // Extraer COVER, CAPTION y HASHTAGS del formato estructurado
-    const coverMatch = caption.match(/COVER:\s*(.+)/i);
-    const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
-    const coverTitulo = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
-    const captionTexto = captionMatch ? captionMatch[1].trim() : caption;
+    // Extraer campos según tipo
+    let coverBuffer;
+    let captionTexto = '';
+    if (esFe) {
+      const afirmMatch    = caption.match(/AFIRMACION:\s*(.+)/i);
+      const heroMatch     = caption.match(/HERO:\s*(.+)/i);
+      const versMatch     = caption.match(/VERSICULO:\s*(.+)/i);
+      const refMatch      = caption.match(/REFERENCIA:\s*(.+)/i);
+      const capMatch      = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
+      const afirmacion    = afirmMatch  ? afirmMatch[1].trim()  : 'SOY AMADO';
+      const hero          = heroMatch   ? heroMatch[1].trim()   : 'POR DIOS';
+      const versiculo     = versMatch   ? versMatch[1].trim()   : '';
+      const referencia    = refMatch    ? refMatch[1].trim()    : '';
+      captionTexto        = capMatch    ? capMatch[1].trim()    : '';
+      console.log('[MultiPage-FE] Afirmacion:', afirmacion, '| Hero:', hero, '| Ref:', referencia);
+      coverBuffer = await generarCoverFe(pageConfig.branding, afirmacion, hero, versiculo, referencia);
+    } else {
+      const coverMatch  = caption.match(/COVER:\s*(.+)/i);
+      const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
+      const coverTitulo = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
+      captionTexto      = captionMatch ? captionMatch[1].trim() : caption;
+      coverBuffer = pageConfig.branding
+        ? await generarCoverGenerico(pageConfig.branding, coverTitulo)
+        : await generarCoverPasarela(titulo.substring(0, 80));
+    }
     console.log('[MultiPage] Caption generado para:', pageConfig.nombre, '— publicando cover...');
     // Intercambiar por page token largo
     let pageToken = pageConfig.token;
@@ -330,10 +355,6 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       const td = await tr.json();
       if (td.access_token) pageToken = td.access_token;
     } catch(e) {}
-    // Publicar cover
-    const coverBuffer = pageConfig.branding
-      ? await generarCoverGenerico(pageConfig.branding, coverTitulo)
-      : await generarCoverPasarela(titulo.substring(0, 80));
     const FormData = require('form-data');
     const form = new FormData();
     form.append('caption', captionTexto + '\n\n' + pageConfig.hashtags);
@@ -1405,6 +1426,122 @@ async function generarCoverPasarela(titulo = '', imageUrl = null) {
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.font = '13px PSSans';
   ctx.fillText('pasarelastudiointer.com  ·  @PASARELASTUDIO', W / 2, H - 26);
+
+  return canvas.toBuffer('image/png');
+}
+
+async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia) {
+  await setupFonts();
+  const W = 1080, H = 1080;
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
+
+  // Foto de naturaleza/fe de fondo
+  const pool = (branding.imagePool && branding.imagePool.length) ? branding.imagePool : [
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=90',
+    'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1080&q=90',
+  ];
+  const imgUrl = pool[Math.floor(Math.random() * pool.length)];
+  try {
+    const buf = await fetchBuf(imgUrl);
+    const img = await loadImage(buf);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    const scale = Math.max(W / img.width, H / img.height);
+    const sw = img.width * scale, sh = img.height * scale;
+    ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+  } catch(e) {
+    const fbGrad = ctx.createLinearGradient(0, 0, 0, H);
+    fbGrad.addColorStop(0, branding.colorBarra || '#0D2E6E');
+    fbGrad.addColorStop(1, '#0D0A0B');
+    ctx.fillStyle = fbGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Gradiente: oscuro arriba/abajo, claro al centro
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0,    'rgba(0,0,0,0.72)');
+  grad.addColorStop(0.18, 'rgba(0,0,0,0.18)');
+  grad.addColorStop(0.50, 'rgba(0,0,0,0.10)');
+  grad.addColorStop(0.72, 'rgba(0,0,0,0.45)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.90)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Barra superior azul
+  ctx.fillStyle = branding.colorBarra;
+  ctx.fillRect(0, 0, W, 88);
+  ctx.fillStyle = branding.colorAccento; // gold
+  ctx.font = 'bold 36px PSSerif';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 4;
+  ctx.fillText(branding.nombreMarca, W / 2, 56);
+  ctx.fillStyle = 'rgba(201,166,107,0.75)';
+  ctx.font = '16px PSSans';
+  ctx.fillText(branding.subtituloMarca, W / 2, 80);
+  ctx.shadowBlur = 0;
+
+  // Afirmación (línea pequeña arriba del hero)
+  const afirmUpper = (afirmacion || '').toUpperCase();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 34px PSSansBold';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 16;
+  ctx.fillText(afirmUpper, W / 2, 210);
+
+  // HERO — texto enorme en gold
+  const heroUpper = (hero || '').toUpperCase();
+  ctx.fillStyle = branding.colorAccento; // gold
+  ctx.font = 'bold 110px PSSerif';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.98)'; ctx.shadowBlur = 24;
+  // wrap si es muy largo
+  const heroWords = heroUpper.split(' ');
+  if (heroWords.length <= 2) {
+    ctx.fillText(heroUpper, W / 2, 340);
+  } else {
+    ctx.font = 'bold 80px PSSerif';
+    ctx.fillText(heroWords.slice(0, 2).join(' '), W / 2, 320);
+    ctx.fillText(heroWords.slice(2).join(' '), W / 2, 410);
+  }
+  ctx.shadowBlur = 0;
+
+  // Línea decorativa gold
+  ctx.strokeStyle = branding.colorAccento;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(80, 490); ctx.lineTo(W - 80, 490);
+  ctx.stroke();
+
+  // Versículo bíblico — texto en blanco, centrado
+  const versMax = versiculo ? (versiculo.length > 140 ? versiculo.substring(0, 137) + '...' : versiculo) : '';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'italic 26px PSSerif';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 12;
+  wrapText(ctx, '"' + versMax + '"', W / 2, 540, W - 160, 38);
+  ctx.shadowBlur = 0;
+
+  // Referencia bíblica en gold
+  if (referencia) {
+    ctx.fillStyle = branding.colorAccento;
+    ctx.font = 'bold 22px PSSansBold';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 8;
+    ctx.fillText('— ' + referencia + ' —', W / 2, H - 120);
+    ctx.shadowBlur = 0;
+  }
+
+  // Barra inferior azul
+  ctx.fillStyle = branding.colorBarra;
+  ctx.fillRect(0, H - 90, W, 90);
+  ctx.fillStyle = branding.colorAccento;
+  ctx.font = 'bold 22px PSSansBold';
+  ctx.textAlign = 'center';
+  ctx.fillText(branding.footerLinea1, W / 2, H - 52);
+  ctx.fillStyle = 'rgba(201,166,107,0.80)';
+  ctx.font = '17px PSSans';
+  ctx.fillText(branding.footerLinea2, W / 2, H - 26);
 
   return canvas.toBuffer('image/png');
 }
