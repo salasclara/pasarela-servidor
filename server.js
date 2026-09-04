@@ -1317,13 +1317,61 @@ const FASHION_POOLS = {
   ],
 };
 
-// Pexels — keywords por categoría — SIEMPRE con persona/modelo, nunca productos
+// Pexels — banco de queries específico de industria de moda/modelaje
+// Se selecciona una al azar por cada ciclo → máxima variedad visual siempre on-brand
+const PASARELA_QUERY_BANK = [
+  // Pasarela y runway
+  'fashion model runway catwalk portrait woman',
+  'Paris fashion week runway model designer',
+  'Milan fashion week catwalk model show',
+  'New York fashion week runway model',
+  'Latin America fashion show model elegant',
+  'fashion week backstage model portrait',
+  'catwalk runway fashion model professional',
+  'fashion show designer collection model',
+  'haute couture runway show model woman',
+  'fashion week front row glamour model',
+  // Modelos — diversidad de edades
+  'young fashion model editorial portrait studio',
+  'professional model portrait fashion studio',
+  'teen model fashion editorial elegant',
+  'child model fashion portrait studio',
+  'latina fashion model portrait professional',
+  'adult fashion model elegant professional portrait',
+  // Editorial y fotografía
+  'fashion editorial photography model portrait',
+  'editorial fashion model studio high fashion',
+  'fashion photographer studio model portrait',
+  'high fashion editorial glamour model woman',
+  'fashion photography model dramatic lighting',
+  // Maquillaje y look
+  'beauty makeup fashion model editorial portrait',
+  'makeup artist fashion model glamour',
+  'fashion model glam makeup editorial studio',
+  // Casting y formación
+  'model casting fashion audition portrait',
+  'modeling school fashion student portrait',
+  'fashion model posing training studio',
+  // Diseñadores
+  'fashion designer runway show model',
+  'couture fashion collection model show',
+  'fashion brand show model designer collection',
+];
+
 const PEXELS_QUERIES = {
-  MODA:          'fashion model woman portrait professional elegant',
-  BELLEZA:       'beauty model woman portrait glamour studio',
-  TALENTO:       'fashion model woman studio portrait professional',
+  MODA:          null, // usa PASARELA_QUERY_BANK aleatorio
+  BELLEZA:       'beauty model woman portrait glamour studio makeup',
+  TALENTO:       'fashion model woman studio portrait professional casting',
   EMPRENDIMIENTO:'latina entrepreneur woman professional confident portrait',
 };
+
+function getPexelsQuery(cat) {
+  if (!cat || cat === 'MODA') {
+    // Rotar por el banco completo para máxima variedad
+    return PASARELA_QUERY_BANK[Math.floor(Math.random() * PASARELA_QUERY_BANK.length)];
+  }
+  return PEXELS_QUERIES[cat] || PASARELA_QUERY_BANK[Math.floor(Math.random() * PASARELA_QUERY_BANK.length)];
+}
 
 // Cache Pexels por categoría — batch de 15, sin repetición
 const _pexelsQueues = {};
@@ -1342,7 +1390,7 @@ async function getImagenCategoria(cat, topic = null) {
       try {
         const baseQuery = topic
           ? `${topic} fashion model woman portrait`
-          : (PEXELS_QUERIES[key] || PEXELS_QUERIES.MODA);
+          : getPexelsQuery(key);
         const query = baseQuery;
         const page  = Math.floor(Math.random() * 5) + 1;
         const pUrl  = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=15&page=${page}&orientation=square`;
