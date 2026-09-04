@@ -1516,19 +1516,19 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   // Versículo bíblico — texto en blanco, centrado
   const versMax = versiculo ? (versiculo.length > 140 ? versiculo.substring(0, 137) + '...' : versiculo) : '';
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'italic 26px PSSerif';
+  ctx.font = 'italic 32px PSSerif';
   ctx.textAlign = 'center';
   ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 12;
-  wrapText(ctx, '"' + versMax + '"', W / 2, 540, W - 160, 38);
+  wrapText(ctx, '"' + versMax + '"', W / 2, 650, W - 140, 44);
   ctx.shadowBlur = 0;
 
   // Referencia bíblica en gold
   if (referencia) {
     ctx.fillStyle = branding.colorAccento;
-    ctx.font = 'bold 22px PSSansBold';
+    ctx.font = 'bold 28px PSSansBold';
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 8;
-    ctx.fillText('— ' + referencia + ' —', W / 2, H - 120);
+    ctx.fillText('— ' + referencia + ' —', W / 2, H - 102);
     ctx.shadowBlur = 0;
   }
 
