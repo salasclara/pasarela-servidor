@@ -1636,7 +1636,11 @@ async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
   // Fondo: DALL-E o imagePool fallback
   if (imgBuf) {
     try {
-      const img = await loadImage(imgBuf);
+      const fs = require('fs');
+      const tempPath = '/tmp/amar_es_' + Date.now() + '.png';
+      fs.writeFileSync(tempPath, imgBuf);
+      const img = await loadImage(tempPath);
+      try { fs.unlinkSync(tempPath); } catch(_) {}
       const scale = Math.max(W / img.width, H / img.height);
       const dw = img.width * scale, dh = img.height * scale;
       ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
