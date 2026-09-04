@@ -311,7 +311,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const esFe = pageConfig.tipo === 'fe';
     const esAmor = pageConfig.tipo === 'amor';
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
-    const formatoAmor = 'Responde en este formato exacto (sin comillas ni asteriscos):\nDALLE_PROMPT: [describe a cute chibi anime scene in English matching the topic, max 200 chars — focus on: cute chibi couple or Latina woman, specific romantic action (holding hands, sharing umbrella, looking at sunset, dancing), warm pastel setting, NO watercolor, NO text]\nCOVER: [frase poética corta máx 7 palabras, español]\nCAPTION: [2 o 3 líneas reflexivas para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
+    const formatoAmor = 'Responde en este formato exacto (sin comillas ni asteriscos):\nSCENE: [describe in English a specific romantic scene for the recurring Amor Es chibi couple — include: location, weather/lighting, specific action or interaction between the two characters, emotion expressed, season if relevant — be specific and visual, max 200 chars]\nCOVER: [frase poética corta máx 7 palabras, español]\nCAPTION: [2 o 3 líneas reflexivas para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const captionPayload = JSON.stringify({
@@ -342,13 +342,13 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       console.log('[MultiPage-FE] Afirmacion:', afirmacion, '| Hero:', hero, '| Ref:', referencia);
       coverBuffer = await generarCoverFe(pageConfig.branding, afirmacion, hero, versiculo, referencia);
     } else if (esAmor) {
-      const dalleMatch   = caption.match(/DALLE_PROMPT:\s*(.+)/i);
+      const sceneMatch   = caption.match(/SCENE:\s*(.+)/i);
       const coverMatch   = caption.match(/COVER:\s*(.+)/i);
       const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
-      const dallePrompt  = dalleMatch ? dalleMatch[1].trim() : 'cute anime chibi couple in love, romantic watercolor';
+      const dallePrompt  = sceneMatch ? sceneMatch[1].trim() : 'cute chibi couple sharing a tender moment, park, warm afternoon';
       const coverTitulo  = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
       captionTexto       = captionMatch ? captionMatch[1].trim() : caption;
-      console.log('[AmarEs] DALLE_PROMPT:', dallePrompt);
+      console.log('[AmarEs] SCENE:', dallePrompt);
       coverBuffer = await generarCoverAmarEs(pageConfig.branding, coverTitulo, dallePrompt);
     } else {
       const coverMatch  = caption.match(/COVER:\s*(.+)/i);
@@ -1559,6 +1559,20 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 }
 
 
+
+const MASTER_PROMPT_AMOR = `Use the provided reference as the primary visual reference for the recurring romantic couple.
+GOAL: Create a completely new romantic chibi illustration for the Facebook page "Amor Es". Each illustration must tell a specific, visually understandable story about love, companionship, affection, everyday relationships or emotional connection. The scene must change from post to post, but the two main characters must remain recognizable as the SAME recurring couple.
+CHARACTER CONSISTENCY — HIGHEST PRIORITY
+MALE CHARACTER: Young adult male. Short tousled dark brown hair. Large warm brown expressive eyes. Round cute chibi face. Soft rosy cheeks. Gentle facial features. Sweet, caring and affectionate personality.
+FEMALE CHARACTER: Young adult female. Very long, wavy dark brown hair. Large warm brown expressive eyes. Round cute chibi face. Soft rosy cheeks. Delicate feminine features. Small white and yellow flower hair accessories. Sweet, warm and affectionate personality. The white/yellow flowers in her hair are a PERMANENT visual signature.
+Maintain the same: facial design, hair identity, eye design, approximate proportions, chibi anatomy, age appearance, overall character identity. Do NOT redesign the couple for each scene. Their clothing CAN and SHOULD change naturally according to the activity, weather, season and location.
+NEW SCENE: {{SCENE}}
+The scene above is the main storytelling instruction. Do not create a generic romantic pose. Show the specific action, environment, interaction and emotion described in the scene. Body language should clearly communicate the relationship and emotion.
+VISUAL STYLE — AMOR ES: Cute romantic chibi anime illustration. Clean polished digital illustration. Flat soft colors. Smooth clean outlines. Big expressive eyes. Round chibi faces. Subtle rosy cheeks. Soft warm lighting. Pastel and warm color harmony. Gentle animated-film atmosphere. Whimsical romantic feeling. Cozy emotional storytelling. Beautiful but relatively simple backgrounds. Soft depth without becoming photorealistic.
+COMPOSITION: Square 1:1 composition optimized for a Facebook post. Only ONE couple. Characters should occupy an important portion of the image. Use the environment to support the story rather than overpower the characters.
+IMPORTANT — NO: text, words, letters, captions, quotes, typography, logos, watermark, watercolor texture, photorealism, photographic people, realistic skin, 3D render, hyperrealistic background, excessive background detail, additional couples.
+FINAL OBJECTIVE: The viewer should immediately recognize this is another AMOR ES illustration featuring the same couple, but discover a NEW romantic moment in every post.`;
+
 async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
   await setupFonts();
   const W = 1080, H = 1080;
@@ -1569,9 +1583,9 @@ async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
   let imgBuf = null;
   try {
     const dalleBody = JSON.stringify({
-      model: 'dall-e-3',
-      prompt: dallePrompt + ' Cute chibi anime illustration style, flat colors, cartoon art, big expressive eyes, round chibi faces, Studio Ghibli inspired, warm pastel tones, pink blush, soft background, clean artwork, no text, no letters, square 1:1 format.',
-      n: 1, size: '1024x1024', quality: 'standard', response_format: 'url'
+      model: 'gpt-image-1',
+      prompt: MASTER_PROMPT_AMOR.replace('{{SCENE}}', dallePrompt),
+      n: 1, size: '1024x1024', quality: 'medium'
     });
     const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -1579,11 +1593,11 @@ async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
       body: dalleBody
     });
     const dalleJson = await dalleRes.json();
-    if (dalleJson.data && dalleJson.data[0] && dalleJson.data[0].url) {
-      imgBuf = await fetchBuf(dalleJson.data[0].url);
-      console.log('[AmarEs] DALL-E OK');
+    if (dalleJson.data && dalleJson.data[0] && dalleJson.data[0].b64_json) {
+      imgBuf = Buffer.from(dalleJson.data[0].b64_json, 'base64');
+      console.log('[AmarEs] gpt-image-1 OK, buf size:', imgBuf.length);
     } else {
-      console.error('[AmarEs] DALL-E error:', JSON.stringify(dalleJson).substring(0,200));
+      console.error('[AmarEs] gpt-image-1 error:', JSON.stringify(dalleJson).substring(0,300));
     }
   } catch(e) { console.error('[AmarEs] DALL-E catch:', e.message); }
 
