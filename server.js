@@ -310,6 +310,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     // Generar caption con la voz del nicho
     const esFe = pageConfig.tipo === 'fe';
     const esAmor = pageConfig.tipo === 'amor';
+    console.log('[MultiPage] tipo:', pageConfig.tipo, '| esFe:', esFe, '| esAmor:', esAmor, '| nombre:', pageConfig.nombre);
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
     const formatoAmor = 'Responde en este formato exacto (sin comillas ni asteriscos):\nSCENE: [describe in English a specific romantic scene for the recurring Amor Es chibi couple — include: location, weather/lighting, specific action or interaction between the two characters, emotion expressed, season if relevant — be specific and visual, max 200 chars]\nCOVER: [frase poética corta máx 7 palabras, español]\nCAPTION: [2 o 3 líneas reflexivas para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
@@ -349,6 +350,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       const coverTitulo  = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
       captionTexto       = captionMatch ? captionMatch[1].trim() : caption;
       console.log('[AmarEs] SCENE:', dallePrompt);
+      console.log('[AmarEs] Llamando gpt-image-1...');
       coverBuffer = await generarCoverAmarEs(pageConfig.branding, coverTitulo, dallePrompt);
     } else {
       const coverMatch  = caption.match(/COVER:\s*(.+)/i);
