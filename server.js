@@ -539,13 +539,12 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // GET /test-cover — publicar cover editorial manual
+  // GET /test-cover — preview cover sin publicar en Facebook
   if (req.method === 'GET' && req.url === '/test-cover') {
    try {
      const buffer = await generarCoverPasarela('Elegancia latina. Poder. Transformación.');
-     await publicarFotoBuffer(buffer, '✨ Pasarela Studio Internacional — donde el talento se convierte en arte. Dallas, TX #PasarelaStudio #Moda #Modelaje');
-     res.writeHead(200, { 'Content-Type': 'application/json' });
-     res.end(JSON.stringify({ ok: true, mensaje: 'Cover publicada en Facebook' }));
+     res.writeHead(200, { 'Content-Type': 'image/png' });
+     res.end(buffer);
    } catch(e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: false, error: e.message }));
