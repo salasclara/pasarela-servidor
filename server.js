@@ -1322,61 +1322,59 @@ async function generarCoverPasarela(titulo = '', imageUrl = null) {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Gradiente suave — foto visible, texto legible
+  // Gradiente muy suave — foto bien visible, texto limpio
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(0,0,0,0.42)');
-  grad.addColorStop(0.28, 'rgba(0,0,0,0.06)');
-  grad.addColorStop(0.60, 'rgba(0,0,0,0.22)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.90)');
+  grad.addColorStop(0, 'rgba(0,0,0,0.28)');
+  grad.addColorStop(0.25, 'rgba(0,0,0,0.04)');
+  grad.addColorStop(0.58, 'rgba(0,0,0,0.10)');
+  grad.addColorStop(0.80, 'rgba(0,0,0,0.62)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.92)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Barra superior burgundy
-  ctx.fillStyle = '#7B2D3E';
-  ctx.fillRect(0, 0, W, 95);
+  // Barra superior fucsia
+  ctx.fillStyle = '#FF1493';
+  ctx.fillRect(0, 0, W, 88);
 
   // PASARELA
-  ctx.fillStyle = '#E8C5B0';
-  ctx.font = 'bold 54px PSSerif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 50px PSSerif';
   ctx.textAlign = 'center';
-  ctx.fillText('P A S A R E L A', W / 2, 62);
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 6;
+  ctx.fillText('P A S A R E L A', W / 2, 58);
 
-  // TU REVISTA
-  ctx.fillStyle = '#C9A66B';
-  ctx.font = '22px PSSans';
-  ctx.fillText('T U   R E V I S T A', W / 2, 88);
+  // STUDIO INTERNACIONAL
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.font = '19px PSSans';
+  ctx.shadowBlur = 4;
+  ctx.fillText('S T U D I O   I N T E R N A C I O N A L', W / 2, 82);
+  ctx.shadowBlur = 0;
 
-  // Línea gold
-  ctx.strokeStyle = '#C9A66B';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(60, 105); ctx.lineTo(W - 60, 105);
-  ctx.stroke();
-
-  // Título principal
+  // Título principal con sombra fuerte para legibilidad
   if (titulo) {
     const texto = titulo.toUpperCase().split(' ').slice(0, 10).join(' ');
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 66px PSSerif';
+    ctx.font = 'bold 64px PSSerif';
     ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 14;
-    wrapText(ctx, texto, W / 2, H - 230, W - 120, 74);
+    ctx.shadowColor = 'rgba(0,0,0,0.98)';
+    ctx.shadowBlur = 22;
+    wrapText(ctx, texto, W / 2, H - 210, W - 120, 72);
     ctx.shadowBlur = 0;
   }
 
-  // Barra inferior
-  ctx.fillStyle = '#7B2D3E';
-  ctx.fillRect(0, H - 85, W, 85);
+  // Barra inferior fucsia
+  ctx.fillStyle = '#FF1493';
+  ctx.fillRect(0, H - 80, W, 80);
 
-  ctx.fillStyle = '#C9A66B';
-  ctx.font = 'bold 17px PSSansBold';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 16px PSSansBold';
   ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  DALLAS, TX', W / 2, H - 50);
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  DALLAS, TX', W / 2, H - 48);
 
-  ctx.fillStyle = '#E8C5B0';
-  ctx.font = '14px PSSans';
-  ctx.fillText('pasarelastudiointer.com  ·  @PASARELASTUDIO', W / 2, H - 28);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '13px PSSans';
+  ctx.fillText('pasarelastudiointer.com  ·  @PASARELASTUDIO', W / 2, H - 26);
 
   return canvas.toBuffer('image/png');
 }
@@ -1412,17 +1410,18 @@ async function generarCoverGenerico(branding, titulo = '') {
     ctx.fillRect(0, 0, W, H);
   }
 
-  // Gradiente suave — foto visible, texto legible
+  // Gradiente muy suave — foto visible, texto limpio
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(0,0,0,0.42)');
-  grad.addColorStop(0.28, 'rgba(0,0,0,0.06)');
-  grad.addColorStop(0.60, 'rgba(0,0,0,0.22)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.90)');
+  grad.addColorStop(0, 'rgba(0,0,0,0.28)');
+  grad.addColorStop(0.25, 'rgba(0,0,0,0.04)');
+  grad.addColorStop(0.58, 'rgba(0,0,0,0.10)');
+  grad.addColorStop(0.80, 'rgba(0,0,0,0.62)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.92)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Barra superior con color de la marca
-  ctx.fillStyle = branding.colorBarra;
+  // Barra superior fucsia
+  ctx.fillStyle = '#FF1493';
   ctx.fillRect(0, 0, W, 95);
 
   // Nombre de la marca
@@ -1449,14 +1448,14 @@ async function generarCoverGenerico(branding, titulo = '') {
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 66px PSSerif';
     ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 14;
-    wrapText(ctx, texto, W / 2, H - 230, W - 120, 74);
+    ctx.shadowColor = 'rgba(0,0,0,0.98)';
+    ctx.shadowBlur = 22;
+    wrapText(ctx, texto, W / 2, H - 210, W - 120, 72);
     ctx.shadowBlur = 0;
   }
 
-  // Barra inferior
-  ctx.fillStyle = branding.colorBarra;
+  // Barra inferior fucsia
+  ctx.fillStyle = '#FF1493';
   ctx.fillRect(0, H - 85, W, 85);
 
   ctx.fillStyle = branding.colorAccento;
