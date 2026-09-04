@@ -311,7 +311,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const esFe = pageConfig.tipo === 'fe';
     const esAmor = pageConfig.tipo === 'amor';
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
-    const formatoAmor = 'Responde en este formato exacto (sin comillas ni asteriscos):\nDALLE_PROMPT: [describe romantic chibi anime scene in English matching the topic, max 200 chars, cute couple or woman, soft watercolor, no text]\nCOVER: [frase poética corta máx 7 palabras, español]\nCAPTION: [2 o 3 líneas reflexivas para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
+    const formatoAmor = 'Responde en este formato exacto (sin comillas ni asteriscos):\nDALLE_PROMPT: [describe a cute chibi anime scene in English matching the topic, max 200 chars — focus on: cute chibi couple or Latina woman, specific romantic action (holding hands, sharing umbrella, looking at sunset, dancing), warm pastel setting, NO watercolor, NO text]\nCOVER: [frase poética corta máx 7 palabras, español]\nCAPTION: [2 o 3 líneas reflexivas para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio');
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase corta impactante de máx 8 palabras relacionada al tema, en español]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const captionPayload = JSON.stringify({
@@ -1570,7 +1570,7 @@ async function generarCoverAmarEs(branding, coverTitulo, dallePrompt) {
   try {
     const dalleBody = JSON.stringify({
       model: 'dall-e-3',
-      prompt: dallePrompt + ' Anime chibi illustration, soft watercolor style, pastel pink rose gold palette, warm romantic lighting, no text, no letters, square format.',
+      prompt: dallePrompt + ' Cute chibi anime illustration style, flat colors, cartoon art, big expressive eyes, round chibi faces, Studio Ghibli inspired, warm pastel tones, pink blush, soft background, clean artwork, no text, no letters, square 1:1 format.',
       n: 1, size: '1024x1024', quality: 'standard', response_format: 'url'
     });
     const dalleRes = await fetch('https://api.openai.com/v1/images/generations', {
