@@ -1600,18 +1600,53 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 
 
 
-const MASTER_PROMPT_AMOR = `Use the provided reference as the primary visual reference for the recurring romantic couple.
-GOAL: Create a completely new romantic chibi illustration for the Facebook page "Amor Es". Each illustration must tell a specific, visually understandable story about love, companionship, affection, everyday relationships or emotional connection. The scene must change from post to post, but the two main characters must remain recognizable as the SAME recurring couple.
-CHARACTER CONSISTENCY — HIGHEST PRIORITY
-MALE CHARACTER: Young adult male. Short tousled dark brown hair. Large warm brown expressive eyes. Round cute chibi face. Soft rosy cheeks. Gentle facial features. Sweet, caring and affectionate personality.
-FEMALE CHARACTER: Young adult female. Very long, wavy dark brown hair. Large warm brown expressive eyes. Round cute chibi face. Soft rosy cheeks. Delicate feminine features. Small white and yellow flower hair accessories. Sweet, warm and affectionate personality. The white/yellow flowers in her hair are a PERMANENT visual signature.
-Maintain the same: facial design, hair identity, eye design, approximate proportions, chibi anatomy, age appearance, overall character identity. Do NOT redesign the couple for each scene. Their clothing CAN and SHOULD change naturally according to the activity, weather, season and location.
-NEW SCENE: {{SCENE}}
-The scene above is the main storytelling instruction. Do not create a generic romantic pose. Show the specific action, environment, interaction and emotion described in the scene. Body language should clearly communicate the relationship and emotion.
-VISUAL STYLE — AMOR ES: Cute romantic chibi anime illustration. Clean polished digital illustration. Flat soft colors. Smooth clean outlines. Big expressive eyes. Round chibi faces. Subtle rosy cheeks. Soft warm lighting. Pastel and warm color harmony. Gentle animated-film atmosphere. Whimsical romantic feeling. Cozy emotional storytelling. Beautiful but relatively simple backgrounds. Soft depth without becoming photorealistic.
-COMPOSITION: Square 1:1 composition optimized for a Facebook post. Only ONE couple. Characters should occupy an important portion of the image. Use the environment to support the story rather than overpower the characters.
-IMPORTANT — NO: text, words, letters, captions, quotes, typography, logos, watermark, watercolor texture, photorealism, photographic people, realistic skin, 3D render, hyperrealistic background, excessive background detail, additional couples.
-FINAL OBJECTIVE: The viewer should immediately recognize this is another AMOR ES illustration featuring the same couple, but discover a NEW romantic moment in every post.`;
+const MASTER_PROMPT_AMOR = `AMAR ES™ — PREMIUM CHIBI VISUAL STYLE
+
+Create a premium, highly polished romantic chibi anime illustration.
+
+CHARACTERS — maintain identity across every post:
+Male:
+- short tousled dark brown hair
+- large expressive warm brown eyes
+- soft rounded chibi face, rosy cheeks
+- youthful adult appearance
+
+Female:
+- very long flowing dark brown hair
+- large expressive warm brown eyes
+- soft rounded chibi face, rosy cheeks
+- small white and yellow flowers in her hair (permanent visual identity — never omit)
+- youthful adult appearance
+
+VISUAL QUALITY:
+Premium high-detail digital anime illustration.
+Beautiful polished chibi character rendering.
+Rich but harmonious colors.
+Detailed hair with soft highlights and fabric folds.
+Beautiful expressive eyes with soft dimensional shading.
+Warm cinematic lighting with atmospheric glow and natural depth.
+Beautiful environmental details with subtle depth of field.
+Professional editorial illustration — premium animated-film quality.
+Romantic cinematic composition with rich light and shadow.
+The environment must support the emotional story.
+Use beautiful lighting, atmospheric perspective and environmental details appropriate to the scene.
+Do NOT make the background plain or generic.
+
+COMPOSITION:
+Square 1:1 format.
+Characters are the clear focal point.
+The lower 30% of the image should have slightly softer lighting
+to allow elegant white text to be placed over it — but keep it
+beautiful, NOT plain or washed out. Subtle atmospheric depth only.
+
+SCENE:
+{{SCENE}}
+
+IMPORTANT:
+Preserve character identity while naturally changing clothing, pose and environment per scene.
+Generate ONLY the illustration.
+NO text. NO typography. NO captions. NO logo. NO watermark.
+`;
 
 async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   await setupFonts();
@@ -1670,77 +1705,73 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
     }
   }
 
-  // Gradiente suave
+  // Degradado sutil — solo en la parte superior e inferior para texto
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0,    'rgba(0,0,0,0.50)');
-  grad.addColorStop(0.18, 'rgba(0,0,0,0.06)');
-  grad.addColorStop(0.45, 'rgba(0,0,0,0.04)');
-  grad.addColorStop(0.60, 'rgba(0,0,0,0.38)');
-  grad.addColorStop(0.80, 'rgba(0,0,0,0.68)');
-  grad.addColorStop(1,    'rgba(0,0,0,0.85)');
+  grad.addColorStop(0,    'rgba(0,0,0,0.38)');
+  grad.addColorStop(0.12, 'rgba(0,0,0,0.04)');
+  grad.addColorStop(0.50, 'rgba(0,0,0,0.00)');
+  grad.addColorStop(0.62, 'rgba(0,0,0,0.18)');
+  grad.addColorStop(0.78, 'rgba(0,0,0,0.58)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.80)');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Barra superior
-  ctx.fillStyle = branding.colorBarra;
-  ctx.fillRect(0, 0, W, 88);
-  ctx.fillStyle = branding.colorAccento;
-  ctx.font = 'bold 38px PSSerif';
+  // Marca flotante — top center, sin barra sólida
   ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
-  ctx.fillText(branding.nombreMarca, W/2, 54);
-  ctx.fillStyle = 'rgba(232,197,176,0.75)';
-  ctx.font = '15px PSSans';
-  ctx.fillText(branding.subtituloMarca, W/2, 78);
+  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 8;
+  ctx.fillStyle = branding.colorAccento || '#C9A66B';
+  ctx.font = 'bold 30px PSSerif';
+  ctx.fillText(branding.nombreMarca, W/2, 52);
+  ctx.fillStyle = 'rgba(255,255,255,0.70)';
+  ctx.font = '13px PSSans';
+  ctx.letterSpacing = '2px';
+  ctx.fillText((branding.subtituloMarca || '').toUpperCase(), W/2, 72);
   ctx.shadowBlur = 0;
 
-  // GANCHO — grande, zona baja de la ilustración
+  // GANCHO — bold, zona baja
   const ganchoUpper = (gancho || '').toUpperCase();
   ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 62px PSSerif';
   ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 20;
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 22;
   const gWords = ganchoUpper.split(' ');
   let gLine = '', gLines = [];
   for (const w of gWords) {
     const test = gLine + w + ' ';
-    if (ctx.measureText(test).width > W-120 && gLine) { gLines.push(gLine.trim()); gLine = w+' '; }
+    if (ctx.measureText(test).width > W - 100 && gLine) { gLines.push(gLine.trim()); gLine = w + ' '; }
     else gLine = test;
   }
   if (gLine.trim()) gLines.push(gLine.trim());
-  const gStartY = 720 - ((gLines.length-1)*70)/2;
-  gLines.slice(0,3).forEach((l,i) => ctx.fillText(l, W/2, gStartY + i*70));
+  const lineH = 70;
+  const gStartY = 790 - ((gLines.length - 1) * lineH) / 2;
+  gLines.slice(0, 3).forEach((l, i) => ctx.fillText(l, W / 2, gStartY + i * lineH));
   ctx.shadowBlur = 0;
 
-  // Línea decorativa bajo el GANCHO
-  const gEndY = gStartY + gLines.length * 70 - 20;
+  // Línea gold decorativa
+  const gEndY = gStartY + gLines.length * lineH - 14;
   ctx.strokeStyle = branding.colorAccento || '#C9A66B';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(W/2 - 90, gEndY + 8);
-  ctx.lineTo(W/2 + 90, gEndY + 8);
+  ctx.moveTo(W / 2 - 80, gEndY + 6);
+  ctx.lineTo(W / 2 + 80, gEndY + 6);
   ctx.stroke();
 
-  // REFLEXION — pequeña, italic, debajo del gancho
+  // REFLEXION — italic, debajo de la línea
   if (reflexion) {
-    ctx.fillStyle = 'rgba(255,255,255,0.90)';
-    ctx.font = 'italic 26px PSSerif';
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.font = 'italic 25px PSSerif';
     ctx.textAlign = 'center';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 10;
-    ctx.fillText(reflexion, W/2, gEndY + 42);
+    ctx.fillText(reflexion, W / 2, gEndY + 38);
     ctx.shadowBlur = 0;
   }
 
-  // Barra inferior
-  ctx.fillStyle = branding.colorBarra;
-  ctx.fillRect(0, H-88, W, 88);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 22px PSSansBold';
+  // Footer mínimo flotante — sin barra sólida
+  ctx.fillStyle = 'rgba(255,255,255,0.60)';
+  ctx.font = '14px PSSans';
   ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6;
-  ctx.fillText(branding.footerLinea1, W/2, H-52);
-  ctx.font = '17px PSSans';
-  ctx.fillText(branding.footerLinea2, W/2, H-26);
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
+  ctx.fillText((branding.footerLinea2 || '@AmarEs'), W / 2, H - 18);
   ctx.shadowBlur = 0;
 
   return canvas.toBuffer('image/png');
