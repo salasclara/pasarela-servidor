@@ -1734,8 +1734,32 @@ async function autoPublicarPaginasExtra() {
   }
   console.log('[AutoPublish] Ciclo completado');
 }
-setInterval(autoPublicarPaginasExtra, 6 * 60 * 60 * 1000);
-console.log('[AutoPublish] Scheduler activado — publica cada 6 horas');
+// ── SCHEDULER HORARIO FIJO: 9am, 3pm, 9pm (Dallas Central Time) ──────────────
+const HORAS_PUBLICACION = [9, 15, 21]; // hora en Central Time
+let _ultimaHoraPublicada = -1;
+
+function horaActualCentral() {
+  // UTC-5 (CDT verano) / UTC-6 (CST invierno) — Railway corre en UTC
+  const ahora = new Date();
+  const utcH = ahora.getUTCHours();
+  const mes = ahora.getUTCMonth(); // 0=ene, 11=dic
+  // CDT (UTC-5): mar 2do dom → nov 1er dom; resto CST (UTC-6)
+  const esCDT = mes >= 2 && mes <= 10;
+  const offset = esCDT ? -5 : -6;
+  return ((utcH + offset) + 24) % 24;
+}
+
+setInterval(async () => {
+  const hora = horaActualCentral();
+  const min  = new Date().getUTCMinutes();
+  if (HORAS_PUBLICACION.includes(hora) && min < 10 && hora !== _ultimaHoraPublicada) {
+    _ultimaHoraPublicada = hora;
+    console.log(`[AutoPublish] ⏰ Hora programada: ${hora}:00 Central — iniciando ciclo`);
+    await autoPublicarPaginasExtra();
+  }
+}, 60 * 1000); // revisa cada minuto
+
+console.log('[AutoPublish] Scheduler activado — publica a las 9am, 3pm y 9pm (Dallas Central Time)');
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
