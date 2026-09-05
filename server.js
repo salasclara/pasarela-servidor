@@ -810,10 +810,8 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   // ── HEADER flotante — "AMAR ES" sobre la imagen ───────────────────────────
   ctx.textAlign = 'center';
   ctx.shadowColor = 'rgba(0,0,0,0.70)'; ctx.shadowBlur = 12;
-  ctx.font = `bold 48px ${hFont}`; ctx.fillStyle = '#FFFFFF';
-  ctx.fillText((branding.nombreMarca || 'AMAR ES').toUpperCase(), 540, 58);
-  ctx.font = `12px Roboto`; ctx.fillStyle = 'rgba(245,237,224,0.70)';
-  ctx.fillText((branding.subtituloMarca || 'AMOR · RELACIONES · BIENESTAR').toUpperCase(), 540, 78);
+  ctx.font = `bold 60px ${hFont}`; ctx.fillStyle = '#FFFFFF';
+  ctx.fillText((branding.nombreMarca || 'AMAR ES').toUpperCase(), 540, 62);
   ctx.shadowBlur = 0;
 
   // ── GANCHO principal — tercio inferior, serif premium ────────────────────
@@ -822,7 +820,7 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   let lineas = []; let linea = '';
   for (const w of palabras) {
     const p = linea ? linea + ' ' + w : w;
-    if (ctx.measureText(p).width > 900) { if (linea) lineas.push(linea); linea = w; } else linea = p;
+    if (ctx.measureText(p).width > 820) { if (linea) lineas.push(linea); linea = w; } else linea = p;
   }
   if (linea) lineas.push(linea);
   if (lineas.length >= 3) { heroSize = 62; ctx.font = `bold ${heroSize}px ${hFont}`; }
@@ -835,16 +833,16 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
 
   // ── REFLEXIÓN — itálica, íntima, debajo del gancho ───────────────────────
   if (reflexion) {
-    ctx.font = `italic ${_cormorantLoaded ? 28 : 24}px ${hFont}`;
+    ctx.font = `italic ${_cormorantLoaded ? 25 : 22}px ${hFont}`;
     ctx.fillStyle = CREMA;
-    ctx.fillText(reflexion.toLowerCase(), 540, heroY + 38);
-    heroY += 38;
+    ctx.fillText(reflexion.toLowerCase(), 540, heroY + 30);
+    heroY += 30;
   }
   ctx.shadowBlur = 0;
 
   // ── FOOTER integrado — texto flotante, sin barra ──────────────────────────
   ctx.font = '13px Roboto'; ctx.fillStyle = 'rgba(245,237,224,0.65)';
-  ctx.fillText(branding.footerLinea1 || 'Amar es · Para la mujer latina', 540, 1052);
+  ctx.fillText('AMOR · RELACIONES · BIENESTAR', 540, 1052);
 
   return canvas.toBuffer('image/png');
 }
