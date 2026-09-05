@@ -655,10 +655,13 @@ async function generarCoverFancy(branding, titular, subtitulo) {
 }
 
 async function generarCoverTrabajando(branding, coverTitulo) {
-  const canvas = createCanvas(1080, 1080);
-  const ctx    = canvas.getContext('2d');
-  ctx.fillStyle = branding.colorBarra || '#1A3A2E';
-  ctx.fillRect(0, 0, 1080, 1080);
+  const canvas  = createCanvas(1080, 1080);
+  const ctx     = canvas.getContext('2d');
+  const VERDE   = '#1A3A2E';
+  const DORADO  = branding.colorAccento || '#C9A66B';
+
+  // PASO 1: fondo fallback + foto protagonista full canvas
+  ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, 1080);
   const imgUrl = await getImagenCategoria('DEFAULT', getQueryTrabajando());
   if (imgUrl) {
     try {
@@ -666,30 +669,47 @@ async function generarCoverTrabajando(branding, coverTitulo) {
       if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1; }
     } catch(e) { console.error('[CoverTrabajando] imagen:', e.message); }
   }
-  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
-  grad.addColorStop(0,    'rgba(26,58,46,0.0)');
-  grad.addColorStop(0.50, 'rgba(26,58,46,0.08)');
-  grad.addColorStop(0.70, 'rgba(26,58,46,0.40)');
-  grad.addColorStop(1,    'rgba(26,58,46,0.88)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
-  ctx.fillStyle = 'rgba(26,58,46,0.72)'; ctx.fillRect(0, 0, 1080, 120);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 6);
-  ctx.font = 'bold 18px Roboto'; ctx.textAlign = 'center';
-  ctx.fillStyle = branding.colorAccento || '#C9A66B';
-  ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 40);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 36px Roboto';
-  ctx.fillText(branding.nombreMarca || 'TRABAJANDO EN CASA', 540, 84);
-  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 16;
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 80px Roboto';
-  const cw = coverTitulo.toUpperCase().split(' '); let cl = ''; let cy = 740;
-  for (const w of cw) { const t = cl ? cl+' '+w : w; if (ctx.measureText(t).width > 920) { ctx.fillText(cl, 540, cy); cl = w; cy += 93; } else cl = t; }
-  if (cl) ctx.fillText(cl, 540, cy);
+
+  // PASO 2: gradiente SOLO zona inferior — foto visible arriba
+  const gradBot = ctx.createLinearGradient(0, 560, 0, 1080);
+  gradBot.addColorStop(0,    'rgba(15,40,28,0.0)');
+  gradBot.addColorStop(0.30, 'rgba(15,40,28,0.45)');
+  gradBot.addColorStop(0.70, 'rgba(15,40,28,0.78)');
+  gradBot.addColorStop(1,    'rgba(15,40,28,0.94)');
+  ctx.fillStyle = gradBot; ctx.fillRect(0, 560, 1080, 520);
+
+  // PASO 3: HEADER sólido sobre foto
+  ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, 88);
+  ctx.fillStyle = DORADO; ctx.fillRect(0, 0, 1080, 5);
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 17px Roboto'; ctx.fillStyle = DORADO;
+  ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 33);
+  ctx.font = 'bold 44px Roboto'; ctx.fillStyle = '#FFFFFF';
+  ctx.fillText((branding.nombreMarca || 'TRABAJANDO EN CASA').toUpperCase(), 540, 76);
+
+  // PASO 4: texto cover — tercio inferior, blanco bold con sombra
+  ctx.shadowColor = 'rgba(0,0,0,0.92)'; ctx.shadowBlur = 20;
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 78px Roboto';
+  const palabras = coverTitulo.toUpperCase().split(' ');
+  let linea = ''; let lineas = [];
+  for (const w of palabras) {
+    const prueba = linea ? linea + ' ' + w : w;
+    if (ctx.measureText(prueba).width > 940) { if (linea) lineas.push(linea); linea = w; }
+    else linea = prueba;
+  }
+  if (linea) lineas.push(linea);
+  let textY = 730;
+  for (const l of lineas) { ctx.fillText(l, 540, textY); textY += 90; }
   ctx.shadowBlur = 0;
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 1073, 1080, 6);
-  ctx.fillStyle = 'rgba(240,245,232,0.75)'; ctx.font = '15px Roboto';
-  ctx.fillText(branding.footerLinea1 || 'Trabajando En Casa · Emprendedoras Latinas', 540, 1051);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = '13px Roboto';
-  ctx.fillText(branding.footerLinea2 || '@TrabajarDesdeCasa', 540, 1067);
+
+  // PASO 5: FOOTER sólido sobre foto
+  ctx.fillStyle = VERDE; ctx.fillRect(0, 988, 1080, 92);
+  ctx.fillStyle = DORADO; ctx.fillRect(0, 1075, 1080, 5);
+  ctx.fillStyle = 'rgba(240,248,236,0.88)'; ctx.font = '16px Roboto';
+  ctx.fillText(branding.footerLinea1 || 'Trabajando En Casa · Emprendedoras Latinas', 540, 1018);
+  ctx.fillStyle = DORADO; ctx.font = 'bold 14px Roboto';
+  ctx.fillText(branding.footerLinea2 || '@TrabajarDesdeCasa', 540, 1039);
+
   return canvas.toBuffer('image/png');
 }
 
