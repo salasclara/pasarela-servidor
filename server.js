@@ -397,20 +397,21 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = branding.colorBarra || '#0D2E6E'; ctx.fillRect(0, 0, 1080, 1080);
-  const imgPool = branding.imagePool || [];
-  if (imgPool.length) {
+  const imgUrlFe = await getImagenCategoria('DEFAULT', 'christian faith sunrise nature peaceful light');
+  if (imgUrlFe) {
     try {
-      const buf = await descargarImagen(imgPool[Math.floor(Math.random() * imgPool.length)]);
-      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.28; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
-    } catch(e) {}
+      const buf = await descargarImagen(imgUrlFe);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.38; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) { console.error('[CoverFe] imagen error:', e.message); }
   }
   const grad = ctx.createLinearGradient(0, 0, 0, 1080);
-  grad.addColorStop(0, 'rgba(13,46,110,0.5)'); grad.addColorStop(1, 'rgba(13,46,110,0.92)');
+  grad.addColorStop(0, 'rgba(13,46,110,0.65)'); grad.addColorStop(1, 'rgba(13,46,110,0.97)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 8);
   ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText((branding.subtituloMarca || '').toUpperCase(), 540, 55);
   ctx.font = 'bold 34px sans-serif'; ctx.fillText(branding.nombreMarca || 'MARAVILLAS DEL REINO', 540, 94);
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
   ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 78px sans-serif';
   ctx.fillText(afirmacion.toUpperCase().substring(0, 18), 540, 420);
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 108px sans-serif';
@@ -504,20 +505,22 @@ async function generarCoverGenerico(branding, coverTitulo) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = branding.colorBarra || '#1A3A2E'; ctx.fillRect(0, 0, 1080, 1080);
-  if (branding.imagePool && branding.imagePool.length) {
+  const imgUrlGen = await getImagenCategoria('DEFAULT', 'home office workspace latina entrepreneur productive');
+  if (imgUrlGen) {
     try {
-      const buf = await descargarImagen(branding.imagePool[Math.floor(Math.random() * branding.imagePool.length)]);
-      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.3; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
-    } catch(e) {}
+      const buf = await descargarImagen(imgUrlGen);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.4; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) { console.error('[CoverGen] imagen error:', e.message); }
   }
   const grad = ctx.createLinearGradient(0, 0, 0, 1080);
-  grad.addColorStop(0, 'rgba(26,58,46,0.4)'); grad.addColorStop(1, 'rgba(26,58,46,0.92)');
+  grad.addColorStop(0, 'rgba(26,58,46,0.65)'); grad.addColorStop(1, 'rgba(26,58,46,0.97)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 6);
   ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
   ctx.fillText(branding.subtituloMarca || '', 540, 52);
   ctx.font = 'bold 36px sans-serif'; ctx.fillText(branding.nombreMarca || '', 540, 96);
-  ctx.fillStyle = branding.colorTexto || '#F0F5E8'; ctx.font = 'bold 80px sans-serif';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
+  ctx.fillStyle = branding.colorTexto || '#FFFFFF'; ctx.font = 'bold 80px sans-serif';
   const cw = coverTitulo.toUpperCase().split(' '); let cl = ''; let cy = 550;
   for (const w of cw) { const t = cl ? cl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(cl, 540, cy); cl = w; cy += 93; } else cl = t; }
   if (cl) ctx.fillText(cl, 540, cy);
