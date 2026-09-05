@@ -670,22 +670,24 @@ async function generarCoverTrabajando(branding, coverTitulo) {
     } catch(e) { console.error('[CoverTrabajando] imagen:', e.message); }
   }
 
-  // PASO 2: gradiente SOLO zona inferior — foto visible arriba
-  const gradBot = ctx.createLinearGradient(0, 560, 0, 1080);
-  gradBot.addColorStop(0,    'rgba(15,40,28,0.0)');
-  gradBot.addColorStop(0.30, 'rgba(15,40,28,0.45)');
-  gradBot.addColorStop(0.70, 'rgba(15,40,28,0.78)');
-  gradBot.addColorStop(1,    'rgba(15,40,28,0.94)');
-  ctx.fillStyle = gradBot; ctx.fillRect(0, 560, 1080, 520);
+  // PASO 2: gradiente SOLO zona inferior — NEGRO puro, foto visible arriba
+  const gradBot = ctx.createLinearGradient(0, 540, 0, 1080);
+  gradBot.addColorStop(0,    'rgba(0,0,0,0.0)');
+  gradBot.addColorStop(0.28, 'rgba(0,0,0,0.42)');
+  gradBot.addColorStop(0.65, 'rgba(0,0,0,0.76)');
+  gradBot.addColorStop(1,    'rgba(0,0,0,0.92)');
+  ctx.fillStyle = gradBot; ctx.fillRect(0, 540, 1080, 540);
 
-  // PASO 3: HEADER sólido sobre foto
-  ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, 88);
+  // PASO 3: HEADER sólido sobre foto — título PRIMERO grande, subtítulo debajo
+  ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, 90);
   ctx.fillStyle = DORADO; ctx.fillRect(0, 0, 1080, 5);
   ctx.textAlign = 'center';
-  ctx.font = 'bold 17px Roboto'; ctx.fillStyle = DORADO;
-  ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 33);
-  ctx.font = 'bold 44px Roboto'; ctx.fillStyle = '#FFFFFF';
-  ctx.fillText((branding.nombreMarca || 'TRABAJANDO EN CASA').toUpperCase(), 540, 76);
+  // TÍTULO principal — blanco bold grande
+  ctx.font = 'bold 46px Roboto'; ctx.fillStyle = '#FFFFFF';
+  ctx.fillText((branding.nombreMarca || 'TRABAJANDO EN CASA').toUpperCase(), 540, 52);
+  // subtítulo — dorado pequeño debajo
+  ctx.font = '16px Roboto'; ctx.fillStyle = DORADO;
+  ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 76);
 
   // PASO 4: texto cover — tercio inferior, blanco bold con sombra
   ctx.shadowColor = 'rgba(0,0,0,0.92)'; ctx.shadowBlur = 20;
