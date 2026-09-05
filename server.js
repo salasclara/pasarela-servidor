@@ -490,16 +490,25 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 33px Roboto';
   ctx.fillText(branding.nombreMarca || 'MARAVILLAS DEL REINO', 540, 84);
   ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 18;
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 68px Roboto';
-  ctx.fillText(afirmacion.toUpperCase().substring(0, 20), 540, 680);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 92px Roboto';
-  ctx.fillText(hero.toUpperCase().substring(0, 14), 540, 790);
-  ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = 'italic 22px Roboto';
-  const vw = versiculo.split(' '); let vl = ''; let vy = 870;
-  for (const w of vw) { const t = vl ? vl+' '+w : w; if (ctx.measureText(t).width > 880) { ctx.fillText(vl, 540, vy); vl = w; vy += 30; } else vl = t; }
-  if (vl) ctx.fillText(vl, 540, vy);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 20px Roboto';
-  ctx.fillText('— ' + referencia + ' —', 540, vy + 36);
+  // afirmacion — word wrap
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 62px Roboto';
+  { const aw = afirmacion.toUpperCase().split(' '); let al = ''; let ay = 620;
+    for (const w of aw) { const t = al ? al+' '+w : w; if (ctx.measureText(t).width > 940) { ctx.fillText(al, 540, ay); al = w; ay += 72; } else al = t; }
+    if (al) { ctx.fillText(al, 540, ay); ay += 72; }
+    // hero — word wrap
+    ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 88px Roboto';
+    { const hw = hero.toUpperCase().split(' '); let hl = ''; let hy = ay + 14;
+      for (const w of hw) { const t = hl ? hl+' '+w : w; if (ctx.measureText(t).width > 960) { ctx.fillText(hl, 540, hy); hl = w; hy += 96; } else hl = t; }
+      if (hl) { ctx.fillText(hl, 540, hy); hy += 96; }
+      // versiculo
+      ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = 'italic 21px Roboto';
+      const vw = versiculo.split(' '); let vl = ''; let vy = Math.min(hy + 12, 920);
+      for (const w of vw) { const t = vl ? vl+' '+w : w; if (ctx.measureText(t).width > 880) { ctx.fillText(vl, 540, vy); vl = w; vy += 28; } else vl = t; }
+      if (vl) ctx.fillText(vl, 540, vy);
+      ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 19px Roboto';
+      ctx.fillText('— ' + referencia + ' —', 540, Math.min(vy + 32, 970));
+    }
+  }
   ctx.shadowBlur = 0;
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 1072, 1080, 8);
   ctx.fillStyle = 'rgba(255,255,255,0.70)'; ctx.font = '15px Roboto';
