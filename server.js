@@ -469,8 +469,7 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
       const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
       const j = await r.json();
       if (j.data && j.data[0] && j.data[0].b64_json) {
-        const imgBuf = Buffer.from(j.data[0].b64_json, 'base64');
-        const img = await loadImage(imgBuf);
+        const img = await loadImage('data:image/png;base64,' + j.data[0].b64_json);
         ctx.globalAlpha = 0.55; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1;
         usedAI = true; console.log('[AmarEs] AI image OK');
       }
