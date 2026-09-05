@@ -761,70 +761,95 @@ async function generarCoverTrabajando(branding, coverTitulo) {
 async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   const canvas = createCanvas(1080, 1080);
   const ctx    = canvas.getContext('2d');
-  ctx.fillStyle = branding.colorBarra || '#7B3A4A';
-  ctx.fillRect(0, 0, 1080, 1080);
+  const CREMA  = '#F5EDE0';
+  const DORADO = branding.colorAccento || '#E8C5B0';
+  const hFont  = _cormorantLoaded ? 'Cormorant' : 'Roboto';
+
+  // ── Fondo fallback ────────────────────────────────────────────────────────
+  ctx.fillStyle = '#3D1A24'; ctx.fillRect(0, 0, 1080, 1080);
+
   if (!process.env.OPENAI_API_KEY || !dallePrompt) {
     console.error('[AmarEs] OPENAI_API_KEY ausente o sin prompt — cancelando'); return null;
   }
   let usedAI = false;
   try {
-    const aiPrompt = 'Premium cute chibi anime illustration. Scene: ' + dallePrompt + '. Style: flat colors, big expressive eyes, round chibi faces, warm cinematic lighting, soft pink and lavender palette, romantic atmosphere, floating hearts, bokeh background. NO text. NO letters. NO watermark. NO photorealism. NO watercolor.';
+    // Prompt premium: chibi, paleta cálida, sin texto, sin marcas de agua
+    const aiPrompt = 'Premium cute chibi anime illustration, elegant editorial quality. Scene: ' + dallePrompt + '. Style: polished flat colors, big expressive emotional eyes, round soft chibi faces, detailed hair, warm cinematic lighting, soft amber and peach and cream tones, intimate romantic atmosphere, gentle depth, bokeh background with warm bokeh lights or soft nature, subtle glow, emotionally expressive elegant composition. NO text. NO letters. NO watermark. NO photorealism. NO watercolor. NO 3D render. NO sticker style.';
     const body = JSON.stringify({ model: 'gpt-image-1', prompt: aiPrompt, n: 1, size: '1024x1024', quality: 'medium' });
     const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
     const j = await r.json();
     if (j.data && j.data[0] && j.data[0].b64_json) {
-      const _fs   = require('fs');
-      const _os   = require('os');
-      const _path = require('path');
-      // 1. Decodificar b64
-      const _buf = Buffer.from(j.data[0].b64_json, 'base64');
-      // 2. Loguear longitud y primeros 8 bytes
+      const _fs = require('fs'); const _os = require('os'); const _path = require('path');
+      const _buf  = Buffer.from(j.data[0].b64_json, 'base64');
       const _hex8 = _buf.slice(0, 8).toString('hex');
       console.log('[AmarEs] buffer.length:', _buf.length, '| primeros 8 bytes:', _hex8);
-      // 3. Validar firma PNG: 89 50 4e 47 0d 0a 1a 0a
-      const PNG_SIG = '89504e470d0a1a0a';
-      if (_hex8 !== PNG_SIG) {
-        console.error('[AmarEs] Firma inválida — no es PNG. Recibido:', _hex8, '— cancelando publicación');
+      if (_hex8 !== '89504e470d0a1a0a') {
+        console.error('[AmarEs] Firma inválida — no es PNG. Recibido:', _hex8, '— cancelando');
       } else {
-        // 4-7. Guardar tmp, loadImage, dibujar, borrar en finally
         const _tmp = _path.join(_os.tmpdir(), 'amares_' + Date.now() + '.png');
         try {
           _fs.writeFileSync(_tmp, _buf);
           const img = await loadImage(_tmp);
+          // Ilustración protagonista — full canvas, sin transparencia
           ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1;
           usedAI = true; console.log('[AmarEs] gpt-image-1 OK');
-        } finally {
-          try { _fs.unlinkSync(_tmp); } catch(_e) {}
-        }
+        } finally { try { _fs.unlinkSync(_tmp); } catch(_e) {} }
       }
     } else { console.error('[AmarEs] gpt-image-1 sin datos:', JSON.stringify(j).substring(0, 200)); }
   } catch(e) { console.error('[AmarEs] gpt-image-1 error:', e.message); }
   if (!usedAI) { console.error('[AmarEs] OpenAI falló — cancelando publicación'); return null; }
-  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
-  grad.addColorStop(0,    'rgba(123,58,74,0.0)');
-  grad.addColorStop(0.55, 'rgba(123,58,74,0.10)');
-  grad.addColorStop(0.78, 'rgba(123,58,74,0.50)');
-  grad.addColorStop(1,    'rgba(123,58,74,0.90)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
-  ctx.fillStyle = 'rgba(123,58,74,0.65)'; ctx.fillRect(0, 0, 1080, 115);
-  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 6);
-  ctx.font = 'bold 18px Roboto'; ctx.textAlign = 'center';
-  ctx.fillStyle = branding.colorAccento || '#E8C5B0';
-  ctx.fillText((branding.subtituloMarca || 'AMOR · RELACIONES · BIENESTAR').toUpperCase(), 540, 40);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 44px Roboto';
-  ctx.fillText(branding.nombreMarca || 'AMAR ES', 540, 84);
-  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 16;
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 72px Roboto';
-  const gw = gancho.toUpperCase().split(' '); let gl = ''; let gy = 740;
-  for (const w of gw) { const t = gl ? gl+' '+w : w; if (ctx.measureText(t).width > 920) { ctx.fillText(gl, 540, gy); gl = w; gy += 82; } else gl = t; }
-  if (gl) ctx.fillText(gl, 540, gy);
-  if (reflexion) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 26px Roboto'; ctx.fillText('"' + reflexion + '"', 540, gy + 54); }
+
+  // ── Gradiente localizado — SOLO zona inferior, muy suave ─────────────────
+  const grad = ctx.createLinearGradient(0, 560, 0, 1080);
+  grad.addColorStop(0,    'rgba(40,20,20,0.0)');
+  grad.addColorStop(0.55, 'rgba(40,20,20,0.12)');
+  grad.addColorStop(0.82, 'rgba(40,20,20,0.48)');
+  grad.addColorStop(1,    'rgba(40,20,20,0.68)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 560, 1080, 520);
+
+  // ── HEADER flotante — "AMAR ES" sobre la imagen ───────────────────────────
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.70)'; ctx.shadowBlur = 12;
+  ctx.font = `bold 48px ${hFont}`; ctx.fillStyle = '#FFFFFF';
+  ctx.fillText((branding.nombreMarca || 'AMAR ES').toUpperCase(), 540, 58);
+  ctx.font = `12px Roboto`; ctx.fillStyle = 'rgba(245,237,224,0.70)';
+  ctx.fillText((branding.subtituloMarca || 'AMOR · RELACIONES · BIENESTAR').toUpperCase(), 540, 78);
   ctx.shadowBlur = 0;
-  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 1073, 1080, 6);
-  ctx.fillStyle = 'rgba(255,245,240,0.75)'; ctx.font = '15px Roboto';
-  ctx.fillText(branding.footerLinea1 || 'Amar es · Para la mujer latina', 540, 1054);
+
+  // ── GANCHO principal — tercio inferior, serif premium ────────────────────
+  let heroSize = 74; ctx.font = `bold ${heroSize}px ${hFont}`;
+  const palabras = gancho.toUpperCase().split(' ');
+  let lineas = []; let linea = '';
+  for (const w of palabras) {
+    const p = linea ? linea + ' ' + w : w;
+    if (ctx.measureText(p).width > 900) { if (linea) lineas.push(linea); linea = w; } else linea = p;
+  }
+  if (linea) lineas.push(linea);
+  if (lineas.length >= 3) { heroSize = 62; ctx.font = `bold ${heroSize}px ${hFont}`; }
+  if (heroSize < 58) heroSize = 58;
+  const lineH = Math.round(heroSize * 1.18);
+  let heroY   = 840 - (lineas.length - 1) * lineH;
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 18;
+  ctx.fillStyle = '#FFFFFF';
+  for (const l of lineas) { ctx.fillText(l, 540, heroY); heroY += lineH; }
+
+  // ── REFLEXIÓN — itálica, íntima, debajo del gancho ───────────────────────
+  if (reflexion) {
+    ctx.font = `italic ${_cormorantLoaded ? 28 : 24}px ${hFont}`;
+    ctx.fillStyle = CREMA;
+    ctx.fillText(reflexion.toLowerCase(), 540, heroY + 38);
+    heroY += 38;
+  }
+  ctx.shadowBlur = 0;
+
+  // ── FOOTER integrado — texto flotante, sin barra ──────────────────────────
+  ctx.font = '13px Roboto'; ctx.fillStyle = 'rgba(245,237,224,0.65)';
+  ctx.fillText(branding.footerLinea1 || 'Amar es · Para la mujer latina', 540, 1052);
+
   return canvas.toBuffer('image/png');
 }
+
+
 async function generarCoverGenerico(branding, coverTitulo) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
