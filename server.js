@@ -773,9 +773,30 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
     const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
     const j = await r.json();
     if (j.data && j.data[0] && j.data[0].b64_json) {
-      const img = await loadImage(Buffer.from(j.data[0].b64_json, 'base64'));
-      ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1;
-      usedAI = true; console.log('[AmarEs] gpt-image-1 OK');
+      const _fs   = require('fs');
+      const _os   = require('os');
+      const _path = require('path');
+      // 1. Decodificar b64
+      const _buf = Buffer.from(j.data[0].b64_json, 'base64');
+      // 2. Loguear longitud y primeros 8 bytes
+      const _hex8 = _buf.slice(0, 8).toString('hex');
+      console.log('[AmarEs] buffer.length:', _buf.length, '| primeros 8 bytes:', _hex8);
+      // 3. Validar firma PNG: 89 50 4e 47 0d 0a 1a 0a
+      const PNG_SIG = '89504e470d0a1a0a';
+      if (_hex8 !== PNG_SIG) {
+        console.error('[AmarEs] Firma inválida — no es PNG. Recibido:', _hex8, '— cancelando publicación');
+      } else {
+        // 4-7. Guardar tmp, loadImage, dibujar, borrar en finally
+        const _tmp = _path.join(_os.tmpdir(), 'amares_' + Date.now() + '.png');
+        try {
+          _fs.writeFileSync(_tmp, _buf);
+          const img = await loadImage(_tmp);
+          ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1;
+          usedAI = true; console.log('[AmarEs] gpt-image-1 OK');
+        } finally {
+          try { _fs.unlinkSync(_tmp); } catch(_e) {}
+        }
+      }
     } else { console.error('[AmarEs] gpt-image-1 sin datos:', JSON.stringify(j).substring(0, 200)); }
   } catch(e) { console.error('[AmarEs] gpt-image-1 error:', e.message); }
   if (!usedAI) { console.error('[AmarEs] OpenAI falló — cancelando publicación'); return null; }
