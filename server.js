@@ -898,7 +898,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase de MÁXIMO 4 PALABRAS en español — solo sustantivos/adjetivos poderosos]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
     const formatoTrabajando = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase de MÁXIMO 4 PALABRAS en español — impactante, motivadora, segunda persona]\nCAPTION: [2 a 3 líneas inspiradoras para emprendedoras latinas — práctica, directa, real]\nHASHTAGS: ' + (pageConfig.hashtags || '#TrabajarDesdeCasa #EmprendimientoLatino');
     const captionPayload = JSON.stringify({
-      model: 'claude-sonnet-4-6', max_tokens: 180,
+      model: 'claude-sonnet-4-6', max_tokens: esAmor ? 520 : esFe ? 220 : esFancy ? 260 : 200,
       system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : esFancy ? formatoFancy : esTrabajando ? formatoTrabajando : formatoGenerico),
       messages: [{ role: 'user', content: esFancy && fancyCat ? 'Tendencia del día: ' + fancyCat.tema + ' ' + fancyCat.emoji : 'Tema: ' + temaActual }]
     });
