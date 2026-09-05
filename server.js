@@ -520,11 +520,29 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   return canvas.toBuffer('image/png');
 }
 
+// ── VISUAL ENGINE — Trabajando En Casa ─────────────────────────────────────
+const VISUAL_ENGINE_TRABAJANDO = [
+  { cat: 'HOME_OFFICE',      queries: ['woman working laptop home', 'hispanic woman home office', 'cozy female home office'] },
+  { cat: 'ENTREPRENEUR',     queries: ['latina entrepreneur', 'hispanic business woman', 'female small business owner'] },
+  { cat: 'EMPOWERMENT',      queries: ['confident latina woman', 'successful hispanic woman', 'confident female entrepreneur'] },
+  { cat: 'PRODUCTIVITY',     queries: ['woman planning desk', 'woman writing planner', 'organized home office'] },
+  { cat: 'DIGITAL_BUSINESS', queries: ['woman smartphone business', 'female content creator', 'woman online business'] },
+  { cat: 'MOM_ENTREPRENEUR', queries: ['mother working from home', 'working mom laptop', 'mother entrepreneur'] },
+  { cat: 'SMALL_BUSINESS',   queries: ['woman packing orders', 'female ecommerce business', 'woman small business owner'] },
+  { cat: 'LEARNING',         queries: ['woman studying laptop', 'online learning woman', 'woman taking notes'] },
+  { cat: 'LIFESTYLE',        queries: ['woman coffee laptop home', 'woman morning routine', 'woman working cozy home'] },
+  { cat: 'SUCCESS',          queries: ['woman celebrating success', 'happy female entrepreneur', 'woman celebrating laptop'] },
+];
+function getQueryTrabajando() {
+  const cat = VISUAL_ENGINE_TRABAJANDO[Math.floor(Math.random() * VISUAL_ENGINE_TRABAJANDO.length)];
+  return cat.queries[Math.floor(Math.random() * cat.queries.length)];
+}
+
 async function generarCoverGenerico(branding, coverTitulo) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = branding.colorBarra || '#1A3A2E'; ctx.fillRect(0, 0, 1080, 1080);
-  const imgUrlGen = await getImagenCategoria('DEFAULT', 'home office workspace latina entrepreneur productive');
+  const imgUrlGen = await getImagenCategoria('DEFAULT', getQueryTrabajando());
   if (imgUrlGen) {
     try {
       const buf = await descargarImagen(imgUrlGen);
