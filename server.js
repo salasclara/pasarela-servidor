@@ -479,6 +479,27 @@ function getQueryTrabajando() {
   const cat = VISUAL_ENGINE_TRABAJANDO[Math.floor(Math.random() * VISUAL_ENGINE_TRABAJANDO.length)];
   return cat.queries[Math.floor(Math.random() * cat.queries.length)];
 }
+function getQueryTrabajandoByContent(titulo) {
+  const t = (titulo || '').toLowerCase();
+  const map = [
+    { keys: ['oportunidad','negocio','próxima','propia','libre','libera','emprende'],  cat: 'ENTREPRENEUR'    },
+    { keys: ['tiempo','organiza','plan','agenda','productiv','día','rutina','hábito'], cat: 'PRODUCTIVITY'    },
+    { keys: ['hogar','casa','oficina','espacio','desde casa'],                         cat: 'HOME_OFFICE'     },
+    { keys: ['teléfono','celular','digital','redes','online','internet','apps'],       cat: 'DIGITAL_BUSINESS'},
+    { keys: ['mamá','familia','hijo','hija','madre','concilia'],                       cat: 'MOM_ENTREPRENEUR'},
+    { keys: ['aprender','estudia','curso','conocimiento','habilidad'],                 cat: 'LEARNING'        },
+    { keys: ['celebra','logro','éxito','alcanz','consegui','ganar','triunf'],          cat: 'SUCCESS'         },
+    { keys: ['empeza','comenz','primer','pequeño','inicio'],                           cat: 'SMALL_BUSINESS'  },
+    { keys: ['café','mañana','balance','bienestar','calma','lifestyle'],               cat: 'LIFESTYLE'       },
+  ];
+  for (const rule of map) {
+    if (rule.keys.some(k => t.includes(k))) {
+      const found = VISUAL_ENGINE_TRABAJANDO.find(c => c.cat === rule.cat);
+      if (found) return found.queries[Math.floor(Math.random() * found.queries.length)];
+    }
+  }
+  return getQueryTrabajando();
+}
 
 
 async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia) {
@@ -655,65 +676,87 @@ async function generarCoverFancy(branding, titular, subtitulo) {
 }
 
 async function generarCoverTrabajando(branding, coverTitulo) {
-  const canvas  = createCanvas(1080, 1080);
-  const ctx     = canvas.getContext('2d');
-  const VERDE   = '#1A3A2E';
-  const DORADO  = branding.colorAccento || '#C9A66B';
+  const canvas   = createCanvas(1080, 1080);
+  const ctx      = canvas.getContext('2d');
+  const VERDE    = '#123F32';
+  const DORADO   = branding.colorAccento || '#C9A66B';
+  const HEADER_H = 95;
+  const FOOTER_Y = 985;
+  const FOOTER_H = 95;
+  const PHOTO_H  = FOOTER_Y - HEADER_H; // 890px
 
-  // PASO 1: fondo fallback + foto protagonista full canvas
-  ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, 1080);
-  const imgUrl = await getImagenCategoria('DEFAULT', getQueryTrabajando());
+  // ── 1. HEADER sólido ──────────────────────────────────────────────────────
+  ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, HEADER_H);
+  ctx.fillStyle = DORADO; ctx.fillRect(0, HEADER_H - 3, 1080, 3);
+  ctx.textAlign = 'center';
+  const hFont = _cormorantLoaded ? 'bold 56px Cormorant' : 'bold 48px Roboto';
+  ctx.font = hFont; ctx.fillStyle = '#FFFFFF';
+  ctx.fillText((branding.nombreMarca || 'TRABAJANDO EN CASA').toUpperCase(), 540, 60);
+  ctx.font = 'bold 15px Roboto'; ctx.fillStyle = DORADO;
+  ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 82);
+
+  // ── 2. FOTO protagonista — object-fit:cover en zona y=95..985 ────────────
+  ctx.fillStyle = '#1A2A20'; ctx.fillRect(0, HEADER_H, 1080, PHOTO_H);
+  const query = getQueryTrabajandoByContent(coverTitulo);
+  const imgUrl = await getImagenCategoria('DEFAULT', query);
   if (imgUrl) {
     try {
       const buf = await descargarImagen(imgUrl);
-      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1; }
+      if (buf) {
+        const img = await loadImage(buf);
+        ctx.save();
+        ctx.beginPath(); ctx.rect(0, HEADER_H, 1080, PHOTO_H); ctx.clip();
+        const ia = img.width / img.height;
+        const za = 1080 / PHOTO_H;
+        let dw, dh, dx, dy;
+        if (ia > za) { dh = PHOTO_H; dw = img.width * (PHOTO_H / img.height); dx = (1080 - dw) / 2; dy = HEADER_H; }
+        else          { dw = 1080;   dh = img.height * (1080 / img.width);     dx = 0;                dy = HEADER_H + (PHOTO_H - dh) / 2; }
+        ctx.globalAlpha = 1; ctx.drawImage(img, dx, dy, dw, dh); ctx.globalAlpha = 1;
+        ctx.restore();
+      }
     } catch(e) { console.error('[CoverTrabajando] imagen:', e.message); }
   }
 
-  // PASO 2: gradiente SOLO zona inferior — NEGRO puro, foto visible arriba
-  const gradBot = ctx.createLinearGradient(0, 540, 0, 1080);
-  gradBot.addColorStop(0,    'rgba(0,0,0,0.0)');
-  gradBot.addColorStop(0.28, 'rgba(0,0,0,0.42)');
-  gradBot.addColorStop(0.65, 'rgba(0,0,0,0.76)');
-  gradBot.addColorStop(1,    'rgba(0,0,0,0.92)');
-  ctx.fillStyle = gradBot; ctx.fillRect(0, 540, 1080, 540);
+  // ── 3. Gradiente localizado — solo tercio inferior de la foto ─────────────
+  const gradY = HEADER_H + PHOTO_H * 0.50;
+  const grad  = ctx.createLinearGradient(0, gradY, 0, FOOTER_Y);
+  grad.addColorStop(0,    'rgba(0,0,0,0.0)');
+  grad.addColorStop(0.30, 'rgba(0,0,0,0.22)');
+  grad.addColorStop(0.65, 'rgba(0,0,0,0.65)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.82)');
+  ctx.fillStyle = grad; ctx.fillRect(0, gradY, 1080, FOOTER_Y - gradY);
 
-  // PASO 3: HEADER sólido sobre foto — título PRIMERO grande, subtítulo debajo
-  ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, 90);
-  ctx.fillStyle = DORADO; ctx.fillRect(0, 0, 1080, 5);
-  ctx.textAlign = 'center';
-  // TÍTULO principal — blanco bold grande
-  ctx.font = 'bold 46px Roboto'; ctx.fillStyle = '#FFFFFF';
-  ctx.fillText((branding.nombreMarca || 'TRABAJANDO EN CASA').toUpperCase(), 540, 52);
-  // subtítulo — dorado pequeño debajo
-  ctx.font = '16px Roboto'; ctx.fillStyle = DORADO;
-  ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 76);
-
-  // PASO 4: texto cover — tercio inferior, blanco bold con sombra
-  ctx.shadowColor = 'rgba(0,0,0,0.92)'; ctx.shadowBlur = 20;
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 78px Roboto';
-  const palabras = coverTitulo.toUpperCase().split(' ');
-  let linea = ''; let lineas = [];
-  for (const w of palabras) {
-    const prueba = linea ? linea + ' ' + w : w;
-    if (ctx.measureText(prueba).width > 940) { if (linea) lineas.push(linea); linea = w; }
-    else linea = prueba;
+  // ── 4. HERO — tercio inferior, serif premium, 3–4 líneas máx ─────────────
+  const hf = _cormorantLoaded ? 'Cormorant' : 'Roboto';
+  let heroSize = 78; ctx.font = `bold ${heroSize}px ${hf}`;
+  const pals = coverTitulo.toUpperCase().split(' ');
+  let lineas = []; let linea = '';
+  for (const w of pals) {
+    const p = linea ? linea + ' ' + w : w;
+    if (ctx.measureText(p).width > 980) { if (linea) lineas.push(linea); linea = w; } else linea = p;
   }
   if (linea) lineas.push(linea);
-  let textY = 730;
-  for (const l of lineas) { ctx.fillText(l, 540, textY); textY += 90; }
+  if (lineas.length >= 4) { heroSize = 62; ctx.font = `bold ${heroSize}px ${hf}`; }
+  if (heroSize < 56) heroSize = 56;
+  const lineH = Math.round(heroSize * 1.18);
+  let heroY   = 878 - (lineas.length - 1) * lineH;
+  ctx.shadowColor = 'rgba(0,0,0,0.90)'; ctx.shadowBlur = 20;
+  ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center';
+  for (const l of lineas) { ctx.fillText(l, 540, heroY); heroY += lineH; }
   ctx.shadowBlur = 0;
 
-  // PASO 5: FOOTER sólido sobre foto
-  ctx.fillStyle = VERDE; ctx.fillRect(0, 988, 1080, 92);
-  ctx.fillStyle = DORADO; ctx.fillRect(0, 1075, 1080, 5);
-  ctx.fillStyle = 'rgba(240,248,236,0.88)'; ctx.font = '16px Roboto';
-  ctx.fillText(branding.footerLinea1 || 'Trabajando En Casa · Emprendedoras Latinas', 540, 1018);
-  ctx.fillStyle = DORADO; ctx.font = 'bold 14px Roboto';
-  ctx.fillText(branding.footerLinea2 || '@TrabajarDesdeCasa', 540, 1039);
+  // ── 5. FOOTER sólido ─────────────────────────────────────────────────────
+  ctx.fillStyle = VERDE; ctx.fillRect(0, FOOTER_Y, 1080, FOOTER_H);
+  ctx.fillStyle = DORADO; ctx.fillRect(0, FOOTER_Y, 1080, 3);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = DORADO; ctx.font = 'bold 16px Roboto';
+  ctx.fillText(branding.footerLinea1 || 'Trabajando En Casa · Emprendedoras Latinas', 540, FOOTER_Y + 36);
+  ctx.fillStyle = 'rgba(240,248,236,0.80)'; ctx.font = '14px Roboto';
+  ctx.fillText(branding.footerLinea2 || '@TrabajarDesdeCasa', 540, FOOTER_Y + 56);
 
   return canvas.toBuffer('image/png');
 }
+
 
 async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   const canvas = createCanvas(1080, 1080);
