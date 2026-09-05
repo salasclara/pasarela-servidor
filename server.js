@@ -287,6 +287,7 @@ const PAGES_EXTRA = [
   {
     id: '321611941644368',
     nombre: 'Trabajando En Casa',
+    tipo: 'trabajando',
     token: process.env.FACEBOOK_TRABA_TOKEN,
     voice: 'Eres la voz de Trabajando En Casa, comunidad de emprendedoras latinas que trabajan desde casa. Voz emprendedora, práctica y motivacional. Inspira con oportunidades reales. Español.',
     hashtags: '#TrabajarDesdeCasa #EmprendimientoLatino #LibertadFinanciera #NegocioDesdeHouse #EmprendedoraLatina',
@@ -412,6 +413,20 @@ async function generarCoverPasarela(titulo, imgUrl) {
   return canvas.toBuffer('image/png');
 }
 
+function drawImageCover(ctx, img, canvasW, canvasH) {
+  const imgAspect    = img.width / img.height;
+  const canvasAspect = canvasW / canvasH;
+  let drawW, drawH, drawX, drawY;
+  if (imgAspect > canvasAspect) {
+    drawH = canvasH; drawW = img.width * (canvasH / img.height);
+    drawX = (canvasW - drawW) / 2; drawY = 0;
+  } else {
+    drawW = canvasW; drawH = img.height * (canvasW / img.width);
+    drawX = 0; drawY = (canvasH - drawH) / 2;
+  }
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+}
+
 // ── VISUAL ENGINE — Maravillas del Reino ───────────────────────────────────
 const VISUAL_ENGINE_FE = [
   { cat: 'FAITH',          queries: ['woman praying', 'hands praying', 'person praying sunrise', 'Bible prayer'] },
@@ -434,39 +449,46 @@ function getQueryFe() {
 
 async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia) {
   const canvas = createCanvas(1080, 1080);
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = branding.colorBarra || '#0D2E6E'; ctx.fillRect(0, 0, 1080, 1080);
-  const imgUrlFe = await getImagenCategoria('DEFAULT', getQueryFe());
-  if (imgUrlFe) {
+  const ctx    = canvas.getContext('2d');
+  ctx.fillStyle = branding.colorBarra || '#0D2E6E';
+  ctx.fillRect(0, 0, 1080, 1080);
+  const imgUrl = await getImagenCategoria('DEFAULT', getQueryFe());
+  if (imgUrl) {
     try {
-      const buf = await descargarImagen(imgUrlFe);
-      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.38; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
-    } catch(e) { console.error('[CoverFe] imagen error:', e.message); }
+      const buf = await descargarImagen(imgUrl);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) { console.error('[CoverFe] imagen:', e.message); }
   }
   const grad = ctx.createLinearGradient(0, 0, 0, 1080);
-  grad.addColorStop(0, 'rgba(13,46,110,0.65)'); grad.addColorStop(1, 'rgba(13,46,110,0.97)');
+  grad.addColorStop(0,    'rgba(13,46,110,0.0)');
+  grad.addColorStop(0.45, 'rgba(13,46,110,0.10)');
+  grad.addColorStop(0.72, 'rgba(13,46,110,0.45)');
+  grad.addColorStop(1,    'rgba(13,46,110,0.82)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
+  ctx.fillStyle = 'rgba(13,46,110,0.60)'; ctx.fillRect(0, 0, 1080, 115);
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 8);
-  ctx.font = 'bold 20px Roboto'; ctx.textAlign = 'center';
-  ctx.fillText((branding.subtituloMarca || '').toUpperCase(), 540, 55);
-  ctx.font = 'bold 34px Roboto'; ctx.fillText(branding.nombreMarca || 'MARAVILLAS DEL REINO', 540, 94);
-  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 78px Roboto';
-  ctx.fillText(afirmacion.toUpperCase().substring(0, 18), 540, 420);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 108px Roboto';
-  ctx.fillText(hero.toUpperCase().substring(0, 12), 540, 560);
-  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = 'italic 26px Roboto';
-  const vw = versiculo.split(' '); let vl = ''; let vy = 660;
-  for (const w of vw) { const t = vl ? vl+' '+w : w; if (ctx.measureText(t).width > 860) { ctx.fillText(vl, 540, vy); vl = w; vy += 36; } else vl = t; }
+  ctx.font = 'bold 18px Roboto'; ctx.textAlign = 'center';
+  ctx.fillStyle = branding.colorAccento || '#C9A66B';
+  ctx.fillText((branding.subtituloMarca || '').toUpperCase(), 540, 44);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 33px Roboto';
+  ctx.fillText(branding.nombreMarca || 'MARAVILLAS DEL REINO', 540, 84);
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 18;
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 68px Roboto';
+  ctx.fillText(afirmacion.toUpperCase().substring(0, 20), 540, 680);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 92px Roboto';
+  ctx.fillText(hero.toUpperCase().substring(0, 14), 540, 790);
+  ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = 'italic 22px Roboto';
+  const vw = versiculo.split(' '); let vl = ''; let vy = 870;
+  for (const w of vw) { const t = vl ? vl+' '+w : w; if (ctx.measureText(t).width > 880) { ctx.fillText(vl, 540, vy); vl = w; vy += 30; } else vl = t; }
   if (vl) ctx.fillText(vl, 540, vy);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 26px Roboto';
-  ctx.fillText('\u2014 ' + referencia + ' \u2014', 540, vy + 46);
-  ctx.fillRect(0, 1072, 1080, 8);
-  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '17px Roboto';
-  ctx.fillText(branding.footerLinea1 || '', 540, 1054);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 20px Roboto';
+  ctx.fillText('— ' + referencia + ' —', 540, vy + 36);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 1072, 1080, 8);
+  ctx.fillStyle = 'rgba(255,255,255,0.70)'; ctx.font = '15px Roboto';
+  ctx.fillText(branding.footerLinea1 || '', 540, 1056);
   return canvas.toBuffer('image/png');
 }
-
 async function generarCoverFancy(branding, titular, subtitulo) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
@@ -497,67 +519,91 @@ async function generarCoverFancy(branding, titular, subtitulo) {
   return canvas.toBuffer('image/png');
 }
 
-async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
+async function generarCoverTrabajando(branding, coverTitulo) {
   const canvas = createCanvas(1080, 1080);
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = branding.colorBarra || '#7B3A4A'; ctx.fillRect(0, 0, 1080, 1080);
-  let usedAI = false;
-  if (process.env.OPENAI_API_KEY && dallePrompt) {
+  const ctx    = canvas.getContext('2d');
+  ctx.fillStyle = branding.colorBarra || '#1A3A2E';
+  ctx.fillRect(0, 0, 1080, 1080);
+  const imgUrl = await getImagenCategoria('DEFAULT', getQueryTrabajando());
+  if (imgUrl) {
     try {
-      const aiPrompt = 'Cute chibi anime couple, kawaii style illustration. Scene: ' + dallePrompt + '. Soft pastel pink and lavender colors, romantic atmosphere, heart decorations, warm lighting. No text in image.';
-      const body = JSON.stringify({ model: 'gpt-image-1', prompt: aiPrompt, n: 1, size: '1024x1024', quality: 'medium' });
-      const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
-      const j = await r.json();
-      if (j.data && j.data[0] && j.data[0].b64_json) {
-        const img = await loadImage('data:image/png;base64,' + j.data[0].b64_json);
-        ctx.globalAlpha = 0.55; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1;
-        usedAI = true; console.log('[AmarEs] AI image OK');
-      }
-    } catch(e) { console.error('[AmarEs] gpt-image error:', e.message); }
-  }
-  if (!usedAI && branding.imagePool && branding.imagePool.length) {
-    try {
-      const buf = await descargarImagen(branding.imagePool[Math.floor(Math.random() * branding.imagePool.length)]);
-      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.35; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
-    } catch(e) {}
+      const buf = await descargarImagen(imgUrl);
+      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1; }
+    } catch(e) { console.error('[CoverTrabajando] imagen:', e.message); }
   }
   const grad = ctx.createLinearGradient(0, 0, 0, 1080);
-  grad.addColorStop(0, 'rgba(123,58,74,0.3)'); grad.addColorStop(0.6, 'rgba(123,58,74,0.65)'); grad.addColorStop(1, 'rgba(123,58,74,0.95)');
+  grad.addColorStop(0,    'rgba(26,58,46,0.0)');
+  grad.addColorStop(0.50, 'rgba(26,58,46,0.08)');
+  grad.addColorStop(0.70, 'rgba(26,58,46,0.40)');
+  grad.addColorStop(1,    'rgba(26,58,46,0.88)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
-  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 6);
-  ctx.font = 'bold 19px Roboto'; ctx.textAlign = 'center';
-  ctx.fillText(branding.subtituloMarca || 'AMOR \u00b7 RELACIONES \u00b7 BIENESTAR', 540, 52);
-  ctx.font = 'bold 44px Roboto'; ctx.fillText(branding.nombreMarca || 'AMAR ES', 540, 102);
-  ctx.font = '46px Roboto'; ctx.fillText('\u2665', 540, 170);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 76px Roboto';
-  const gw = gancho.toUpperCase().split(' '); let gl = ''; let gy = 520;
-  for (const w of gw) { const t = gl ? gl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(gl, 540, gy); gl = w; gy += 86; } else gl = t; }
-  if (gl) ctx.fillText(gl, 540, gy);
-  if (reflexion) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 29px Roboto'; ctx.fillText('"' + reflexion + '"', 540, gy + 58); }
-  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 1073, 1080, 6);
-  ctx.fillStyle = 'rgba(255,245,240,0.65)'; ctx.font = '17px Roboto';
-  ctx.fillText(branding.footerLinea1 || 'Amar es \u00b7 Para la mujer latina', 540, 1051);
+  ctx.fillStyle = 'rgba(26,58,46,0.72)'; ctx.fillRect(0, 0, 1080, 120);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 6);
+  ctx.font = 'bold 18px Roboto'; ctx.textAlign = 'center';
+  ctx.fillStyle = branding.colorAccento || '#C9A66B';
+  ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 40);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 36px Roboto';
+  ctx.fillText(branding.nombreMarca || 'TRABAJANDO EN CASA', 540, 84);
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 16;
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 80px Roboto';
+  const cw = coverTitulo.toUpperCase().split(' '); let cl = ''; let cy = 740;
+  for (const w of cw) { const t = cl ? cl+' '+w : w; if (ctx.measureText(t).width > 920) { ctx.fillText(cl, 540, cy); cl = w; cy += 93; } else cl = t; }
+  if (cl) ctx.fillText(cl, 540, cy);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 1073, 1080, 6);
+  ctx.fillStyle = 'rgba(240,245,232,0.75)'; ctx.font = '15px Roboto';
+  ctx.fillText(branding.footerLinea1 || 'Trabajando En Casa · Emprendedoras Latinas', 540, 1051);
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = '13px Roboto';
+  ctx.fillText(branding.footerLinea2 || '@TrabajarDesdeCasa', 540, 1067);
   return canvas.toBuffer('image/png');
 }
 
-// ── VISUAL ENGINE — Trabajando En Casa ─────────────────────────────────────
-const VISUAL_ENGINE_TRABAJANDO = [
-  { cat: 'HOME_OFFICE',      queries: ['woman working laptop home', 'hispanic woman home office', 'cozy female home office'] },
-  { cat: 'ENTREPRENEUR',     queries: ['latina entrepreneur', 'hispanic business woman', 'female small business owner'] },
-  { cat: 'EMPOWERMENT',      queries: ['confident latina woman', 'successful hispanic woman', 'confident female entrepreneur'] },
-  { cat: 'PRODUCTIVITY',     queries: ['woman planning desk', 'woman writing planner', 'organized home office'] },
-  { cat: 'DIGITAL_BUSINESS', queries: ['woman smartphone business', 'female content creator', 'woman online business'] },
-  { cat: 'MOM_ENTREPRENEUR', queries: ['mother working from home', 'working mom laptop', 'mother entrepreneur'] },
-  { cat: 'SMALL_BUSINESS',   queries: ['woman packing orders', 'female ecommerce business', 'woman small business owner'] },
-  { cat: 'LEARNING',         queries: ['woman studying laptop', 'online learning woman', 'woman taking notes'] },
-  { cat: 'LIFESTYLE',        queries: ['woman coffee laptop home', 'woman morning routine', 'woman working cozy home'] },
-  { cat: 'SUCCESS',          queries: ['woman celebrating success', 'happy female entrepreneur', 'woman celebrating laptop'] },
-];
-function getQueryTrabajando() {
-  const cat = VISUAL_ENGINE_TRABAJANDO[Math.floor(Math.random() * VISUAL_ENGINE_TRABAJANDO.length)];
-  return cat.queries[Math.floor(Math.random() * cat.queries.length)];
+async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
+  const canvas = createCanvas(1080, 1080);
+  const ctx    = canvas.getContext('2d');
+  ctx.fillStyle = branding.colorBarra || '#7B3A4A';
+  ctx.fillRect(0, 0, 1080, 1080);
+  if (!process.env.OPENAI_API_KEY || !dallePrompt) {
+    console.error('[AmarEs] OPENAI_API_KEY ausente o sin prompt — cancelando'); return null;
+  }
+  let usedAI = false;
+  try {
+    const aiPrompt = 'Premium cute chibi anime illustration. Scene: ' + dallePrompt + '. Style: flat colors, big expressive eyes, round chibi faces, warm cinematic lighting, soft pink and lavender palette, romantic atmosphere, floating hearts, bokeh background. NO text. NO letters. NO watermark. NO photorealism. NO watercolor.';
+    const body = JSON.stringify({ model: 'gpt-image-1', prompt: aiPrompt, n: 1, size: '1024x1024', quality: 'medium' });
+    const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
+    const j = await r.json();
+    if (j.data && j.data[0] && j.data[0].b64_json) {
+      const img = await loadImage('data:image/png;base64,' + j.data[0].b64_json);
+      ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1;
+      usedAI = true; console.log('[AmarEs] gpt-image-1 OK');
+    } else { console.error('[AmarEs] gpt-image-1 sin datos:', JSON.stringify(j).substring(0, 200)); }
+  } catch(e) { console.error('[AmarEs] gpt-image-1 error:', e.message); }
+  if (!usedAI) { console.error('[AmarEs] OpenAI falló — cancelando publicación'); return null; }
+  const grad = ctx.createLinearGradient(0, 0, 0, 1080);
+  grad.addColorStop(0,    'rgba(123,58,74,0.0)');
+  grad.addColorStop(0.55, 'rgba(123,58,74,0.10)');
+  grad.addColorStop(0.78, 'rgba(123,58,74,0.50)');
+  grad.addColorStop(1,    'rgba(123,58,74,0.90)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
+  ctx.fillStyle = 'rgba(123,58,74,0.65)'; ctx.fillRect(0, 0, 1080, 115);
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 6);
+  ctx.font = 'bold 18px Roboto'; ctx.textAlign = 'center';
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0';
+  ctx.fillText((branding.subtituloMarca || 'AMOR · RELACIONES · BIENESTAR').toUpperCase(), 540, 40);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 44px Roboto';
+  ctx.fillText(branding.nombreMarca || 'AMAR ES', 540, 84);
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 16;
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 72px Roboto';
+  const gw = gancho.toUpperCase().split(' '); let gl = ''; let gy = 740;
+  for (const w of gw) { const t = gl ? gl+' '+w : w; if (ctx.measureText(t).width > 920) { ctx.fillText(gl, 540, gy); gl = w; gy += 82; } else gl = t; }
+  if (gl) ctx.fillText(gl, 540, gy);
+  if (reflexion) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 26px Roboto'; ctx.fillText('"' + reflexion + '"', 540, gy + 54); }
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 1073, 1080, 6);
+  ctx.fillStyle = 'rgba(255,245,240,0.75)'; ctx.font = '15px Roboto';
+  ctx.fillText(branding.footerLinea1 || 'Amar es · Para la mujer latina', 540, 1054);
+  return canvas.toBuffer('image/png');
 }
-
 async function generarCoverGenerico(branding, coverTitulo) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
@@ -630,9 +676,10 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
   }
   try {
     // Generar caption con la voz del nicho
-    const esFe    = pageConfig.tipo === 'fe';
-    const esAmor  = pageConfig.tipo === 'amor';
-    const esFancy = pageConfig.tipo === 'fancy';
+    const esFe         = pageConfig.tipo === 'fe';
+    const esAmor       = pageConfig.tipo === 'amor';
+    const esFancy      = pageConfig.tipo === 'fancy';
+    const esTrabajando = pageConfig.tipo === 'trabajando';
     const FANCY_CATEGORIAS = [
       { tema: 'vestidos elegantes mujer',        searchTerm: 'vestidos mujer elegantes',          emoji: '👗' },
       { tema: 'zapatos tacones tendencia',        searchTerm: 'tacones mujer moda',                emoji: '👠' },
@@ -649,9 +696,10 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const formatoAmor = 'Responde en este formato exacto (sin comillas, sin asteriscos, sin texto adicional):\nSCENE: [describe in English a specific romantic scene for the Amor Es chibi couple — location, lighting, specific action, emotion — max 200 chars]\nGANCHO: [frase gancho max 7 palabras en español, mayúsculas, impactante, 2ª persona]\nREFLEXION: [una sola línea poética emotiva max 12 palabras, español, minúsculas]\nMICROHISTORIA: [2 a 3 líneas en segunda persona, emotivas, sin hashtags — narra el momento como si le hablaras directamente a ella]\nCTA: [pregunta conversacional corta para invitar a comentar, español]\nPILAR: [elige uno: amor de pareja | amor propio | relaciones sanas | pequeños gestos cotidianos | sanar y dejar ir | familia y complicidad]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio') + ' — escoge máximo 3 hashtags relevantes al pilar elegido, sin repetición';
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase de MÁXIMO 4 PALABRAS en español — solo sustantivos/adjetivos poderosos]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
+    const formatoTrabajando = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase de MÁXIMO 4 PALABRAS en español — impactante, motivadora, segunda persona]\nCAPTION: [2 a 3 líneas inspiradoras para emprendedoras latinas — práctica, directa, real]\nHASHTAGS: ' + (pageConfig.hashtags || '#TrabajarDesdeCasa #EmprendimientoLatino');
     const captionPayload = JSON.stringify({
       model: 'claude-sonnet-4-6', max_tokens: 180,
-      system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : esFancy ? formatoFancy : formatoGenerico),
+      system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : esFancy ? formatoFancy : esTrabajando ? formatoTrabajando : formatoGenerico),
       messages: [{ role: 'user', content: esFancy && fancyCat ? 'Tendencia del día: ' + fancyCat.tema + ' ' + fancyCat.emoji : 'Tema: ' + temaActual }]
     });
     const caption = await new Promise((resolve, reject) => {
@@ -711,14 +759,23 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       captionTexto = capTexto + '\n\n' + ctaTexto + (amazonLink ? '\n🔗 ' + amazonLink + '\n*(enlace de afiliado)' : '') + '\n\n— Fancy by Roxette ✨\n\n' + hashArr;
       console.log('[Fancy] TITULAR:', titular, '| CAT:', fancyCat ? fancyCat.tema : 'genérico');
       coverBuffer = await generarCoverFancy(pageConfig.branding, titular, subtitulo);
-    } else {
+    } else if (esTrabajando) {
       const coverMatch  = caption.match(/COVER:\s*(.+)/i);
-      const captionMatch = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
-      const coverTitulo = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 60);
-      captionTexto      = captionMatch ? captionMatch[1].trim() : caption;
-      coverBuffer = pageConfig.branding
-        ? await generarCoverGenerico(pageConfig.branding, coverTitulo)
-        : await generarCoverPasarela(titulo.split(' ').slice(0,5).join(' '), await getImagenCategoria('MODA', titulo.split(' ').slice(0,3).join(' ')));
+      const capMatch    = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
+      const hashMatch   = caption.match(/HASHTAGS:\s*(.+)/i);
+      const coverTitulo = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 25);
+      const capTexto    = capMatch   ? capMatch[1].trim()   : '';
+      const hashTexto   = hashMatch  ? hashMatch[1].trim()  : pageConfig.hashtags || '';
+      captionTexto = capTexto + '\n\n' + hashTexto;
+      console.log('[Trabajando] COVER:', coverTitulo);
+      coverBuffer = await generarCoverTrabajando(pageConfig.branding, coverTitulo);
+    } else {
+      console.error('[MultiPage] Tipo no reconocido:', pageConfig.tipo, '— abortando');
+      return;
+    }
+    if (!coverBuffer) {
+      console.error('[MultiPage] No se generó imagen para:', pageConfig.nombre, '— abortando');
+      return;
     }
     console.log('[MultiPage] Caption generado para:', pageConfig.nombre, '— publicando cover...');
     // Intercambiar por page token largo
