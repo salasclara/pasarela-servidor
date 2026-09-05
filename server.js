@@ -412,11 +412,31 @@ async function generarCoverPasarela(titulo, imgUrl) {
   return canvas.toBuffer('image/png');
 }
 
+// ── VISUAL ENGINE — Maravillas del Reino ───────────────────────────────────
+const VISUAL_ENGINE_FE = [
+  { cat: 'FAITH',          queries: ['woman praying', 'hands praying', 'person praying sunrise', 'Bible prayer'] },
+  { cat: 'HOPE',           queries: ['hope sunrise', 'sunlight clouds', 'looking at sunrise', 'walking toward light'] },
+  { cat: 'GOD_PRESENCE',   queries: ['sun rays clouds', 'heavenly light', 'light through clouds', 'dramatic sky sunlight'] },
+  { cat: 'BIBLE',          queries: ['open Bible', 'woman reading Bible', 'Bible study', 'Bible coffee'] },
+  { cat: 'PEACE',          queries: ['peaceful nature', 'calm lake sunrise', 'serene landscape', 'quiet morning'] },
+  { cat: 'COMFORT',        queries: ['woman reflection', 'woman finding peace', 'hope after sadness', 'light after storm'] },
+  { cat: 'GRATITUDE',      queries: ['woman grateful', 'worship hands', 'woman looking sky', 'gratitude nature'] },
+  { cat: 'NEW_BEGINNING',  queries: ['new beginning sunrise', 'morning light', 'open road sunrise', 'beautiful dawn'] },
+  { cat: 'DIFFICULT_TIMES',queries: ['storm clouds sunlight', 'woman rain window', 'light in darkness', 'hopeful silhouette'] },
+  { cat: 'BLESSINGS',      queries: ['flowers sunlight', 'sunflower field', 'golden field sunlight', 'beautiful morning nature'] },
+  { cat: 'FAMILY_FAITH',   queries: ['family praying', 'mother daughter praying', 'family holding hands', 'family together home'] },
+  { cat: 'PURPOSE',        queries: ['woman walking path', 'road sunrise', 'person mountain path', 'walking toward light'] },
+];
+function getQueryFe() {
+  const cat = VISUAL_ENGINE_FE[Math.floor(Math.random() * VISUAL_ENGINE_FE.length)];
+  return cat.queries[Math.floor(Math.random() * cat.queries.length)];
+}
+
 async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = branding.colorBarra || '#0D2E6E'; ctx.fillRect(0, 0, 1080, 1080);
-  const imgUrlFe = await getImagenCategoria('DEFAULT', 'christian faith sunrise nature peaceful light');
+  const imgUrlFe = await getImagenCategoria('DEFAULT', getQueryFe());
   if (imgUrlFe) {
     try {
       const buf = await descargarImagen(imgUrlFe);
