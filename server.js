@@ -318,7 +318,26 @@ const PAGES_EXTRA = [
 // ============================================================
 // CANVAS + COVER GENERATORS
 // ============================================================
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
+const _fontPath = require('path').join(__dirname, 'Roboto-Bold.ttf');
+// Registrar fuente al arrancar — @napi-rs/canvas en Linux no usa fuentes del sistema
+(async () => {
+  try {
+    if (!require('fs').existsSync(_fontPath)) {
+      console.log('[Fonts] Descargando Roboto-Bold...');
+      const _buf = await new Promise(res => {
+        require('https').get('https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc9.ttf', r => {
+          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
+        }).on('error', () => res(null));
+      });
+      if (_buf && _buf.length > 10000) { require('fs').writeFileSync(_fontPath, _buf); console.log('[Fonts] Roboto-Bold descargado OK'); }
+    }
+    if (require('fs').existsSync(_fontPath)) {
+      GlobalFonts.registerFromPath(_fontPath, 'Roboto');
+      console.log('[Fonts] Roboto registrado para canvas');
+    }
+  } catch(e) { console.error('[Fonts] Error:', e.message); }
+})();
 
 async function descargarImagen(url) {
   if (!url) return null;
@@ -376,10 +395,10 @@ async function generarCoverPasarela(titulo, imgUrl) {
   grad.addColorStop(1, 'rgba(13,10,11,0.95)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
   ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, 6);
-  ctx.fillStyle = '#C9A66B'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#C9A66B'; ctx.font = 'bold 22px Roboto'; ctx.textAlign = 'center';
   ctx.fillText('PASARELA\u2122 STUDIO INTERNACIONAL', 540, 55);
   ctx.fillStyle = 'rgba(201,166,107,0.4)'; ctx.fillRect(80, 68, 920, 1);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 72px sans-serif';
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 72px Roboto';
   const words = titulo.toUpperCase().split(' ');
   let line = ''; let y = 580;
   for (const w of words) {
@@ -388,7 +407,7 @@ async function generarCoverPasarela(titulo, imgUrl) {
   }
   if (line) ctx.fillText(line, 540, y);
   ctx.fillStyle = '#C9A66B'; ctx.fillRect(80, y + 30, 920, 3);
-  ctx.fillStyle = '#C4826A'; ctx.font = '20px sans-serif';
+  ctx.fillStyle = '#C4826A'; ctx.font = '20px Roboto';
   ctx.fillText('pasarelastudiointer.com  \u00b7  Dallas, TX', 540, 1045);
   return canvas.toBuffer('image/png');
 }
@@ -408,22 +427,22 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   grad.addColorStop(0, 'rgba(13,46,110,0.65)'); grad.addColorStop(1, 'rgba(13,46,110,0.97)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 8);
-  ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center';
+  ctx.font = 'bold 20px Roboto'; ctx.textAlign = 'center';
   ctx.fillText((branding.subtituloMarca || '').toUpperCase(), 540, 55);
-  ctx.font = 'bold 34px sans-serif'; ctx.fillText(branding.nombreMarca || 'MARAVILLAS DEL REINO', 540, 94);
+  ctx.font = 'bold 34px Roboto'; ctx.fillText(branding.nombreMarca || 'MARAVILLAS DEL REINO', 540, 94);
   ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 78px sans-serif';
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 78px Roboto';
   ctx.fillText(afirmacion.toUpperCase().substring(0, 18), 540, 420);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 108px sans-serif';
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 108px Roboto';
   ctx.fillText(hero.toUpperCase().substring(0, 12), 540, 560);
-  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = 'italic 26px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = 'italic 26px Roboto';
   const vw = versiculo.split(' '); let vl = ''; let vy = 660;
   for (const w of vw) { const t = vl ? vl+' '+w : w; if (ctx.measureText(t).width > 860) { ctx.fillText(vl, 540, vy); vl = w; vy += 36; } else vl = t; }
   if (vl) ctx.fillText(vl, 540, vy);
-  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 26px sans-serif';
+  ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.font = 'bold 26px Roboto';
   ctx.fillText('\u2014 ' + referencia + ' \u2014', 540, vy + 46);
   ctx.fillRect(0, 1072, 1080, 8);
-  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '17px Roboto';
   ctx.fillText(branding.footerLinea1 || '', 540, 1054);
   return canvas.toBuffer('image/png');
 }
@@ -443,17 +462,17 @@ async function generarCoverFancy(branding, titular, subtitulo) {
   grad.addColorStop(0, 'rgba(44,26,46,0.35)'); grad.addColorStop(0.5, 'rgba(44,26,46,0.6)'); grad.addColorStop(1, 'rgba(44,26,46,0.95)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
   ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 5);
-  ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
+  ctx.font = 'bold 19px Roboto'; ctx.textAlign = 'center';
   ctx.fillText(branding.subtituloMarca || 'BOUTIQUE \u00b7 DALLAS TX', 540, 52);
-  ctx.font = 'bold 40px sans-serif'; ctx.fillText(branding.nombreMarca || 'FANCY BY ROXETTE', 540, 100);
+  ctx.font = 'bold 40px Roboto'; ctx.fillText(branding.nombreMarca || 'FANCY BY ROXETTE', 540, 100);
   ctx.fillStyle = 'rgba(232,197,176,0.35)'; ctx.fillRect(80, 115, 920, 1);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 86px sans-serif';
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 86px Roboto';
   const tw = titular.toUpperCase().split(' '); let tl = ''; let ty = 550;
   for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(tl, 540, ty); tl = w; ty += 98; } else tl = t; }
   if (tl) ctx.fillText(tl, 540, ty);
-  if (subtitulo) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 30px sans-serif'; ctx.fillText(subtitulo, 540, ty + 52); }
+  if (subtitulo) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 30px Roboto'; ctx.fillText(subtitulo, 540, ty + 52); }
   ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 1073, 1080, 5);
-  ctx.fillStyle = 'rgba(249,240,232,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillStyle = 'rgba(249,240,232,0.65)'; ctx.font = '17px Roboto';
   ctx.fillText(branding.footerLinea1 || 'Fancy by Roxette \u00b7 Dallas, TX', 540, 1051);
   return canvas.toBuffer('image/png');
 }
@@ -486,17 +505,17 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   grad.addColorStop(0, 'rgba(123,58,74,0.3)'); grad.addColorStop(0.6, 'rgba(123,58,74,0.65)'); grad.addColorStop(1, 'rgba(123,58,74,0.95)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
   ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 6);
-  ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
+  ctx.font = 'bold 19px Roboto'; ctx.textAlign = 'center';
   ctx.fillText(branding.subtituloMarca || 'AMOR \u00b7 RELACIONES \u00b7 BIENESTAR', 540, 52);
-  ctx.font = 'bold 44px sans-serif'; ctx.fillText(branding.nombreMarca || 'AMAR ES', 540, 102);
-  ctx.font = '46px sans-serif'; ctx.fillText('\u2665', 540, 170);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 76px sans-serif';
+  ctx.font = 'bold 44px Roboto'; ctx.fillText(branding.nombreMarca || 'AMAR ES', 540, 102);
+  ctx.font = '46px Roboto'; ctx.fillText('\u2665', 540, 170);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 76px Roboto';
   const gw = gancho.toUpperCase().split(' '); let gl = ''; let gy = 520;
   for (const w of gw) { const t = gl ? gl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(gl, 540, gy); gl = w; gy += 86; } else gl = t; }
   if (gl) ctx.fillText(gl, 540, gy);
-  if (reflexion) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 29px sans-serif'; ctx.fillText('"' + reflexion + '"', 540, gy + 58); }
+  if (reflexion) { ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.font = 'italic 29px Roboto'; ctx.fillText('"' + reflexion + '"', 540, gy + 58); }
   ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 1073, 1080, 6);
-  ctx.fillStyle = 'rgba(255,245,240,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillStyle = 'rgba(255,245,240,0.65)'; ctx.font = '17px Roboto';
   ctx.fillText(branding.footerLinea1 || 'Amar es \u00b7 Para la mujer latina', 540, 1051);
   return canvas.toBuffer('image/png');
 }
@@ -516,16 +535,16 @@ async function generarCoverGenerico(branding, coverTitulo) {
   grad.addColorStop(0, 'rgba(26,58,46,0.65)'); grad.addColorStop(1, 'rgba(26,58,46,0.97)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1080);
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 0, 1080, 6);
-  ctx.font = 'bold 19px sans-serif'; ctx.textAlign = 'center';
+  ctx.font = 'bold 19px Roboto'; ctx.textAlign = 'center';
   ctx.fillText(branding.subtituloMarca || '', 540, 52);
-  ctx.font = 'bold 36px sans-serif'; ctx.fillText(branding.nombreMarca || '', 540, 96);
+  ctx.font = 'bold 36px Roboto'; ctx.fillText(branding.nombreMarca || '', 540, 96);
   ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
-  ctx.fillStyle = branding.colorTexto || '#FFFFFF'; ctx.font = 'bold 80px sans-serif';
+  ctx.fillStyle = branding.colorTexto || '#FFFFFF'; ctx.font = 'bold 80px Roboto';
   const cw = coverTitulo.toUpperCase().split(' '); let cl = ''; let cy = 550;
   for (const w of cw) { const t = cl ? cl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(cl, 540, cy); cl = w; cy += 93; } else cl = t; }
   if (cl) ctx.fillText(cl, 540, cy);
   ctx.fillStyle = branding.colorAccento || '#C9A66B'; ctx.fillRect(0, 1073, 1080, 6);
-  ctx.fillStyle = 'rgba(240,245,232,0.65)'; ctx.font = '17px sans-serif';
+  ctx.fillStyle = 'rgba(240,245,232,0.65)'; ctx.font = '17px Roboto';
   ctx.fillText(branding.footerLinea1 || '', 540, 1051);
   return canvas.toBuffer('image/png');
 }
@@ -541,11 +560,11 @@ async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
   grad.addColorStop(0, 'rgba(13,10,11,0.2)'); grad.addColorStop(1, 'rgba(13,10,11,0.9)');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 566);
   ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, 4);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 50px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 50px Roboto'; ctx.textAlign = 'center';
   const tw = titulo.split(' '); let tl = ''; let ty = 330;
   for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 940) { ctx.fillText(tl, 540, ty); tl = w; ty += 60; } else tl = t; }
   if (tl) ctx.fillText(tl, 540, ty);
-  ctx.fillStyle = '#C9A66B'; ctx.font = '19px sans-serif';
+  ctx.fillStyle = '#C9A66B'; ctx.font = '19px Roboto';
   ctx.fillText('PASARELA\u2122  \u00b7  ' + (fecha || new Date().toLocaleDateString('es-US')), 540, ty + 40);
   return canvas.toBuffer('image/png');
 }
@@ -1362,6 +1381,23 @@ INSTRUCCIONES:
   res.writeHead(404);
   res.end();
 });
+// ── AUTO-PUBLICADOR PÁGINAS EXTRA — cada 6 horas ──────────────────────────
+async function autoPublicarPaginasExtra() {
+  const _titulo = 'Reflexión del día — ' + new Date().toLocaleDateString('es-MX', {weekday:'long', month:'long', day:'numeric'});
+  console.log('[AutoPublish] Iniciando ciclo multi-página:', _titulo);
+  for (const _pg of PAGES_EXTRA) {
+    if (!_pg.token) { console.log('[AutoPublish] Sin token:', _pg.nombre); continue; }
+    try {
+      await publicarCoverParaPagina(_pg, _titulo);
+      console.log('[AutoPublish] ✅', _pg.nombre);
+      await new Promise(r => setTimeout(r, 8000));
+    } catch(e) { console.error('[AutoPublish] Error en', _pg.nombre, ':', e.message); }
+  }
+  console.log('[AutoPublish] Ciclo completado');
+}
+setInterval(autoPublicarPaginasExtra, 6 * 60 * 60 * 1000);
+console.log('[AutoPublish] Scheduler activado — publica cada 6 horas');
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`[Servidor] Corriendo en puerto ${PORT}`);
