@@ -484,135 +484,143 @@ function getQueryTrabajando() {
 async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia) {
   const canvas = createCanvas(1080, 1080);
   const ctx    = canvas.getContext('2d');
-  const AZUL   = branding.colorBarra   || '#0D2E6E';
+  const AZUL   = '#123B7A';
   const DORADO = branding.colorAccento || '#C9A66B';
-  const HEADER_H = 88;
-  const FOOTER_H = 88;
-  const PHOTO_BOT = 1080 - FOOTER_H; // 992
 
-  // 1. Base azul
+  // BASE azul
   ctx.fillStyle = AZUL;
   ctx.fillRect(0, 0, 1080, 1080);
 
-  // 2. Foto — clipped entre header y footer, object-fit cover
+  // FOTO — full canvas 1080×1080, object-fit cover, SIN clip, SIN reducción
   const imgUrl = await getImagenCategoria('DEFAULT', getQueryFe());
   if (imgUrl) {
     try {
       const buf = await descargarImagen(imgUrl);
       if (buf) {
         const img = await loadImage(buf);
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, HEADER_H, 1080, PHOTO_BOT - HEADER_H);
-        ctx.clip();
+        ctx.globalAlpha = 1;
         drawImageCover(ctx, img, 1080, 1080);
-        ctx.restore();
+        ctx.globalAlpha = 1;
       }
     } catch(e) { console.error('[CoverFe] imagen:', e.message); }
   }
 
-  // 3. Gradiente superior suave — solo para legibilidad de afirmación
-  const gTop = ctx.createLinearGradient(0, HEADER_H, 0, HEADER_H + 200);
-  gTop.addColorStop(0, 'rgba(0,0,0,0.42)');
-  gTop.addColorStop(1, 'rgba(0,0,0,0.0)');
+  // GRADIENTE SUPERIOR — solo donde va texto (header+afirmación+hero), preserva foto
+  const gTop = ctx.createLinearGradient(0, 80, 0, 510);
+  gTop.addColorStop(0,   'rgba(0,0,0,0.50)');
+  gTop.addColorStop(0.6, 'rgba(0,0,0,0.18)');
+  gTop.addColorStop(1,   'rgba(0,0,0,0.0)');
   ctx.fillStyle = gTop;
-  ctx.fillRect(0, HEADER_H, 1080, 200);
+  ctx.fillRect(0, 80, 1080, 430);
 
-  // 4. Gradiente inferior suave — para versículo y referencia
-  const gBot = ctx.createLinearGradient(0, PHOTO_BOT - 360, 0, PHOTO_BOT);
+  // GRADIENTE INFERIOR — zona versículo/referencia
+  const gBot = ctx.createLinearGradient(0, 540, 0, 985);
   gBot.addColorStop(0, 'rgba(0,0,0,0.0)');
-  gBot.addColorStop(1, 'rgba(0,0,0,0.52)');
+  gBot.addColorStop(1, 'rgba(0,0,0,0.58)');
   ctx.fillStyle = gBot;
-  ctx.fillRect(0, PHOTO_BOT - 360, 1080, 360);
+  ctx.fillRect(0, 540, 1080, 445);
 
-  // 5. HEADER — franja azul sólida
+  // ── HEADER — encima de la foto, y=0..80 ─────────────────────────────────
   ctx.fillStyle = AZUL;
-  ctx.fillRect(0, 0, 1080, HEADER_H);
+  ctx.fillRect(0, 0, 1080, 80);
   ctx.fillStyle = DORADO;
-  ctx.fillRect(0, HEADER_H - 2, 1080, 2); // línea dorada inferior del header
+  ctx.fillRect(0, 78, 1080, 2);                     // línea dorada inferior
 
   ctx.textAlign = 'center';
   ctx.shadowBlur = 0;
   ctx.fillStyle = DORADO;
-  ctx.font = 'bold 34px Roboto';
-  ctx.fillText((branding.nombreMarca || 'MARAVILLAS DEL REINO').toUpperCase(), 540, 47);
-  ctx.fillStyle = 'rgba(255,255,255,0.78)';
-  ctx.font = '13px Roboto';
-  ctx.fillText((branding.subtituloMarca || 'COMUNIDAD DE FE').toUpperCase(), 540, 71);
-
-  // 6. AFIRMACIÓN — tercio superior de la foto, blanco bold
-  ctx.shadowColor = 'rgba(0,0,0,0.92)';
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = '#FFFFFF';
   ctx.font = 'bold 32px Roboto';
+  ctx.fillText('MARAVILLAS DEL REINO', 540, 44);
+  ctx.fillStyle = 'rgba(201,166,107,0.85)';
+  ctx.font = '13px Roboto';
+  ctx.fillText('COMUNIDAD DE FE', 540, 67);
+
+  // ── AFIRMACIÓN — y ≈ 165–215 ─────────────────────────────────────────────
+  ctx.shadowColor = 'rgba(0,0,0,0.95)';
+  ctx.shadowBlur  = 14;
+  ctx.fillStyle   = '#FFFFFF';
+  ctx.font        = 'bold 33px Roboto';
   const aw = afirmacion.toUpperCase().split(' ');
-  let al = ''; let ay = 236;
+  let al = ''; let ay = 188;
   for (const w of aw) {
     const t = al ? al+' '+w : w;
-    if (ctx.measureText(t).width > 920) { ctx.fillText(al, 540, ay); al = w; ay += 38; }
+    if (ctx.measureText(t).width > 940) { ctx.fillText(al, 540, ay); al = w; ay += 40; }
     else al = t;
   }
-  if (al) { ctx.fillText(al, 540, ay); ay += 38; }
+  if (al) { ctx.fillText(al, 540, ay); ay += 40; }
 
-  // 7. HERO — elemento dominante, dorado, serif editorial
-  const heroFontFace = _cormorantLoaded ? 'Cormorant' : 'Roboto';
-  const heroSize     = _cormorantLoaded ? 104 : 88;
-  const heroLineH    = _cormorantLoaded ? 112 : 98;
-  ctx.fillStyle = DORADO;
-  ctx.font = `bold ${heroSize}px ${heroFontFace}`;
+  // ── HERO — elemento dominante, 65–90 px ──────────────────────────────────
+  const heroFace = _cormorantLoaded ? 'Cormorant' : 'Roboto';
+  let   heroSz   = _cormorantLoaded ? 88 : 74;
+  ctx.fillStyle  = DORADO;
+  ctx.font       = `bold ${heroSz}px ${heroFace}`;
+  // Reducir si el hero de 1 palabra excede el canvas
+  if (ctx.measureText(hero.toUpperCase()).width > 1020) {
+    heroSz = Math.max(60, heroSz - 12);
+    ctx.font = `bold ${heroSz}px ${heroFace}`;
+  }
+  const heroLineH = heroSz + 12;
   const hw = hero.toUpperCase().split(' ');
-  let hl = ''; let hy = ay + 36;
+  let hl = ''; let hy = ay + 28;
   for (const w of hw) {
     const t = hl ? hl+' '+w : w;
-    if (ctx.measureText(t).width > 960) { ctx.fillText(hl, 540, hy); hl = w; hy += heroLineH; }
+    if (ctx.measureText(t).width > 990) { ctx.fillText(hl, 540, hy); hl = w; hy += heroLineH; }
     else hl = t;
   }
   if (hl) { ctx.fillText(hl, 540, hy); hy += heroLineH; }
 
-  // 8. SEPARADOR — línea dorada fina, 64% de ancho
+  // ── SEPARADOR — y ≈ 450–490 ──────────────────────────────────────────────
   ctx.shadowBlur = 0;
-  const sepY = Math.min(hy + 16, 700);
-  const lineW = 1080 * 0.64;
+  const sepY = Math.max(Math.min(hy + 22, 490), 410);
+  const lineW = 1080 * 0.68;
   ctx.strokeStyle = DORADO;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth   = 1.5;
   ctx.beginPath();
   ctx.moveTo((1080 - lineW) / 2, sepY);
   ctx.lineTo((1080 + lineW) / 2, sepY);
   ctx.stroke();
 
-  // 9. VERSÍCULO — itálica blanca, contemplativo
-  ctx.shadowColor = 'rgba(0,0,0,0.88)';
-  ctx.shadowBlur = 8;
-  ctx.fillStyle = 'rgba(255,255,255,0.93)';
-  ctx.font = 'italic 21px Roboto';
-  const vText = '"' + versiculo + '"';
-  const vwords = vText.split(' '); let vl = ''; let vy = Math.min(sepY + 55, 760);
+  // ── VERSÍCULO — y ≈ 590–720, 30 px, legible ──────────────────────────────
+  ctx.shadowColor = 'rgba(0,0,0,0.95)';
+  ctx.shadowBlur  = 10;
+  ctx.fillStyle   = 'rgba(255,255,255,0.97)';
+  ctx.font        = 'italic 30px Roboto';
+  const vText  = '“' + versiculo + '”';
+  const vwords = vText.split(' '); let vl = ''; let vy = Math.max(sepY + 105, 595);
   for (const w of vwords) {
     const t = vl ? vl+' '+w : w;
-    if (ctx.measureText(t).width > 870) { ctx.fillText(vl, 540, vy); vl = w; vy += 28; }
+    if (ctx.measureText(t).width > 880) { ctx.fillText(vl, 540, vy); vl = w; vy += 36; }
     else vl = t;
   }
-  if (vl) { ctx.fillText(vl, 540, vy); vy += 28; }
+  if (vl) { ctx.fillText(vl, 540, vy); vy += 36; }
 
-  // 10. REFERENCIA BÍBLICA
+  // ── REFERENCIA — y ≈ 880–930 ─────────────────────────────────────────────
   ctx.fillStyle = DORADO;
-  ctx.font = 'bold 19px Roboto';
-  ctx.fillText('— ' + referencia + ' —', 540, Math.min(vy + 30, 940));
+  ctx.font      = 'bold 27px Roboto';
+  const refY = Math.max(Math.min(vy + 44, 930), 850);
+  ctx.fillText('— ' + referencia + ' —', 540, refY);
 
   ctx.shadowBlur = 0;
 
-  // 11. FOOTER — franja azul sólida
+  // ── FOOTER — encima de la foto, y=985..1080 ──────────────────────────────
   ctx.fillStyle = AZUL;
-  ctx.fillRect(0, PHOTO_BOT, 1080, FOOTER_H);
+  ctx.fillRect(0, 985, 1080, 95);
   ctx.fillStyle = DORADO;
-  ctx.fillRect(0, PHOTO_BOT, 1080, 2); // línea dorada superior del footer
+  ctx.fillRect(0, 985, 1080, 2);                    // línea dorada superior
 
   ctx.fillStyle = DORADO;
-  ctx.font = 'bold 15px Roboto';
-  ctx.fillText(branding.footerLinea1 || 'Comunidad de Fe Maravillas Del Reino · Dallas, TX', 540, PHOTO_BOT + 36);
-  ctx.fillStyle = 'rgba(255,255,255,0.65)';
-  ctx.font = '13px Roboto';
-  ctx.fillText(branding.footerLinea2 || '@MaravillaDelReino', 540, PHOTO_BOT + 60);
+  ctx.font      = 'bold 16px Roboto';
+  ctx.fillText(branding.footerLinea1 || 'Comunidad de Fe Maravillas Del Reino · Dallas, TX', 540, 1022);
+  ctx.fillStyle = 'rgba(255,255,255,0.72)';
+  ctx.font      = '14px Roboto';
+  ctx.fillText(branding.footerLinea2 || '@MaravillaDelReino', 540, 1048);
+
+  // ── VALIDACIÓN ─────────────────────────────────────────────────────────────
+  const comp = { photoWidth:1080, heroFontSize:heroSz, verseFontSize:30, noLateralMargins:true };
+  console.log('[CoverFe] Composición:', JSON.stringify(comp));
+  if (comp.heroFontSize < 60 || comp.verseFontSize < 26) {
+    console.error('[CoverFe] FALLA validación — abortando'); return null;
+  }
 
   return canvas.toBuffer('image/png');
 }
