@@ -446,6 +446,23 @@ function getQueryFe() {
   const cat = VISUAL_ENGINE_FE[Math.floor(Math.random() * VISUAL_ENGINE_FE.length)];
   return cat.queries[Math.floor(Math.random() * cat.queries.length)];
 }
+const VISUAL_ENGINE_TRABAJANDO = [
+  { cat: 'HOME_OFFICE',      queries: ['woman working laptop home', 'hispanic woman home office', 'cozy female home office'] },
+  { cat: 'ENTREPRENEUR',     queries: ['latina entrepreneur', 'hispanic business woman', 'female small business owner'] },
+  { cat: 'EMPOWERMENT',      queries: ['confident latina woman', 'successful hispanic woman', 'confident female entrepreneur'] },
+  { cat: 'PRODUCTIVITY',     queries: ['woman planning desk', 'woman writing planner', 'organized home office'] },
+  { cat: 'DIGITAL_BUSINESS', queries: ['woman smartphone business', 'female content creator', 'woman online business'] },
+  { cat: 'MOM_ENTREPRENEUR', queries: ['mother working from home', 'working mom laptop', 'mother entrepreneur'] },
+  { cat: 'SMALL_BUSINESS',   queries: ['woman packing orders', 'female ecommerce business', 'woman small business owner'] },
+  { cat: 'LEARNING',         queries: ['woman studying laptop', 'online learning woman', 'woman taking notes'] },
+  { cat: 'LIFESTYLE',        queries: ['woman coffee laptop home', 'woman morning routine', 'woman working cozy home'] },
+  { cat: 'SUCCESS',          queries: ['woman celebrating success', 'happy female entrepreneur', 'woman celebrating laptop'] },
+];
+function getQueryTrabajando() {
+  const cat = VISUAL_ENGINE_TRABAJANDO[Math.floor(Math.random() * VISUAL_ENGINE_TRABAJANDO.length)];
+  return cat.queries[Math.floor(Math.random() * cat.queries.length)];
+}
+
 
 async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia) {
   const canvas = createCanvas(1080, 1080);
@@ -573,7 +590,7 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
     const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
     const j = await r.json();
     if (j.data && j.data[0] && j.data[0].b64_json) {
-      const img = await loadImage('data:image/png;base64,' + j.data[0].b64_json);
+      const img = await loadImage(Buffer.from(j.data[0].b64_json, 'base64'));
       ctx.globalAlpha = 1; drawImageCover(ctx, img, 1080, 1080); ctx.globalAlpha = 1;
       usedAI = true; console.log('[AmarEs] gpt-image-1 OK');
     } else { console.error('[AmarEs] gpt-image-1 sin datos:', JSON.stringify(j).substring(0, 200)); }
