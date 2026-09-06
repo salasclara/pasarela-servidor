@@ -1734,6 +1734,66 @@ async function autoPublicarPaginasExtra() {
   }
   console.log('[AutoPublish] Ciclo completado');
 }
+// ── AUTO-PUBLICADOR PASARELA STUDIO — misma hora que páginas extra ──────────
+async function autoPublicarPasarela() {
+  if (!FB_PAGE_TOKEN) { console.log('[AutoPublish-Pasarela] Sin FB_PAGE_TOKEN — omitiendo'); return; }
+  console.log('[AutoPublish-Pasarela] Iniciando publicación editorial...');
+  try {
+    // 1. Tomar noticia del cache RSS (con imagen preferida)
+    const pool_noticias = cacheNoticias.length > 0 ? cacheNoticias : [];
+    if (pool_noticias.length === 0) { console.log('[AutoPublish-Pasarela] Cache RSS vacío — omitiendo'); return; }
+    const conImagen = pool_noticias.filter(n => n.imagen && n.imagen.startsWith('http'));
+    const noticia = conImagen.length > 0
+      ? conImagen[Math.floor(Math.random() * conImagen.length)]
+      : pool_noticias[Math.floor(Math.random() * pool_noticias.length)];
+
+    // 2. Generar artículo editorial con Claude
+    const promptEditorial = 'Escribe un artículo editorial original e inspirador sobre: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas. Voz editorial propia.';
+    const payload = JSON.stringify({
+      model: 'claude-sonnet-4-6', max_tokens: 900,
+      system: 'Eres la editora de PASARELA STUDIO INTERNACIONAL™, escuela de modelaje y elegancia latina de Dallas, TX. Voz sofisticada, empoderada, latina. NUNCA cites fuentes. Primera persona editorial.',
+      messages: [{ role: 'user', content: promptEditorial }]
+    });
+    const contenido = await new Promise((resolve, reject) => {
+      const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(payload) } };
+      const r = https.request(opts, res => { let d = ''; res.on('data', c => { d += c; }); res.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+      r.on('error', reject); r.write(payload); r.end();
+    });
+    if (!contenido) throw new Error('Claude sin respuesta');
+
+    // 3. Guardar en DB
+    const slug = generarSlug(noticia.titulo);
+    await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
+      [noticia.titulo, contenido, 'editorial', slug, true, noticia.imagen || '']);
+
+    // 4. Generar cover con plantilla aprobada
+    const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
+    const fechaStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+    let coverBuffer = null;
+    if (noticia.imagen) {
+      try {
+        const imgBuf = await fetchBuf(noticia.imagen);
+        coverBuffer = await generarCoverBlogArticulo(imgBuf, noticia.titulo, fechaStr);
+      } catch(e) {
+        console.log('[AutoPublish-Pasarela] Imagen RSS no accesible, usando Pexels:', e.message);
+        const imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
+        coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '), imgUrl);
+      }
+    } else {
+      const imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
+      coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '), imgUrl);
+    }
+
+    // 5. Caption y publicar
+    const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
+    const caption = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion #EleganciaLatina #ModelajeLatino';
+    const fbRes = await publicarFotoBuffer(coverBuffer, caption);
+    console.log('[AutoPublish-Pasarela] ✅ Publicado:', noticia.titulo, '| FB ID:', fbRes?.id || fbRes);
+  } catch(e) {
+    console.error('[AutoPublish-Pasarela] Error:', e.message);
+  }
+}
+
 // ── SCHEDULER HORARIO FIJO: 9am, 3pm, 9pm (Dallas Central Time) ──────────────
 const HORAS_PUBLICACION = [9, 15, 21]; // hora en Central Time
 let _ultimaHoraPublicada = -1;
@@ -1755,6 +1815,8 @@ setInterval(async () => {
   if (HORAS_PUBLICACION.includes(hora) && min < 10 && hora !== _ultimaHoraPublicada) {
     _ultimaHoraPublicada = hora;
     console.log(`[AutoPublish] ⏰ Hora programada: ${hora}:00 Central — iniciando ciclo`);
+    await autoPublicarPasarela();
+    await new Promise(r => setTimeout(r, 15000)); // 15s entre Pasarela y páginas extra
     await autoPublicarPaginasExtra();
   }
 }, 60 * 1000); // revisa cada minuto
