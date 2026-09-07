@@ -447,47 +447,67 @@ function drawImageCover(ctx, img, canvasW, canvasH) {
 // ── VISUAL ENGINE — Maravillas del Reino ───────────────────────────────────
 // ── VISUAL ENGINE — Maravillas del Reino (13 categorías semánticas) ─────────
 const VISUAL_ENGINE_FE = [
-  { cat: 'FAITH',         queries: ['woman praying sunlight', 'hands praying sunlight', 'person praying sunrise', 'woman worship outdoors'] },
-  { cat: 'HOPE',          queries: ['beautiful sunrise landscape', 'woman looking sunrise', 'sunlight through clouds', 'walking toward sunrise'] },
-  { cat: 'PRAYER',        queries: ['woman praying home', 'hands praying Bible', 'family praying together', 'woman praying window sunlight'] },
-  { cat: 'BIBLE',         queries: ['open Bible sunlight', 'woman reading Bible morning', 'Bible study natural light', 'Bible coffee morning'] },
-  { cat: 'PEACE',         queries: ['peaceful lake sunrise', 'serene mountains morning', 'calm ocean sunrise', 'woman peaceful nature'] },
-  { cat: 'COMFORT',       queries: ['mother hugging daughter', 'woman peaceful window sunlight', 'woman reflection sunlight', 'hope after sadness'] },
-  { cat: 'GRATITUDE',     queries: ['woman grateful sunlight', 'worship hands sunset', 'happy woman nature', 'woman looking sky sunlight'] },
-  { cat: 'NEW_BEGINNING', queries: ['beautiful sunrise', 'morning golden light', 'open road sunrise', 'woman walking morning light'] },
-  { cat: 'FAMILY',        queries: ['happy family outdoors', 'mother daughter sunset', 'family holding hands', 'family together sunlight'] },
-  { cat: 'PURPOSE',       queries: ['woman walking mountain path', 'road toward sunrise', 'person mountain trail', 'woman looking horizon'] },
-  { cat: 'STRENGTH',      queries: ['confident woman outdoors', 'woman mountain sunrise', 'person standing mountain', 'woman overcoming challenge'] },
-  { cat: 'BLESSINGS',     queries: ['sunflower field sunlight', 'flowers morning light', 'golden field sunrise', 'happy family sunlight'] },
-  { cat: 'GOD_CREATION',  queries: ['majestic mountains sunlight', 'ocean sunset', 'beautiful clouds sunlight', 'wildflowers mountains'] },
+  // ── NATURALEZA 45% (9 categorías) ──────────────────────────────────────────
+  { cat: 'SUNRISE',      queries: ['golden sunrise sky morning light', 'beautiful sunrise landscape', 'sunrise over mountains peaceful', 'warm golden sunrise horizon'] },
+  { cat: 'MOUNTAINS',    queries: ['majestic mountains sunlight', 'mountain peak sunrise golden', 'scenic mountain landscape morning', 'mountains clouds sunlight peaceful'] },
+  { cat: 'FLOWERS',      queries: ['beautiful flowers sunlight garden', 'wildflowers morning light colorful', 'sunflower field golden light', 'spring flowers bloom sunlight'] },
+  { cat: 'FIELDS',       queries: ['golden wheat field sunlight', 'green field horizon morning', 'meadow wildflowers sunlight peaceful', 'open field sunrise warm light'] },
+  { cat: 'OCEAN',        queries: ['calm ocean sunrise peaceful', 'beach sunrise warm golden light', 'ocean waves sunlight blue sky', 'tropical beach morning light'] },
+  { cat: 'FOREST',       queries: ['sunlight through forest trees', 'forest path morning light', 'green forest sunlight peaceful', 'trees sunlight nature calm'] },
+  { cat: 'PATHS',        queries: ['road sunrise morning light', 'peaceful path nature morning', 'trail through nature sunrise', 'walkway garden sunlight'] },
+  { cat: 'GOLDEN_HOUR',  queries: ['golden hour sunset landscape', 'warm golden light nature', 'sunset golden glow peaceful', 'golden light sky clouds'] },
+  { cat: 'SKY',          queries: ['beautiful blue sky clouds sunlight', 'dramatic clouds golden sunlight', 'sky sunrise colors horizon', 'peaceful sky morning light'] },
+  // ── PERSONAS 30% (6 categorías) ─────────────────────────────────────────────
+  { cat: 'JOY',          queries: ['joyful woman outdoors sunlight', 'happy woman laughing nature', 'woman smiling sunlight peaceful', 'cheerful woman arms open sky'] },
+  { cat: 'FREEDOM',      queries: ['woman arms open field sunrise', 'free woman nature light', 'woman standing hilltop sunrise', 'woman open arms morning sky'] },
+  { cat: 'STRENGTH',     queries: ['confident woman sunrise outdoors', 'strong woman nature morning light', 'determined woman hilltop sunrise', 'woman standing strong sunlight'] },
+  { cat: 'PEACE_PERSON', queries: ['peaceful woman nature sunlight', 'woman eyes closed sunlight', 'serene woman garden morning', 'calm woman nature light'] },
+  { cat: 'WORSHIP',      queries: ['woman worship arms raised sunrise', 'person worship outdoor sunlight', 'woman hands raised sky morning', 'worship sunset arms open'] },
+  { cat: 'WALK',         queries: ['woman walking nature morning light', 'person walking path sunrise', 'woman walking beach sunrise', 'woman walk through flowers morning'] },
+  // ── FAMILIA 15% (3 categorías) ──────────────────────────────────────────────
+  { cat: 'FAMILY_JOY',   queries: ['happy family outdoors sunlight', 'family laughing park sunny day', 'family together bright sunny', 'joyful family outdoor light'] },
+  { cat: 'MOTHER_CHILD', queries: ['mother hugging child sunlight', 'mother daughter outdoors bright', 'mom child garden sunlight', 'mother holding child morning'] },
+  { cat: 'FAMILY_LOVE',  queries: ['family holding hands sunlight', 'couple family outdoors bright morning', 'family embrace sunset golden', 'family love outdoor light'] },
+  // ── BIBLIA 10% (2 categorías) ───────────────────────────────────────────────
+  { cat: 'BIBLE_LIGHT',  queries: ['open Bible sunlight bright', 'Bible window morning light', 'Bible study warm light', 'holy Bible golden light coffee'] },
+  { cat: 'PRAYER_BRIGHT', queries: ['hands praying bright sunlight', 'woman praying window morning light', 'person praying outdoor sunlight', 'prayer hands warm golden light'] },
 ];
-// Fallback aleatorio
+
+// Fallback aleatorio biased hacia naturaleza (9/20 chance nature)
 function getQueryFe() {
   const cat = VISUAL_ENGINE_FE[Math.floor(Math.random() * VISUAL_ENGINE_FE.length)];
   return cat.queries[Math.floor(Math.random() * cat.queries.length)];
 }
-// Clasificación semántica mensaje → categoría → query
+
+// Mapeo emocional (emoción > literalidad): texto del mensaje → categoría visual
 function getQueryFeByContent(afirmacion, hero) {
   const txt = ((afirmacion || '') + ' ' + (hero || '')).toLowerCase();
   const map = [
-    { keys: ['libre','libertad','libre en cristo'],                                    cat: 'NEW_BEGINNING' },
-    { keys: ['vencedor','victoria','venzo','triunfo','triunfar'],                      cat: 'STRENGTH'      },
-    { keys: ['nueva criatura','nueva','renovado','renovada','transformado'],           cat: 'NEW_BEGINNING' },
-    { keys: ['heredero','hijo de dios','hija de dios','pertenezco'],                  cat: 'GOD_CREATION'  },
-    { keys: ['templo','espíritu santo','espiritu'],                                    cat: 'PEACE'         },
-    { keys: ['bendecido','bendecida','bendición','bendicion'],                         cat: 'BLESSINGS'     },
-    { keys: ['dios conmigo','no estoy solo','no estoy sola','dios está'],             cat: 'FAITH'         },
-    { keys: ['restaura','restaurado','restaurada','sana','sanado','sanada'],           cat: 'HOPE'          },
-    { keys: ['oración','orar','ora','orando','oración','ruego','ruega'],              cat: 'PRAYER'        },
-    { keys: ['palabra','biblia','escritura','versículo','versiculo'],                  cat: 'BIBLE'         },
-    { keys: ['paz','tranquilo','tranquila','descanso','quietud'],                      cat: 'PEACE'         },
-    { keys: ['familia','hijo','hija','madre','padre','hogar'],                        cat: 'FAMILY'        },
-    { keys: ['propósito','proposito','llamado','misión','mision','destino'],          cat: 'PURPOSE'       },
-    { keys: ['fortaleza','fuerte','fuerza','valiente','valentía'],                    cat: 'STRENGTH'      },
-    { keys: ['gratitud','agradecido','agradecida','gracias','doy gracias'],           cat: 'GRATITUDE'     },
-    { keys: ['esperanza','espero','confío','confio','confianza'],                     cat: 'HOPE'          },
-    { keys: ['consuelo','consuela','consolado','refugio','amparo'],                   cat: 'COMFORT'       },
-    { keys: ['fe','creo','creer','creyente'],                                         cat: 'FAITH'         },
+    // Emociones positivas → naturaleza luminosa primero
+    { keys: ['alegría','gozo','feliz','felicidad','gozoso','gozosa'],                  cat: 'JOY'          },
+    { keys: ['libre','libertad','libre en cristo','liberado','liberada'],               cat: 'FREEDOM'      },
+    { keys: ['vencedor','victoria','venzo','triunfo','triunfar'],                      cat: 'STRENGTH'     },
+    { keys: ['nueva criatura','nueva','renovado','renovada','transformado'],           cat: 'SUNRISE'      },
+    { keys: ['nueva mañana','amanecer','nueva oportunidad'],                           cat: 'SUNRISE'      },
+    { keys: ['esperanza','espero','confío','confio','confianza'],                      cat: 'GOLDEN_HOUR'  },
+    { keys: ['paz','tranquilo','tranquila','descanso','quietud','calma'],              cat: 'PEACE_PERSON' },
+    { keys: ['fortaleza','fuerte','fuerza','valiente','valentía'],                     cat: 'STRENGTH'     },
+    { keys: ['propósito','proposito','llamado','misión','mision','destino'],           cat: 'PATHS'        },
+    { keys: ['gratitud','agradecido','agradecida','gracias','doy gracias'],            cat: 'FIELDS'       },
+    { keys: ['consuelo','consuela','consolado','refugio','amparo'],                    cat: 'OCEAN'        },
+    { keys: ['restaura','restaurado','restaurada','sana','sanado','sanada'],           cat: 'FLOWERS'      },
+    { keys: ['bendecido','bendecida','bendición','bendicion'],                         cat: 'GOLDEN_HOUR'  },
+    { keys: ['familia','hijo','hija','madre','padre','hogar'],                         cat: 'FAMILY_JOY'   },
+    { keys: ['madre','mamá','mama','hijos','niños'],                                   cat: 'MOTHER_CHILD' },
+    { keys: ['adoración','adorar','alabanza','alabar','glorificar'],                   cat: 'WORSHIP'      },
+    { keys: ['oración','orar','ora','orando','ruego','ruega'],                         cat: 'PRAYER_BRIGHT'},
+    { keys: ['palabra','biblia','escritura','versículo','versiculo'],                  cat: 'BIBLE_LIGHT'  },
+    { keys: ['heredero','hijo de dios','hija de dios','pertenezco'],                  cat: 'SKY'          },
+    { keys: ['dios conmigo','no estoy solo','no estoy sola','dios está'],             cat: 'MOUNTAINS'    },
+    { keys: ['fe','creo','creer','creyente'],                                          cat: 'SUNRISE'      },
+    { keys: ['camino','jornada','paso a paso','avanzar','seguir'],                    cat: 'PATHS'        },
+    { keys: ['creación','maravilla','asombro','obra de dios'],                         cat: 'SKY'          },
+    { keys: ['bosque','naturaleza','jardín','jardin'],                                  cat: 'FOREST'       },
   ];
   for (const rule of map) {
     if (rule.keys.some(k => txt.includes(k))) {
@@ -495,10 +515,21 @@ function getQueryFeByContent(afirmacion, hero) {
       if (found) return found.queries[Math.floor(Math.random() * found.queries.length)];
     }
   }
-  return getQueryFe(); // fallback aleatorio
+  // Fallback biased: 60% naturaleza
+  const roll = Math.random();
+  let pool;
+  if (roll < 0.60) {
+    pool = VISUAL_ENGINE_FE.filter(c => ['SUNRISE','MOUNTAINS','FLOWERS','FIELDS','OCEAN','FOREST','PATHS','GOLDEN_HOUR','SKY'].includes(c.cat));
+  } else if (roll < 0.90) {
+    pool = VISUAL_ENGINE_FE.filter(c => ['JOY','FREEDOM','STRENGTH','PEACE_PERSON','WORSHIP','WALK'].includes(c.cat));
+  } else {
+    pool = VISUAL_ENGINE_FE.filter(c => ['FAMILY_JOY','MOTHER_CHILD','FAMILY_LOVE'].includes(c.cat));
+  }
+  const cat = pool[Math.floor(Math.random() * pool.length)];
+  return cat.queries[Math.floor(Math.random() * cat.queries.length)];
 }
 
-// ── IMAGEN EXCLUSIVA FE — anti-repetición + selección de calidad ─────────────
+// ── IMAGEN EXCLUSIVA FE — anti-repetición + filtro de luminosidad ─────────────
 let _feRecentIds = []; // últimos ~20 IDs usados
 async function getImagenFe(query) {
   try {
@@ -511,10 +542,27 @@ async function getImagenFe(query) {
       });
       r.on('error', reject); r.end();
     });
-    const fotos = (data.photos || []).filter(p => !_feRecentIds.includes(p.id));
-    const pool  = fotos.length >= 5 ? fotos.slice(0, 5) : (fotos.length > 0 ? fotos : (data.photos || []));
+    const todas = (data.photos || []).filter(p => !_feRecentIds.includes(p.id));
+    const pool  = todas.length > 0 ? todas : (data.photos || []);
     if (!pool.length) return null;
-    const pick  = pool[Math.floor(Math.random() * pool.length)];
+
+    // Filtro de luminosidad: preferir fotos con brightness > 80
+    function hexBrightness(hex) {
+      if (!hex || hex.length < 6) return 128;
+      const h = hex.replace('#','');
+      const r = parseInt(h.slice(0,2),16);
+      const g = parseInt(h.slice(2,4),16);
+      const b = parseInt(h.slice(4,6),16);
+      return (r*299 + g*587 + b*114) / 1000;
+    }
+    const BRIGHT_MIN = 80;
+    const luminosas = pool.filter(p => hexBrightness(p.avg_color) > BRIGHT_MIN);
+    const candidatos = luminosas.length >= 3 ? luminosas : pool; // fallback si pocas luminosas
+
+    // Tomar top 5 candidatos para variedad
+    const top5 = candidatos.slice(0, 5);
+    const pick  = top5[Math.floor(Math.random() * top5.length)];
+
     // Registrar ID usado
     _feRecentIds.push(pick.id);
     if (_feRecentIds.length > 20) _feRecentIds.shift();
