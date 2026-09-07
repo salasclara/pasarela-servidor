@@ -643,19 +643,16 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 
   // ── HEADER — encima de la foto, y=0..80 ─────────────────────────────────
   ctx.fillStyle = AZUL;
-  ctx.fillRect(0, 0, 1080, 80);
+  ctx.fillRect(0, 0, 1080, 88);
   ctx.fillStyle = DORADO;
-  ctx.fillRect(0, 78, 1080, 2);                     // línea dorada inferior
+  ctx.fillRect(0, 86, 1080, 2);                     // línea dorada inferior
 
   ctx.textAlign = 'center';
   ctx.shadowBlur = 0;
-  const hdrFont = _cormorantLoaded ? 'bold 40px Cormorant' : 'bold 34px Roboto';
+  const hdrFont = _cormorantLoaded ? 'bold 54px Cormorant' : 'bold 46px Roboto';
   ctx.fillStyle = DORADO;
   ctx.font = hdrFont;
-  ctx.fillText('MARAVILLAS DEL REINO', 540, 50);
-  ctx.fillStyle = 'rgba(201,166,107,0.85)';
-  ctx.font = '13px Roboto';
-  ctx.fillText('COMUNIDAD DE FE', 540, 70);
+  ctx.fillText('MARAVILLAS DEL REINO', 540, 58);
 
   // ── AFIRMACIÓN — y ≈ 165–215 ─────────────────────────────────────────────
   // Ajuste vertical: texto corto empieza más abajo para dejar más foto visible
@@ -709,19 +706,19 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   ctx.shadowColor = 'rgba(0,0,0,0.95)';
   ctx.shadowBlur  = 10;
   ctx.fillStyle   = 'rgba(255,255,255,0.97)';
-  ctx.font        = 'italic 30px Roboto';
+  ctx.font        = 'italic 38px Roboto';
   const vText  = '“' + versiculo + '”';
   const vwords = vText.split(' '); let vl = ''; let vy = Math.max(sepY + 105, 595);
   for (const w of vwords) {
     const t = vl ? vl+' '+w : w;
-    if (ctx.measureText(t).width > 880) { ctx.fillText(vl, 540, vy); vl = w; vy += 36; }
+    if (ctx.measureText(t).width > 880) { ctx.fillText(vl, 540, vy); vl = w; vy += 44; }
     else vl = t;
   }
-  if (vl) { ctx.fillText(vl, 540, vy); vy += 36; }
+  if (vl) { ctx.fillText(vl, 540, vy); vy += 44; }
 
   // ── REFERENCIA — y ≈ 880–930 ─────────────────────────────────────────────
   ctx.fillStyle = DORADO;
-  ctx.font      = 'bold 27px Roboto';
+  ctx.font      = 'bold 32px Roboto';
   const refY = Math.max(Math.min(vy + 44, 930), 850);
   ctx.fillText('— ' + referencia + ' —', 540, refY);
 
@@ -734,14 +731,14 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   ctx.fillRect(0, 985, 1080, 2);                    // línea dorada superior
 
   ctx.fillStyle = DORADO;
-  ctx.font      = 'bold 16px Roboto';
-  ctx.fillText(branding.footerLinea1 || 'Comunidad de Fe Maravillas Del Reino · Dallas, TX', 540, 1022);
+  ctx.font      = 'bold 22px Roboto';
+  ctx.fillText(branding.footerLinea1 || 'Comunidad de Fe Maravillas Del Reino · Dallas, TX', 540, 1020);
   ctx.fillStyle = 'rgba(255,255,255,0.72)';
-  ctx.font      = '14px Roboto';
-  ctx.fillText(branding.footerLinea2 || '@MaravillaDelReino', 540, 1048);
+  ctx.font      = '18px Roboto';
+  ctx.fillText(branding.footerLinea2 || '@MaravillaDelReino', 540, 1050);
 
   // ── VALIDACIÓN ─────────────────────────────────────────────────────────────
-  const comp = { photoWidth:1080, heroFontSize:heroSz, verseFontSize:30, noLateralMargins:true };
+  const comp = { photoWidth:1080, heroFontSize:heroSz, verseFontSize:38, noLateralMargins:true };
   console.log('[CoverFe] Composición:', JSON.stringify(comp));
   if (comp.heroFontSize < 60 || comp.verseFontSize < 26) {
     console.error('[CoverFe] FALLA validación — abortando'); return null;
