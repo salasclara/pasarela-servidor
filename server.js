@@ -1124,6 +1124,148 @@ async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
   return canvas.toBuffer('image/png');
 }
 
+// ── VISUAL ENGINE V2 — Fancy by Roxette ───────────────────────────────────
+// generarCoverFancyV2: renderer experimental INDEPENDIENTE de generarCoverFancy()
+// Layout LIFESTYLE_HERO: zona editorial izquierda | zona visual derecha (fotografía protagonista)
+// NO modifica ni llama ninguna función de producción existente.
+async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto, imagenBuffer, layout }) {
+  const canvas = createCanvas(1080, 1080);
+  const ctx    = canvas.getContext('2d');
+
+  // Paleta de identidad Fancy V2
+  const CREAM   = '#FFF8F1';
+  const FUCHSIA = '#D50067';
+  const YELLOW  = '#FFD52A';
+  const BLACK   = '#111111';
+  const GRAY    = '#555555';
+
+  // Geometría LIFESTYLE_HERO
+  const LEFT_SOLID = 380;   // x hasta donde el crema es sólido
+  const LEFT_FADE  = 520;   // x hasta donde el crema desvanece a transparente
+  const MARGIN_L   = 60;    // margen izquierdo del contenido editorial
+  const MAX_TXT_W  = 295;   // ancho máximo para wrapping de texto
+
+  // ── CAPA 1: FOTOGRAFÍA FULL CANVAS (protagonista · sin alpha · sin overlay) ──
+  let photoLoaded = false;
+  if (imagenBuffer) {
+    try {
+      const img = await loadImage(imagenBuffer);
+      drawImageCover(ctx, img, 1080, 1080);
+      photoLoaded = true;
+    } catch (e) {
+      console.log('[ FancyV2 ] Error cargando imagenBuffer:', e.message);
+    }
+  }
+  if (!photoLoaded) {
+    console.log('[ FancyV2 ] Pexels image unavailable — rendering fallback');
+    ctx.fillStyle = CREAM;
+    ctx.fillRect(0, 0, 1080, 1080);
+  }
+
+  // ── CAPA 2: PANEL CREMA IZQUIERDO + GRADIENTE HORIZONTAL LOCALIZADO ────────
+  // Sólido x=0 → LEFT_SOLID
+  ctx.fillStyle = CREAM;
+  ctx.fillRect(0, 0, LEFT_SOLID, 1080);
+  // Gradiente crema→transparente x=LEFT_SOLID → LEFT_FADE (transición suave)
+  const leftGrad = ctx.createLinearGradient(LEFT_SOLID, 0, LEFT_FADE, 0);
+  leftGrad.addColorStop(0, 'rgba(255,248,241,1)');
+  leftGrad.addColorStop(1, 'rgba(255,248,241,0)');
+  ctx.fillStyle = leftGrad;
+  ctx.fillRect(LEFT_SOLID, 0, LEFT_FADE - LEFT_SOLID, 1080);
+
+  // ── CAPA 3: BRANDING "FANCY / by ROXETTE" ──────────────────────────────────
+  ctx.textAlign = 'left';
+  // "FANCY"
+  ctx.font      = 'bold 42px Roboto';
+  ctx.fillStyle = BLACK;
+  ctx.fillText('FANCY', MARGIN_L, 108);
+  // Línea fuchsia decorativa bajo "FANCY"
+  ctx.fillStyle = FUCHSIA;
+  ctx.fillRect(MARGIN_L, 116, 210, 3);
+  // "by ROXETTE"
+  ctx.font      = '15px Roboto';
+  ctx.fillStyle = GRAY;
+  ctx.fillText('by ROXETTE', MARGIN_L, 142);
+
+  // ── CAPA 4: VISUAL LABEL sobre bloque amarillo ─────────────────────────────
+  const label  = (visualLabel || 'STYLE IT').toUpperCase();
+  ctx.font     = 'bold 19px Roboto';
+  const labelW = ctx.measureText(label).width + 30;
+  const labelH = 50;
+  const labelY = 210;
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(MARGIN_L, labelY, labelW, labelH);
+  ctx.fillStyle = BLACK;
+  ctx.fillText(label, MARGIN_L + 15, labelY + 34);
+
+  // ── CAPA 5: TITULAR (máx 3 líneas · wrapping · línea central en fuchsia) ───
+  ctx.font = 'bold 78px Roboto';
+  // Wrapping: máx 3 líneas — si hay exceso se acumula en la línea 3
+  const titWords = (titular || '').toUpperCase().split(' ');
+  const titLines = [];
+  let   titCurr  = '';
+  for (const word of titWords) {
+    if (titLines.length >= 2) {
+      titCurr = titCurr ? `${titCurr} ${word}` : word;
+      continue;
+    }
+    const test = titCurr ? `${titCurr} ${word}` : word;
+    if (ctx.measureText(test).width > MAX_TXT_W && titCurr) {
+      titLines.push(titCurr);
+      titCurr = word;
+    } else {
+      titCurr = test;
+    }
+  }
+  if (titCurr) titLines.push(titCurr);
+
+  // Colores por línea: negro / fuchsia / negro
+  const LINE_COLORS = [BLACK, FUCHSIA, BLACK];
+  const TIT_START_Y = 310;
+  const TIT_LINE_H  = 90;
+  titLines.slice(0, 3).forEach((line, i) => {
+    ctx.fillStyle = LINE_COLORS[i] || BLACK;
+    ctx.fillText(line, MARGIN_L, TIT_START_Y + i * TIT_LINE_H);
+  });
+
+  const titEndY = TIT_START_Y + Math.min(titLines.length, 3) * TIT_LINE_H;
+
+  // ── CAPA 6: MICROTEXTO (máx 2 líneas) ────────────────────────────────────
+  if (microtexto) {
+    ctx.font      = '26px Roboto';
+    ctx.fillStyle = GRAY;
+    const mWords = microtexto.split(' ');
+    const mLines = [];
+    let   mCurr  = '';
+    for (const w of mWords) {
+      if (mLines.length >= 1) {
+        mCurr = mCurr ? `${mCurr} ${w}` : w;
+        continue;
+      }
+      const t = mCurr ? `${mCurr} ${w}` : w;
+      if (ctx.measureText(t).width > MAX_TXT_W && mCurr) {
+        mLines.push(mCurr);
+        mCurr = w;
+      } else {
+        mCurr = t;
+      }
+    }
+    if (mCurr) mLines.push(mCurr);
+    mLines.slice(0, 2).forEach((line, i) => {
+      ctx.fillText(line, MARGIN_L, titEndY + 50 + i * 36);
+    });
+  }
+
+  // ── CAPA 7: ACENTO FUCHSIA (línea decorativa mínima) ─────────────────────
+  const decoY = titEndY + (microtexto ? 108 : 44);
+  if (decoY < 980) {
+    ctx.fillStyle = FUCHSIA;
+    ctx.fillRect(MARGIN_L, decoY, 68, 3);
+  }
+
+  return canvas.toBuffer('image/png');
+}
+
 async function generarCoverTrabajando(branding, gancho) {
   const canvas   = createCanvas(1080, 1080);
   const ctx      = canvas.getContext('2d');
@@ -2191,6 +2333,50 @@ INSTRUCCIONES:
         console.log('[TEST FANCY] ── FIN CON ERROR ──────────────────────');
       }
     })();
+    return;
+  }
+
+  // ── FANCY VISUAL ENGINE V2 — TEST AISLADO ──────────────────────────────────
+  // Devuelve image/png directamente al navegador.
+  // NO publica · NO llama Commerce Engine · NO modifica FANCY_STATE · NO scheduler.
+  if (req.method === 'GET' && req.url === '/test-fancy-visual-v2') {
+    console.log('[ FancyV2 ] ── TEST INICIO ───────────────────────────────');
+    const fancyPage    = PAGES_EXTRA.find(p => p.tipo === 'fancy');
+    const testBranding = fancyPage ? fancyPage.branding : {
+      nombreMarca:    'FANCY BY ROXETTE',
+      subtituloMarca: 'BOUTIQUE · DALLAS TX',
+      footerLinea1:   'Fancy by Roxette  ·  Dallas, TX',
+      footerLinea2:   '@FancyByRoxette'
+    };
+    let imagenBuffer = null;
+    try {
+      const imgUrl = await getImagenCategoria('MODA', 'stylish woman structured handbag fashion');
+      if (imgUrl) {
+        imagenBuffer = await descargarImagen(imgUrl);
+        console.log('[ FancyV2 ] Imagen Pexels obtenida OK');
+      } else {
+        console.log('[ FancyV2 ] Pexels image unavailable — rendering fallback');
+      }
+    } catch (e) {
+      console.log('[ FancyV2 ] Pexels image unavailable — rendering fallback');
+    }
+    try {
+      const coverBuffer = await generarCoverFancyV2({
+        branding:    testBranding,
+        visualLabel: 'STYLE IT',
+        titular:     'EL BOLSO QUE ELEVA TU LOOK',
+        microtexto:  'Un detalle. Todo cambia.',
+        imagenBuffer,
+        layout:      'LIFESTYLE_HERO'
+      });
+      console.log('[ FancyV2 ] ── TEST OK ───────────────────────────────');
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(coverBuffer);
+    } catch (e) {
+      console.error('[ FancyV2 ] ERROR:', e.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
     return;
   }
 
