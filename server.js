@@ -445,23 +445,81 @@ function drawImageCover(ctx, img, canvasW, canvasH) {
 }
 
 // ── VISUAL ENGINE — Maravillas del Reino ───────────────────────────────────
+// ── VISUAL ENGINE — Maravillas del Reino (13 categorías semánticas) ─────────
 const VISUAL_ENGINE_FE = [
-  { cat: 'FAITH',          queries: ['woman praying', 'hands praying', 'person praying sunrise', 'Bible prayer'] },
-  { cat: 'HOPE',           queries: ['hope sunrise', 'sunlight clouds', 'looking at sunrise', 'walking toward light'] },
-  { cat: 'GOD_PRESENCE',   queries: ['sun rays clouds', 'heavenly light', 'light through clouds', 'dramatic sky sunlight'] },
-  { cat: 'BIBLE',          queries: ['open Bible', 'woman reading Bible', 'Bible study', 'Bible coffee'] },
-  { cat: 'PEACE',          queries: ['peaceful nature', 'calm lake sunrise', 'serene landscape', 'quiet morning'] },
-  { cat: 'COMFORT',        queries: ['woman reflection', 'woman finding peace', 'hope after sadness', 'light after storm'] },
-  { cat: 'GRATITUDE',      queries: ['woman grateful', 'worship hands', 'woman looking sky', 'gratitude nature'] },
-  { cat: 'NEW_BEGINNING',  queries: ['new beginning sunrise', 'morning light', 'open road sunrise', 'beautiful dawn'] },
-  { cat: 'DIFFICULT_TIMES',queries: ['storm clouds sunlight', 'woman rain window', 'light in darkness', 'hopeful silhouette'] },
-  { cat: 'BLESSINGS',      queries: ['flowers sunlight', 'sunflower field', 'golden field sunlight', 'beautiful morning nature'] },
-  { cat: 'FAMILY_FAITH',   queries: ['family praying', 'mother daughter praying', 'family holding hands', 'family together home'] },
-  { cat: 'PURPOSE',        queries: ['woman walking path', 'road sunrise', 'person mountain path', 'walking toward light'] },
+  { cat: 'FAITH',         queries: ['woman praying sunlight', 'hands praying sunlight', 'person praying sunrise', 'woman worship outdoors'] },
+  { cat: 'HOPE',          queries: ['beautiful sunrise landscape', 'woman looking sunrise', 'sunlight through clouds', 'walking toward sunrise'] },
+  { cat: 'PRAYER',        queries: ['woman praying home', 'hands praying Bible', 'family praying together', 'woman praying window sunlight'] },
+  { cat: 'BIBLE',         queries: ['open Bible sunlight', 'woman reading Bible morning', 'Bible study natural light', 'Bible coffee morning'] },
+  { cat: 'PEACE',         queries: ['peaceful lake sunrise', 'serene mountains morning', 'calm ocean sunrise', 'woman peaceful nature'] },
+  { cat: 'COMFORT',       queries: ['mother hugging daughter', 'woman peaceful window sunlight', 'woman reflection sunlight', 'hope after sadness'] },
+  { cat: 'GRATITUDE',     queries: ['woman grateful sunlight', 'worship hands sunset', 'happy woman nature', 'woman looking sky sunlight'] },
+  { cat: 'NEW_BEGINNING', queries: ['beautiful sunrise', 'morning golden light', 'open road sunrise', 'woman walking morning light'] },
+  { cat: 'FAMILY',        queries: ['happy family outdoors', 'mother daughter sunset', 'family holding hands', 'family together sunlight'] },
+  { cat: 'PURPOSE',       queries: ['woman walking mountain path', 'road toward sunrise', 'person mountain trail', 'woman looking horizon'] },
+  { cat: 'STRENGTH',      queries: ['confident woman outdoors', 'woman mountain sunrise', 'person standing mountain', 'woman overcoming challenge'] },
+  { cat: 'BLESSINGS',     queries: ['sunflower field sunlight', 'flowers morning light', 'golden field sunrise', 'happy family sunlight'] },
+  { cat: 'GOD_CREATION',  queries: ['majestic mountains sunlight', 'ocean sunset', 'beautiful clouds sunlight', 'wildflowers mountains'] },
 ];
+// Fallback aleatorio
 function getQueryFe() {
   const cat = VISUAL_ENGINE_FE[Math.floor(Math.random() * VISUAL_ENGINE_FE.length)];
   return cat.queries[Math.floor(Math.random() * cat.queries.length)];
+}
+// Clasificación semántica mensaje → categoría → query
+function getQueryFeByContent(afirmacion, hero) {
+  const txt = ((afirmacion || '') + ' ' + (hero || '')).toLowerCase();
+  const map = [
+    { keys: ['libre','libertad','libre en cristo'],                                    cat: 'NEW_BEGINNING' },
+    { keys: ['vencedor','victoria','venzo','triunfo','triunfar'],                      cat: 'STRENGTH'      },
+    { keys: ['nueva criatura','nueva','renovado','renovada','transformado'],           cat: 'NEW_BEGINNING' },
+    { keys: ['heredero','hijo de dios','hija de dios','pertenezco'],                  cat: 'GOD_CREATION'  },
+    { keys: ['templo','espíritu santo','espiritu'],                                    cat: 'PEACE'         },
+    { keys: ['bendecido','bendecida','bendición','bendicion'],                         cat: 'BLESSINGS'     },
+    { keys: ['dios conmigo','no estoy solo','no estoy sola','dios está'],             cat: 'FAITH'         },
+    { keys: ['restaura','restaurado','restaurada','sana','sanado','sanada'],           cat: 'HOPE'          },
+    { keys: ['oración','orar','ora','orando','oración','ruego','ruega'],              cat: 'PRAYER'        },
+    { keys: ['palabra','biblia','escritura','versículo','versiculo'],                  cat: 'BIBLE'         },
+    { keys: ['paz','tranquilo','tranquila','descanso','quietud'],                      cat: 'PEACE'         },
+    { keys: ['familia','hijo','hija','madre','padre','hogar'],                        cat: 'FAMILY'        },
+    { keys: ['propósito','proposito','llamado','misión','mision','destino'],          cat: 'PURPOSE'       },
+    { keys: ['fortaleza','fuerte','fuerza','valiente','valentía'],                    cat: 'STRENGTH'      },
+    { keys: ['gratitud','agradecido','agradecida','gracias','doy gracias'],           cat: 'GRATITUDE'     },
+    { keys: ['esperanza','espero','confío','confio','confianza'],                     cat: 'HOPE'          },
+    { keys: ['consuelo','consuela','consolado','refugio','amparo'],                   cat: 'COMFORT'       },
+    { keys: ['fe','creo','creer','creyente'],                                         cat: 'FAITH'         },
+  ];
+  for (const rule of map) {
+    if (rule.keys.some(k => txt.includes(k))) {
+      const found = VISUAL_ENGINE_FE.find(c => c.cat === rule.cat);
+      if (found) return found.queries[Math.floor(Math.random() * found.queries.length)];
+    }
+  }
+  return getQueryFe(); // fallback aleatorio
+}
+
+// ── IMAGEN EXCLUSIVA FE — anti-repetición + selección de calidad ─────────────
+let _feRecentIds = []; // últimos ~20 IDs usados
+async function getImagenFe(query) {
+  try {
+    const pexUrl = 'https://api.pexels.com/v1/search?query=' + encodeURIComponent(query) + '&per_page=20&orientation=square';
+    const data = await new Promise((resolve, reject) => {
+      const opts = new URL(pexUrl);
+      const r = https.request({ hostname: opts.hostname, path: opts.pathname + opts.search, headers: { Authorization: PEXELS_API_KEY } }, res => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      });
+      r.on('error', reject); r.end();
+    });
+    const fotos = (data.photos || []).filter(p => !_feRecentIds.includes(p.id));
+    const pool  = fotos.length >= 5 ? fotos.slice(0, 5) : (fotos.length > 0 ? fotos : (data.photos || []));
+    if (!pool.length) return null;
+    const pick  = pool[Math.floor(Math.random() * pool.length)];
+    // Registrar ID usado
+    _feRecentIds.push(pick.id);
+    if (_feRecentIds.length > 20) _feRecentIds.shift();
+    return pick.src.large2x || pick.src.large || pick.src.original;
+  } catch(e) { console.error('[Pexels-Fe] Error:', e.message); return null; }
 }
 const VISUAL_ENGINE_TRABAJANDO = [
   { cat: 'HOME_OFFICE',      queries: ['woman working laptop home', 'hispanic woman home office', 'cozy female home office'] },
@@ -513,7 +571,7 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
   ctx.fillRect(0, 0, 1080, 1080);
 
   // FOTO — full canvas 1080×1080, object-fit cover, SIN clip, SIN reducción
-  const imgUrl = await getImagenCategoria('DEFAULT', getQueryFe());
+  const imgUrl = await getImagenFe(getQueryFeByContent(afirmacion, hero));
   if (imgUrl) {
     try {
       const buf = await descargarImagen(imgUrl);
@@ -526,20 +584,14 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
     } catch(e) { console.error('[CoverFe] imagen:', e.message); }
   }
 
-  // GRADIENTE SUPERIOR — solo donde va texto (header+afirmación+hero), preserva foto
-  const gTop = ctx.createLinearGradient(0, 80, 0, 510);
-  gTop.addColorStop(0,   'rgba(0,0,0,0.50)');
-  gTop.addColorStop(0.6, 'rgba(0,0,0,0.18)');
-  gTop.addColorStop(1,   'rgba(0,0,0,0.0)');
-  ctx.fillStyle = gTop;
-  ctx.fillRect(0, 80, 1080, 430);
-
-  // GRADIENTE INFERIOR — zona versículo/referencia
-  const gBot = ctx.createLinearGradient(0, 540, 0, 985);
-  gBot.addColorStop(0, 'rgba(0,0,0,0.0)');
-  gBot.addColorStop(1, 'rgba(0,0,0,0.58)');
+  // GRADIENTE INFERIOR — localizado solo en zona texto inferior, tono azul-fe
+  const gBot = ctx.createLinearGradient(0, 500, 0, 985);
+  gBot.addColorStop(0,    'rgba(8,35,82,0.0)');
+  gBot.addColorStop(0.35, 'rgba(8,35,82,0.10)');
+  gBot.addColorStop(0.70, 'rgba(8,35,82,0.42)');
+  gBot.addColorStop(1,    'rgba(8,35,82,0.60)');
   ctx.fillStyle = gBot;
-  ctx.fillRect(0, 540, 1080, 445);
+  ctx.fillRect(0, 500, 1080, 485);
 
   // ── HEADER — encima de la foto, y=0..80 ─────────────────────────────────
   ctx.fillStyle = AZUL;
@@ -549,20 +601,24 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 
   ctx.textAlign = 'center';
   ctx.shadowBlur = 0;
+  const hdrFont = _cormorantLoaded ? 'bold 40px Cormorant' : 'bold 34px Roboto';
   ctx.fillStyle = DORADO;
-  ctx.font = 'bold 32px Roboto';
-  ctx.fillText('MARAVILLAS DEL REINO', 540, 44);
+  ctx.font = hdrFont;
+  ctx.fillText('MARAVILLAS DEL REINO', 540, 50);
   ctx.fillStyle = 'rgba(201,166,107,0.85)';
   ctx.font = '13px Roboto';
-  ctx.fillText('COMUNIDAD DE FE', 540, 67);
+  ctx.fillText('COMUNIDAD DE FE', 540, 70);
 
   // ── AFIRMACIÓN — y ≈ 165–215 ─────────────────────────────────────────────
+  // Ajuste vertical: texto corto empieza más abajo para dejar más foto visible
+  const totalWords = (afirmacion + ' ' + hero).split(' ').length;
+  const startY = totalWords <= 6 ? 230 : totalWords <= 10 ? 200 : 175;
   ctx.shadowColor = 'rgba(0,0,0,0.95)';
   ctx.shadowBlur  = 14;
   ctx.fillStyle   = '#FFFFFF';
   ctx.font        = 'bold 33px Roboto';
   const aw = afirmacion.toUpperCase().split(' ');
-  let al = ''; let ay = 188;
+  let al = ''; let ay = startY;
   for (const w of aw) {
     const t = al ? al+' '+w : w;
     if (ctx.measureText(t).width > 940) { ctx.fillText(al, 540, ay); al = w; ay += 40; }
