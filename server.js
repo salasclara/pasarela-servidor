@@ -1472,8 +1472,8 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const hashMatch      = copyRaw.match(/HASHTAGS:\s*(.+)/i);
       const titular        = titularMatch ? titularMatch[1].trim() : categoria.tema.toUpperCase();
       const subtitulo      = subMatch     ? subMatch[1].trim()     : '';
-      const capTexto       = capMatch     ? capMatch[1].trim()     : '';
-      const ctaTexto       = ctaMatch     ? ctaMatch[1].trim()     : 'El link está en los comentarios 👇';
+      const capTexto       = capMatch     ? capMatch[1].trim().replace(/#\S+/g, '').replace(/\n{3,}/g, '\n\n').trim()     : '';
+      const ctaTexto       = ctaMatch     ? ctaMatch[1].trim()     : '';
       const hashArr        = [...new Set((hashMatch ? hashMatch[1].trim() : '#FancyByRoxette #Moda').split(/\s+/).filter(h => h.startsWith('#')))].slice(0, 4).join(' ');
       captionTexto = capTexto + '\n\n' + ctaTexto + '\n🔗 ' + amazonLink + '\n*(enlace de afiliado)' + '\n\n— Fancy by Roxette ✨\n\n' + hashArr;
       console.log('[Fancy] TITULAR:', titular, '| SUBTITULO:', subtitulo);
