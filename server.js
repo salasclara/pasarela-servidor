@@ -1237,7 +1237,20 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const revelMatch  = caption.match(/REVELACION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
       const ctaMatch    = caption.match(/CTA:\s*(.+)/i);
       const hashMatch   = caption.match(/HASHTAGS:\s*(.+)/i);
-      const gancho      = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 60);
+      // Gancho: nunca usar fallback de otras páginas — fallback exclusivo Trabajando
+      const GANCHO_FALLBACK_TRAB = 'EMPIEZA CON LO QUE TIENES';
+      const MARCAS_PROHIBIDAS_TRAB = /pasarela|revista|fancy|amar\s*es|maravillas\s*del\s*reino/i;
+      const ganchoRaw = ganchoMatch ? ganchoMatch[1].trim() : '';
+      let gancho;
+      if (!ganchoRaw) {
+        console.error('[Trabajando] ⚠️ GANCHO ausente — usando fallback seguro');
+        gancho = GANCHO_FALLBACK_TRAB;
+      } else if (MARCAS_PROHIBIDAS_TRAB.test(ganchoRaw)) {
+        console.error('[Trabajando] 🚫 GANCHO contaminado con marca ajena:', ganchoRaw, '— usando fallback');
+        gancho = GANCHO_FALLBACK_TRAB;
+      } else {
+        gancho = ganchoRaw;
+      }
       // Limpiar etiquetas internas si el modelo las incluyó en el texto
       const stripLabel = (t) => (t || '').replace(/^(REVELACION|CTA|ACTION|COMMENT|SAVE|SHARE|COMMUNITY|GANCHO|HASHTAGS)\s*:\s*/i, '').trim();
       const revelTexto  = stripLabel(revelMatch  ? revelMatch[1].trim()  : '');
@@ -1247,6 +1260,20 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const hashArr     = [...new Set(hashTexto.split(/\s+/).filter(h => h.startsWith('#')))].slice(0, 5).join(' ');
       // Copy: REVELACION + CTA + HASHTAGS (el gancho ya va en la imagen, no repetir)
       captionTexto = revelTexto + (ctaTexto ? '\n\n' + ctaTexto : '') + '\n\n' + hashArr;
+      // ── Validación antes de publicar ──────────────────────────────────────
+      const LABELS_INTERNAS_TRAB = /\b(GANCHO|REVELACION|CTA|ACTION|COMMENT|SAVE|SHARE|COMMUNITY|PILAR|HASHTAGS)\s*:/i;
+      const hashFinalArr = hashArr.split(/\s+/).filter(h => h.startsWith('#'));
+      const trabajandoOk = gancho && gancho.trim()
+        && revelTexto && revelTexto.trim()
+        && ctaTexto && ctaTexto.trim()
+        && hashFinalArr.length >= 3 && hashFinalArr.length <= 5
+        && !LABELS_INTERNAS_TRAB.test(revelTexto)
+        && !LABELS_INTERNAS_TRAB.test(ctaTexto);
+      if (!trabajandoOk) {
+        console.error('[Trabajando] 🚫 VALIDACIÓN FALLIDA — publicación cancelada');
+        console.error('[Trabajando] gancho:', gancho, '| revelChars:', revelTexto.length, '| ctaChars:', ctaTexto.length, '| hashtags:', hashFinalArr.length);
+        return;
+      }
       console.log('[Trabajando] PILAR:', pilarTrabajando, '| GANCHO:', gancho);
       coverBuffer = await generarCoverTrabajando(pageConfig.branding, gancho);
     } else {
@@ -1267,7 +1294,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
     } catch(e) {}
     const FormData = require('form-data');
     const form = new FormData();
-    form.append('caption', captionTexto + '\n\n' + pageConfig.hashtags);
+    form.append('caption', esTrabajando ? captionTexto : captionTexto + '\n\n' + pageConfig.hashtags);
     form.append('access_token', pageToken);
     form.append('source', coverBuffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
     await new Promise((resolve, reject) => {
