@@ -956,7 +956,7 @@ async function generarCoverTrabajando(branding, gancho) {
   }
   const lineH = Math.round(heroSize * 1.20);
   // Anclar al tercio inferior, subir según número de líneas
-  let heroY = 870 - (lineas.length - 1) * lineH;
+  let heroY = 820 - (lineas.length - 1) * lineH;
   if (heroY < HEADER_H + 60) heroY = HEADER_H + 60; // nunca salir del canvas
   ctx.shadowColor = 'rgba(0,0,0,0.92)'; ctx.shadowBlur = 18;
   ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center';
@@ -1162,11 +1162,12 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const hashPoolTrab = (pageConfig.hashtags || '#TrabajarDesdeCasa #EmprendimientoLatino #MujeresEmprendedoras').split(' ');
     const hashSampleTrab = hashPoolTrab.sort(() => 0.5 - Math.random()).slice(0, 5).join(' ');
     const formatoTrabajando = `Eres una mujer hablando con otra mujer. Cercana, inteligente, práctica. Sin lenguaje de gurú, sin clichés, sin promesas exageradas.
+VOZ: Puede provocar y desafiar, pero NUNCA regañar. Evita frases agresivas como "eso es mentira", "deja de poner excusas", "si no lo haces es porque no quieres". Prefiere: "nadie empieza con todo listo", "empezar imperfecta también es empezar", "no necesitas tener todo resuelto para comenzar".
 PILAR OBLIGATORIO PARA ESTA PUBLICACIÓN: ${pilarTrabajando}
-Genera exactamente este formato (sin comillas, sin asteriscos, sin texto adicional):
-GANCHO: [pregunta, contradicción o afirmación que detenga el scroll — máx 10 palabras, español natural, humana, sin cliché — ejemplos: "¿Y si no te falta talento, sino empezar?", "Estar ocupada no significa estar avanzando."]
-REVELACION: [1-3 frases que desarrollen el gancho — clara, útil, realista, práctica — sin lenguaje motivacional vacío — aprox 30-60 palabras]
-CTA: [varía el tipo — COMMENT: pide que compartan algo / SAVE: pide que guarden / ACTION: invita a hacer algo hoy / COMMUNITY: completa la frase o cuéntame — máx 20 palabras]
+Genera exactamente este formato (sin comillas, sin asteriscos, SIN incluir las etiquetas en el texto final — solo úsalas para estructurar tu respuesta):
+GANCHO: [pregunta, contradicción o afirmación que detenga el scroll — máx 10 palabras — firme y cercana, nunca agresiva — ejemplos: "¿Y si no te falta talento, sino empezar?", "Estar ocupada no significa estar avanzando.", "Nadie empieza con todo listo."]
+REVELACION: [1-3 frases que desarrollen el gancho — clara, útil, realista, práctica — escribe el texto directamente sin repetir la palabra REVELACION — aprox 30-60 palabras]
+CTA: [escribe directamente el llamado a acción sin la palabra CTA — varía el tipo: invita a comentar / guardar / compartir / hacer algo hoy — máx 20 palabras]
 HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — de este pool: ${hashSampleTrab}]`;
 
     const captionPayload = JSON.stringify({
@@ -1237,11 +1238,14 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const ctaMatch    = caption.match(/CTA:\s*(.+)/i);
       const hashMatch   = caption.match(/HASHTAGS:\s*(.+)/i);
       const gancho      = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 60);
-      const revelTexto  = revelMatch  ? revelMatch[1].trim()  : '';
-      const ctaTexto    = ctaMatch    ? ctaMatch[1].trim()    : '';
-      const hashTexto   = hashMatch   ? hashMatch[1].trim()   : hashSampleTrab || '#TrabajarDesdeCasa #EmprendimientoLatino';
-      const hashArr     = [...new Set((hashTexto).split(/\s+/).filter(h => h.startsWith('#')))].slice(0, 5).join(' ');
-      // Copy: REVELACION + CTA + HASHTAGS (el gancho ya va en la imagen)
+      // Limpiar etiquetas internas si el modelo las incluyó en el texto
+      const stripLabel = (t) => (t || '').replace(/^(REVELACION|CTA|ACTION|COMMENT|SAVE|SHARE|COMMUNITY|GANCHO|HASHTAGS)\s*:\s*/i, '').trim();
+      const revelTexto  = stripLabel(revelMatch  ? revelMatch[1].trim()  : '');
+      const ctaTexto    = stripLabel(ctaMatch    ? ctaMatch[1].trim()    : '');
+      // Hashtags: solo los del modelo, deduplicados, máximo 5 total (sin concatenar pageConfig)
+      const hashTexto   = hashMatch ? hashMatch[1].trim() : hashSampleTrab || '#TrabajarDesdeCasa #EmprendimientoLatino';
+      const hashArr     = [...new Set(hashTexto.split(/\s+/).filter(h => h.startsWith('#')))].slice(0, 5).join(' ');
+      // Copy: REVELACION + CTA + HASHTAGS (el gancho ya va en la imagen, no repetir)
       captionTexto = revelTexto + (ctaTexto ? '\n\n' + ctaTexto : '') + '\n\n' + hashArr;
       console.log('[Trabajando] PILAR:', pilarTrabajando, '| GANCHO:', gancho);
       coverBuffer = await generarCoverTrabajando(pageConfig.branding, gancho);
