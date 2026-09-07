@@ -289,9 +289,9 @@ const PAGES_EXTRA = [
     nombre: 'Trabajando En Casa',
     tipo: 'trabajando',
     token: process.env.FACEBOOK_TRABA_TOKEN,
-    voice: 'Eres la voz de Trabajando En Casa, comunidad de emprendedoras latinas que trabajan desde casa. Voz emprendedora, práctica y motivacional. Inspira con oportunidades reales. Español.',
-    hashtags: '#TrabajarDesdeCasa #EmprendimientoLatino #LibertadFinanciera #NegocioDesdeHouse #EmprendedoraLatina',
-    temas: ['oportunidades', 'trabajo remoto', 'emprendimiento'],
+    voice: 'Eres la voz editorial de Trabajando En Casa — comunidad de mujeres que construyen su vida con autonomía. Hablas como una mujer a otra mujer: cercana, inteligente, práctica, realista. Nunca lenguaje de gurú, nunca promesas exageradas. Tu mensaje central es: puedes crecer, empieza con lo que tienes. Español. Sin clichés. Sin motivación tóxica.',
+    hashtags: '#TrabajarDesdeCasa #EmprendimientoLatino #MujeresEmprendedoras #NegocioDesdeHouse #EmprendedoraLatina #Productividad #MujeresQueInspiran #TrabajoRemoto #EmprendeLuego #MujerEmprendedora #IndependenciaEconomica #NegocioPropio #MujeresLatinas #DesdeHouse #Emprendimiento',
+    temas: ['cómo empezar un negocio desde cero', 'miedo a dar el primer paso', 'organizar el tiempo trabajando desde casa', 'construir ingresos extra con tus habilidades', 'trabajar con enfoque sin distracciones', 'reinventarse a cualquier edad', 'pequeños pasos que construyen resultados', 'consistencia vs motivación', 'valorar tu trabajo y cobrar lo que mereces', 'el primer cliente es el más difícil', 'emprender siendo mamá', 'productividad sin agotamiento'],
     branding: {
       colorBarra: '#1A3A2E',
       colorAccento: '#C9A66B',
@@ -569,42 +569,147 @@ async function getImagenFe(query) {
     return pick.src.large2x || pick.src.large || pick.src.original;
   } catch(e) { console.error('[Pexels-Fe] Error:', e.message); return null; }
 }
+// ── TRABAJANDO EN CASA — pilares editoriales ────────────────────────────────
+const PILARES_TRABAJANDO = ['EMPRENDIMIENTO', 'INDEPENDENCIA', 'PRODUCTIVIDAD', 'MENTALIDAD', 'ACCION'];
+let _trabPilaresRecientes = [];
+let _trabRecentIds = [];
+
+function elegirPilarTrabajando() {
+  const disponibles = PILARES_TRABAJANDO.filter(p => !_trabPilaresRecientes.includes(p));
+  const pool = disponibles.length > 0 ? disponibles : PILARES_TRABAJANDO;
+  const pilar = pool[Math.floor(Math.random() * pool.length)];
+  _trabPilaresRecientes.push(pilar);
+  if (_trabPilaresRecientes.length > 3) _trabPilaresRecientes.shift();
+  return pilar;
+}
+
+// ── VISUAL ENGINE — distribución: 55% emprendiendo / 20% home office / 15% small biz / 10% lifestyle
 const VISUAL_ENGINE_TRABAJANDO = [
-  { cat: 'HOME_OFFICE',      queries: ['woman working laptop home', 'hispanic woman home office', 'cozy female home office'] },
-  { cat: 'ENTREPRENEUR',     queries: ['latina entrepreneur', 'hispanic business woman', 'female small business owner'] },
-  { cat: 'EMPOWERMENT',      queries: ['confident latina woman', 'successful hispanic woman', 'confident female entrepreneur'] },
-  { cat: 'PRODUCTIVITY',     queries: ['woman planning desk', 'woman writing planner', 'organized home office'] },
-  { cat: 'DIGITAL_BUSINESS', queries: ['woman smartphone business', 'female content creator', 'woman online business'] },
-  { cat: 'MOM_ENTREPRENEUR', queries: ['mother working from home', 'working mom laptop', 'mother entrepreneur'] },
-  { cat: 'SMALL_BUSINESS',   queries: ['woman packing orders', 'female ecommerce business', 'woman small business owner'] },
-  { cat: 'LEARNING',         queries: ['woman studying laptop', 'online learning woman', 'woman taking notes'] },
-  { cat: 'LIFESTYLE',        queries: ['woman coffee laptop home', 'woman morning routine', 'woman working cozy home'] },
-  { cat: 'SUCCESS',          queries: ['woman celebrating success', 'happy female entrepreneur', 'woman celebrating laptop'] },
+  // ── EMPRENDIENDO / ENTREPRENEUR 55% (4 categorías) ──────────────────────
+  { cat: 'ENTREPRENEUR',     queries: [
+    'woman entrepreneur home bright', 'female entrepreneur laptop sunlight',
+    'woman starting business smiling', 'female business owner desk daylight',
+    'woman working laptop natural light', 'latina entrepreneur bright office',
+    'female entrepreneur confident working', 'woman business idea notebook'
+  ]},
+  { cat: 'EMPOWERMENT',      queries: [
+    'confident woman smiling work', 'successful woman entrepreneur outdoor',
+    'woman arms open field', 'happy woman working laptop',
+    'woman celebrating achievement', 'confident female professional natural light',
+    'woman winner success smile', 'empowered woman working home'
+  ]},
+  { cat: 'DIGITAL_BUSINESS', queries: [
+    'woman smartphone business home', 'female content creator bright room',
+    'woman social media laptop window', 'woman online business natural light',
+    'female creator working daylight', 'woman video call bright office',
+    'woman working phone laptop home', 'female digital entrepreneur'
+  ]},
+  { cat: 'SMALL_BUSINESS',   queries: [
+    'woman small business owner', 'female entrepreneur products table',
+    'woman handmade business bright', 'woman packaging orders daylight',
+    'female ecommerce seller home', 'woman craft business natural light',
+    'woman online seller working', 'female shop owner bright'
+  ]},
+  // ── HOME OFFICE / PRODUCTIVIDAD 20% (2 categorías) ──────────────────────
+  { cat: 'HOME_OFFICE',      queries: [
+    'woman working laptop home bright', 'cozy female home office daylight',
+    'woman desk laptop coffee morning', 'bright home office woman working',
+    'woman home office natural light', 'female remote work bright room',
+    'woman organized desk daylight', 'clean home office woman laptop'
+  ]},
+  { cat: 'PRODUCTIVITY',     queries: [
+    'woman writing planner daylight', 'woman planning notebook bright',
+    'organized desk woman morning', 'woman taking notes laptop window',
+    'woman focused working natural light', 'woman calendar planning bright',
+    'woman checklist notebook daylight', 'woman priorities planning home'
+  ]},
+  // ── LIFESTYLE / LOGROS 10% (2 categorías) ───────────────────────────────
+  { cat: 'LIFESTYLE',        queries: [
+    'woman coffee laptop morning home', 'woman flexible work bright',
+    'woman enjoying home office', 'woman morning routine laptop',
+    'woman working cozy bright home', 'woman work life balance',
+    'woman laptop morning window', 'woman peaceful working home'
+  ]},
+  { cat: 'SUCCESS',          queries: [
+    'woman celebrating success laptop', 'happy female entrepreneur achievement',
+    'woman excited laptop success', 'confident woman work achievement',
+    'woman happy working from home', 'female entrepreneur proud moment',
+    'woman victory arms raised', 'happy business woman success bright'
+  ]},
 ];
+
 function getQueryTrabajando() {
-  const cat = VISUAL_ENGINE_TRABAJANDO[Math.floor(Math.random() * VISUAL_ENGINE_TRABAJANDO.length)];
+  // Fallback biased: 55% entrepreneur, 20% home/productivity, 10% lifestyle
+  const roll = Math.random();
+  let pool;
+  if (roll < 0.55) pool = VISUAL_ENGINE_TRABAJANDO.filter(c => ['ENTREPRENEUR','EMPOWERMENT','DIGITAL_BUSINESS','SMALL_BUSINESS'].includes(c.cat));
+  else if (roll < 0.75) pool = VISUAL_ENGINE_TRABAJANDO.filter(c => ['HOME_OFFICE','PRODUCTIVITY'].includes(c.cat));
+  else pool = VISUAL_ENGINE_TRABAJANDO.filter(c => ['LIFESTYLE','SUCCESS'].includes(c.cat));
+  const cat = pool[Math.floor(Math.random() * pool.length)];
   return cat.queries[Math.floor(Math.random() * cat.queries.length)];
 }
-function getQueryTrabajandoByContent(titulo) {
-  const t = (titulo || '').toLowerCase();
+
+// Mapeo por PILAR + palabras clave del gancho → categoría visual
+function getQueryTrabajandoByContent(pilar, gancho) {
+  const txt = ((pilar || '') + ' ' + (gancho || '')).toLowerCase();
   const map = [
-    { keys: ['oportunidad','negocio','próxima','propia','libre','libera','emprende'],  cat: 'ENTREPRENEUR'    },
-    { keys: ['tiempo','organiza','plan','agenda','productiv','día','rutina','hábito'], cat: 'PRODUCTIVITY'    },
-    { keys: ['hogar','casa','oficina','espacio','desde casa'],                         cat: 'HOME_OFFICE'     },
-    { keys: ['teléfono','celular','digital','redes','online','internet','apps'],       cat: 'DIGITAL_BUSINESS'},
-    { keys: ['mamá','familia','hijo','hija','madre','concilia'],                       cat: 'MOM_ENTREPRENEUR'},
-    { keys: ['aprender','estudia','curso','conocimiento','habilidad'],                 cat: 'LEARNING'        },
-    { keys: ['celebra','logro','éxito','alcanz','consegui','ganar','triunf'],          cat: 'SUCCESS'         },
-    { keys: ['empeza','comenz','primer','pequeño','inicio'],                           cat: 'SMALL_BUSINESS'  },
-    { keys: ['café','mañana','balance','bienestar','calma','lifestyle'],               cat: 'LIFESTYLE'       },
+    { keys: ['digital','redes','online','internet','celular','teléfono','apps','contenido'],  cat: 'DIGITAL_BUSINESS' },
+    { keys: ['producto','empacar','vender','cliente','paquete','tienda','artesanal','manualidad'], cat: 'SMALL_BUSINESS' },
+    { keys: ['logro','éxito','celebra','consegui','alcanz','triunf','ganar','primera venta'],  cat: 'SUCCESS'         },
+    { keys: ['café','mañana','balance','bienestar','calma','rutina mañana','lifestyle'],       cat: 'LIFESTYLE'       },
+    { keys: ['tiempo','organiza','plan','agenda','productiv','prioridad','hábito','enfoque'],  cat: 'PRODUCTIVITY'    },
+    { keys: ['hogar','casa','oficina','escritorio','desde casa','espacio','remoto'],           cat: 'HOME_OFFICE'     },
+    { keys: ['confianza','miedo','dudas','impostor','creencia','creer en','síndrome'],        cat: 'EMPOWERMENT'     },
+    { keys: ['empezar','inicio','primer paso','primera vez','comienzo','arrancar','debut'],   cat: 'ENTREPRENEUR'    },
+    { keys: ['talento','habilidad','aprender','curso','estudia','conocimiento'],               cat: 'ENTREPRENEUR'    },
+    { keys: ['ingreso','dinero','cobrar','precio','valor','independencia','económica'],        cat: 'SMALL_BUSINESS'  },
+    { keys: ['mamá','familia','hijo','hija','madre','concilia','mientras duermen'],           cat: 'HOME_OFFICE'     },
+    { keys: ['productividad', 'accion', 'acción', 'disciplina', 'hábito', 'constancia'],     cat: 'PRODUCTIVITY'    },
   ];
   for (const rule of map) {
-    if (rule.keys.some(k => t.includes(k))) {
+    if (rule.keys.some(k => txt.includes(k))) {
       const found = VISUAL_ENGINE_TRABAJANDO.find(c => c.cat === rule.cat);
       if (found) return found.queries[Math.floor(Math.random() * found.queries.length)];
     }
   }
-  return getQueryTrabajando();
+  return getQueryTrabajando(); // fallback biased
+}
+
+// ── IMAGEN EXCLUSIVA TRABAJANDO — Pexels directo, anti-repetición, luminosidad preferida
+async function getImagenTrabajando(query) {
+  try {
+    // Sin orientation=square para mayor pool de calidad — cover crop adapta al 1080x1080
+    const pexUrl = 'https://api.pexels.com/v1/search?query=' + encodeURIComponent(query) + '&per_page=20';
+    const data = await new Promise((resolve, reject) => {
+      const opts = new URL(pexUrl);
+      const r = https.request({ hostname: opts.hostname, path: opts.pathname + opts.search, headers: { Authorization: PEXELS_API_KEY } }, res => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      });
+      r.on('error', reject); r.end();
+    });
+    const todas = (data.photos || []).filter(p => !_trabRecentIds.includes(p.id));
+    const pool  = todas.length > 0 ? todas : (data.photos || []);
+    if (!pool.length) return null;
+
+    // Preferir fotos luminosas — criterio de calidad, no rígido
+    function hexBright(hex) {
+      if (!hex || hex.length < 6) return 128;
+      const h = hex.replace('#','');
+      const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16);
+      return (r*299 + g*587 + b*114) / 1000;
+    }
+    const BRIGHT_MIN = 75;
+    const luminosas = pool.filter(p => hexBright(p.avg_color) > BRIGHT_MIN);
+    // Si hay al menos 3 luminosas, preferirlas; si no, usar todo el pool
+    const candidatos = luminosas.length >= 3 ? luminosas : pool;
+    const top5 = candidatos.slice(0, 5);
+    const pick = top5[Math.floor(Math.random() * top5.length)];
+
+    _trabRecentIds.push(pick.id);
+    if (_trabRecentIds.length > 20) _trabRecentIds.shift();
+    return pick.src.large2x || pick.src.large || pick.src.original;
+  } catch(e) { console.error('[Pexels-Trab] Error:', e.message); return null; }
 }
 
 
@@ -776,7 +881,7 @@ async function generarCoverFancy(branding, titular, subtitulo) {
   return canvas.toBuffer('image/png');
 }
 
-async function generarCoverTrabajando(branding, coverTitulo) {
+async function generarCoverTrabajando(branding, gancho) {
   const canvas   = createCanvas(1080, 1080);
   const ctx      = canvas.getContext('2d');
   const VERDE    = '#123F32';
@@ -796,10 +901,10 @@ async function generarCoverTrabajando(branding, coverTitulo) {
   ctx.font = 'bold 15px Roboto'; ctx.fillStyle = DORADO;
   ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 82);
 
-  // ── 2. FOTO protagonista — object-fit:cover en zona y=95..985 ────────────
+  // ── 2. FOTO protagonista — cover crop en zona y=95..985 ──────────────────
   ctx.fillStyle = '#1A2A20'; ctx.fillRect(0, HEADER_H, 1080, PHOTO_H);
-  const query = getQueryTrabajandoByContent(coverTitulo);
-  const imgUrl = await getImagenCategoria('DEFAULT', query);
+  const query = getQueryTrabajandoByContent(null, gancho);
+  const imgUrl = await getImagenTrabajando(query);
   if (imgUrl) {
     try {
       const buf = await descargarImagen(imgUrl);
@@ -818,30 +923,42 @@ async function generarCoverTrabajando(branding, coverTitulo) {
     } catch(e) { console.error('[CoverTrabajando] imagen:', e.message); }
   }
 
-  // ── 3. Gradiente localizado — solo tercio inferior de la foto ─────────────
-  const gradY = HEADER_H + PHOTO_H * 0.50;
+  // ── 3. Gradiente localizado — 55% inferior, solo para legibilidad del gancho
+  const gradY = HEADER_H + PHOTO_H * 0.45;
   const grad  = ctx.createLinearGradient(0, gradY, 0, FOOTER_Y);
   grad.addColorStop(0,    'rgba(0,0,0,0.0)');
-  grad.addColorStop(0.30, 'rgba(0,0,0,0.22)');
-  grad.addColorStop(0.65, 'rgba(0,0,0,0.65)');
-  grad.addColorStop(1,    'rgba(0,0,0,0.82)');
+  grad.addColorStop(0.25, 'rgba(0,0,0,0.18)');
+  grad.addColorStop(0.60, 'rgba(0,0,0,0.60)');
+  grad.addColorStop(1,    'rgba(0,0,0,0.80)');
   ctx.fillStyle = grad; ctx.fillRect(0, gradY, 1080, FOOTER_Y - gradY);
 
-  // ── 4. HERO — tercio inferior, serif premium, 3–4 líneas máx ─────────────
+  // ── 4. GANCHO — protagonista visual, tercio inferior ─────────────────────
+  // El gancho puede ser 6–12 palabras, wrap dinámico
   const hf = _cormorantLoaded ? 'Cormorant' : 'Roboto';
-  let heroSize = 78; ctx.font = `bold ${heroSize}px ${hf}`;
-  const pals = coverTitulo.toUpperCase().split(' ');
+  let heroSize = 72;
+  ctx.font = `bold ${heroSize}px ${hf}`;
+  const palabras = gancho.toUpperCase().split(' ');
   let lineas = []; let linea = '';
-  for (const w of pals) {
+  for (const w of palabras) {
     const p = linea ? linea + ' ' + w : w;
-    if (ctx.measureText(p).width > 980) { if (linea) lineas.push(linea); linea = w; } else linea = p;
+    if (ctx.measureText(p).width > 960) { if (linea) lineas.push(linea); linea = w; } else linea = p;
   }
   if (linea) lineas.push(linea);
-  if (lineas.length >= 4) { heroSize = 62; ctx.font = `bold ${heroSize}px ${hf}`; }
-  if (heroSize < 56) heroSize = 56;
-  const lineH = Math.round(heroSize * 1.18);
-  let heroY   = 878 - (lineas.length - 1) * lineH;
-  ctx.shadowColor = 'rgba(0,0,0,0.90)'; ctx.shadowBlur = 20;
+  // Reducir fuente si hay 4+ líneas
+  if (lineas.length >= 4) {
+    heroSize = 58; ctx.font = `bold ${heroSize}px ${hf}`;
+    lineas = []; linea = '';
+    for (const w of palabras) {
+      const p = linea ? linea + ' ' + w : w;
+      if (ctx.measureText(p).width > 960) { if (linea) lineas.push(linea); linea = w; } else linea = p;
+    }
+    if (linea) lineas.push(linea);
+  }
+  const lineH = Math.round(heroSize * 1.20);
+  // Anclar al tercio inferior, subir según número de líneas
+  let heroY = 870 - (lineas.length - 1) * lineH;
+  if (heroY < HEADER_H + 60) heroY = HEADER_H + 60; // nunca salir del canvas
+  ctx.shadowColor = 'rgba(0,0,0,0.92)'; ctx.shadowBlur = 18;
   ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'center';
   for (const l of lineas) { ctx.fillText(l, 540, heroY); heroY += lineH; }
   ctx.shadowBlur = 0;
@@ -850,14 +967,13 @@ async function generarCoverTrabajando(branding, coverTitulo) {
   ctx.fillStyle = VERDE; ctx.fillRect(0, FOOTER_Y, 1080, FOOTER_H);
   ctx.fillStyle = DORADO; ctx.fillRect(0, FOOTER_Y, 1080, 3);
   ctx.textAlign = 'center';
-  ctx.fillStyle = DORADO; ctx.font = 'bold 16px Roboto';
-  ctx.fillText(branding.footerLinea1 || 'Trabajando En Casa · Emprendedoras Latinas', 540, FOOTER_Y + 36);
-  ctx.fillStyle = 'rgba(240,248,236,0.80)'; ctx.font = '14px Roboto';
-  ctx.fillText(branding.footerLinea2 || '@TrabajarDesdeCasa', 540, FOOTER_Y + 56);
+  ctx.fillStyle = DORADO; ctx.font = 'bold 20px Roboto';
+  ctx.fillText(branding.footerLinea1 || 'Trabajando En Casa · Emprendedoras Latinas', 540, FOOTER_Y + 35);
+  ctx.fillStyle = 'rgba(240,248,236,0.80)'; ctx.font = '16px Roboto';
+  ctx.fillText(branding.footerLinea2 || '@TrabajarDesdeCasa', 540, FOOTER_Y + 58);
 
   return canvas.toBuffer('image/png');
 }
-
 
 async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   const canvas = createCanvas(1080, 1080);
@@ -1041,9 +1157,20 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const formatoAmor = 'Responde en este formato exacto (sin comillas, sin asteriscos, sin texto adicional):\nSCENE: [describe in English a specific romantic scene for the Amor Es chibi couple — location, lighting, specific action, emotion — max 200 chars]\nGANCHO: [frase gancho max 7 palabras en español, mayúsculas, impactante, 2ª persona]\nREFLEXION: [una sola línea poética emotiva max 12 palabras, español, minúsculas]\nMICROHISTORIA: [2 a 3 líneas en segunda persona, emotivas, sin hashtags — narra el momento como si le hablaras directamente a ella]\nCTA: [pregunta conversacional corta para invitar a comentar, español]\nPILAR: [elige uno: amor de pareja | amor propio | relaciones sanas | pequeños gestos cotidianos | sanar y dejar ir | familia y complicidad]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio') + ' — escoge máximo 3 hashtags relevantes al pilar elegido, sin repetición';
     const formatoFe = 'Responde en este formato exacto (sin comillas ni asteriscos):\nAFIRMACION: [frase corta tipo "SOY..." o "TENGO..." máx 6 palabras]\nHERO: [1 a 3 palabras clave poderosas en mayúsculas, ej: EN CRISTO, PAZ, ORO]\nVERSICULO: [cita bíblica real completa relacionada, máx 120 caracteres]\nREFERENCIA: [libro capítulo:versículo, ej: Juan 3:16]\nCAPTION: [1 o 2 frases inspiradoras para el post de Facebook]\nHASHTAGS: ' + (pageConfig.hashtags || '#Fe #Biblia');
     const formatoGenerico = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase de MÁXIMO 4 PALABRAS en español — solo sustantivos/adjetivos poderosos]\nCAPTION: [2 líneas reflexivas o inspiradoras]\nHASHTAGS: ' + (pageConfig.hashtags || '#Inspiracion #Reflexion #Vida');
-    const formatoTrabajando = 'Responde en este formato exacto (sin comillas ni asteriscos):\nCOVER: [frase de MÁXIMO 4 PALABRAS en español — impactante, motivadora, segunda persona]\nCAPTION: [2 a 3 líneas inspiradoras para emprendedoras latinas — práctica, directa, real]\nHASHTAGS: ' + (pageConfig.hashtags || '#TrabajarDesdeCasa #EmprendimientoLatino');
+    const pilarTrabajando = esTrabajando ? elegirPilarTrabajando() : null;
+    // Pool de hashtags — seleccionar 3-5 relevantes al pilar
+    const hashPoolTrab = (pageConfig.hashtags || '#TrabajarDesdeCasa #EmprendimientoLatino #MujeresEmprendedoras').split(' ');
+    const hashSampleTrab = hashPoolTrab.sort(() => 0.5 - Math.random()).slice(0, 5).join(' ');
+    const formatoTrabajando = `Eres una mujer hablando con otra mujer. Cercana, inteligente, práctica. Sin lenguaje de gurú, sin clichés, sin promesas exageradas.
+PILAR OBLIGATORIO PARA ESTA PUBLICACIÓN: ${pilarTrabajando}
+Genera exactamente este formato (sin comillas, sin asteriscos, sin texto adicional):
+GANCHO: [pregunta, contradicción o afirmación que detenga el scroll — máx 10 palabras, español natural, humana, sin cliché — ejemplos: "¿Y si no te falta talento, sino empezar?", "Estar ocupada no significa estar avanzando."]
+REVELACION: [1-3 frases que desarrollen el gancho — clara, útil, realista, práctica — sin lenguaje motivacional vacío — aprox 30-60 palabras]
+CTA: [varía el tipo — COMMENT: pide que compartan algo / SAVE: pide que guarden / ACTION: invita a hacer algo hoy / COMMUNITY: completa la frase o cuéntame — máx 20 palabras]
+HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — de este pool: ${hashSampleTrab}]`;
+
     const captionPayload = JSON.stringify({
-      model: 'claude-sonnet-4-6', max_tokens: esAmor ? 520 : esFe ? 220 : esFancy ? 260 : 200,
+      model: 'claude-sonnet-4-6', max_tokens: esAmor ? 520 : esFe ? 220 : esFancy ? 260 : esTrabajando ? 350 : 200,
       system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : esFancy ? formatoFancy : esTrabajando ? formatoTrabajando : formatoGenerico),
       messages: [{ role: 'user', content: esFancy && fancyCat ? 'Tendencia del día: ' + fancyCat.tema + ' ' + fancyCat.emoji : 'Tema: ' + temaActual }]
     });
@@ -1105,15 +1232,19 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
       console.log('[Fancy] TITULAR:', titular, '| CAT:', fancyCat ? fancyCat.tema : 'genérico');
       coverBuffer = await generarCoverFancy(pageConfig.branding, titular, subtitulo);
     } else if (esTrabajando) {
-      const coverMatch  = caption.match(/COVER:\s*(.+)/i);
-      const capMatch    = caption.match(/CAPTION:\s*([\s\S]+?)(?=HASHTAGS:|$)/i);
+      const ganchoMatch = caption.match(/GANCHO:\s*(.+)/i);
+      const revelMatch  = caption.match(/REVELACION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
+      const ctaMatch    = caption.match(/CTA:\s*(.+)/i);
       const hashMatch   = caption.match(/HASHTAGS:\s*(.+)/i);
-      const coverTitulo = coverMatch ? coverMatch[1].trim() : titulo.substring(0, 25);
-      const capTexto    = capMatch   ? capMatch[1].trim()   : '';
-      const hashTexto   = hashMatch  ? hashMatch[1].trim()  : pageConfig.hashtags || '';
-      captionTexto = capTexto + '\n\n' + hashTexto;
-      console.log('[Trabajando] COVER:', coverTitulo);
-      coverBuffer = await generarCoverTrabajando(pageConfig.branding, coverTitulo);
+      const gancho      = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 60);
+      const revelTexto  = revelMatch  ? revelMatch[1].trim()  : '';
+      const ctaTexto    = ctaMatch    ? ctaMatch[1].trim()    : '';
+      const hashTexto   = hashMatch   ? hashMatch[1].trim()   : hashSampleTrab || '#TrabajarDesdeCasa #EmprendimientoLatino';
+      const hashArr     = [...new Set((hashTexto).split(/\s+/).filter(h => h.startsWith('#')))].slice(0, 5).join(' ');
+      // Copy: REVELACION + CTA + HASHTAGS (el gancho ya va en la imagen)
+      captionTexto = revelTexto + (ctaTexto ? '\n\n' + ctaTexto : '') + '\n\n' + hashArr;
+      console.log('[Trabajando] PILAR:', pilarTrabajando, '| GANCHO:', gancho);
+      coverBuffer = await generarCoverTrabajando(pageConfig.branding, gancho);
     } else {
       console.error('[MultiPage] Tipo no reconocido:', pageConfig.tipo, '— abortando');
       return;
