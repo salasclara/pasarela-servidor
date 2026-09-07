@@ -851,6 +851,101 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 
   return canvas.toBuffer('image/png');
 }
+// ── AMAZON PRODUCT ADVERTISING API — FANCY BY ROXETTE ─────────────────────
+// Función EXCLUSIVA de Fancy — NO compartida con otras páginas
+// Variables Railway: AMAZON_CREATORS_CREDENTIAL_ID, AMAZON_CREATORS_CREDENTIAL_SECRET, AMAZON_TAG
+// SDK oficial: paapi5-nodejs-sdk v1.1.0
+// NO publicar — solo obtener producto real y loggear
+
+async function getAmazonProductFancy(searchTerm) {
+  const accessKey  = process.env.AMAZON_CREATORS_CREDENTIAL_ID;
+  const secretKey  = process.env.AMAZON_CREATORS_CREDENTIAL_SECRET;
+  const partnerTag = process.env.AMAZON_TAG || 'fancybyroxette-20';
+
+  if (!accessKey || !secretKey) {
+    console.error('[AmazonFancy] ⚠️ Credenciales AMAZON_CREATORS_CREDENTIAL_ID / SECRET no configuradas en Railway');
+    return null;
+  }
+
+  try {
+    const paapi5 = require('paapi5-nodejs-sdk');
+
+    // Configurar cliente con credenciales de entorno
+    const client      = paapi5.ApiClient.instance;
+    client.accessKey  = accessKey;
+    client.secretKey  = secretKey;
+    client.host       = 'webservices.amazon.com';
+    client.region     = 'us-east-1';
+
+    const api = new paapi5.DefaultApi();
+
+    // Construir SearchItemsRequest
+    const req       = new paapi5.SearchItemsRequest(partnerTag, paapi5.PartnerType.Associates);
+    req.Keywords    = searchTerm;
+    req.SearchIndex = 'All';
+    req.ItemCount   = 5;
+    req.Resources   = [
+      'ItemInfo.Title',
+      'Images.Primary.Large',
+      'Images.Primary.Medium',
+      'Offers.Listings.Price',
+    ];
+
+    // Llamada al API — callback → Promise
+    const response = await new Promise((resolve, reject) => {
+      api.searchItems(req, (error, data, _httpResponse) => {
+        if (error) return reject(error);
+        resolve(data);
+      });
+    });
+
+    // Validar respuesta
+    const items = response && response.SearchResult && response.SearchResult.Items;
+    if (!items || items.length === 0) {
+      console.error('[AmazonFancy] NoProductsFound para:', searchTerm);
+      return null;
+    }
+
+    // Filtrar candidatos válidos: deben tener ASIN + title + URL + imagen
+    const candidatos = items.filter(item => {
+      const tieneAsin  = !!item.ASIN;
+      const tieneTitle = item.ItemInfo && item.ItemInfo.Title && item.ItemInfo.Title.DisplayValue;
+      const tieneURL   = !!item.DetailPageURL;
+      const tieneImg   = item.Images && item.Images.Primary &&
+                         (item.Images.Primary.Large || item.Images.Primary.Medium);
+      return tieneAsin && tieneTitle && tieneURL && tieneImg;
+    });
+
+    if (candidatos.length === 0) {
+      console.error('[AmazonFancy] Sin candidatos válidos (sin imagen o sin URL) para:', searchTerm);
+      return null;
+    }
+
+    // Seleccionar primer candidato válido
+    const item   = candidatos[0];
+    const imgObj = item.Images.Primary.Large || item.Images.Primary.Medium;
+    const price  = item.Offers && item.Offers.Listings && item.Offers.Listings[0] &&
+                   item.Offers.Listings[0].Price
+                     ? item.Offers.Listings[0].Price.DisplayAmount
+                     : null; // precio es OPCIONAL — no es error si es null
+
+    // Producto normalizado — estructura interna Fancy
+    return {
+      asin:          item.ASIN,
+      title:         item.ItemInfo.Title.DisplayValue,
+      image:         imgObj.URL || null,
+      price:         price,           // string displayable o null
+      detailPageURL: item.DetailPageURL, // URL devuelta por Amazon — NO reconstruir
+    };
+
+  } catch (e) {
+    // Loggear error de API sin exponer credenciales
+    const errCode = e.message || (e.data && e.data.__type) || 'unknown';
+    console.error('[AmazonFancy] ❌ Error API:', errCode);
+    return null;
+  }
+}
+
 async function generarCoverFancy(branding, titular, subtitulo) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
@@ -1917,6 +2012,30 @@ INSTRUCCIONES:
       }
     })();
     res.end(JSON.stringify({ mensaje: 'Generando imagen de prueba — ver logs Railway' }));
+    return;
+  }
+
+  // TEST AMAZON FANCY — SOLO LOGS, NO PUBLICA NADA
+  if (req.method === 'GET' && req.url === '/test-amazon-fancy') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ mensaje: 'Consultando Amazon Creators API — ver logs Railway para resultado' }));
+    (async () => {
+      console.log('[AmazonFancy] ── INICIO PRUEBA ─────────────────────');
+      console.log('[AmazonFancy] searchTerm: "women elegant midi dress"');
+      const producto = await getAmazonProductFancy('women elegant midi dress');
+      if (!producto) {
+        console.error('[AmazonFancy] RESULTADO: null — sin producto válido');
+        return;
+      }
+      // Log seguro — sin credenciales, sin tokens, sin secrets
+      console.log('[AmazonFancy] ✅ OK');
+      console.log('[AmazonFancy] ASIN:', producto.asin);
+      console.log('[AmazonFancy] Title:', producto.title);
+      console.log('[AmazonFancy] Price:', producto.price || '(no disponible)');
+      console.log('[AmazonFancy] Image available:', !!producto.image);
+      console.log('[AmazonFancy] Detail URL available:', !!producto.detailPageURL);
+      console.log('[AmazonFancy] ── FIN PRUEBA ──────────────────────');
+    })();
     return;
   }
 
