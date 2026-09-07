@@ -893,7 +893,9 @@ async function getAmazonProductFancy(searchTerm) {
     ];
 
     // Llamada al API — marketplace US
-    const response = await api.searchItems('www.amazon.com', { searchItemsRequestContent: req });
+    console.log('[AmazonFancy] DEBUG partnerTag:', JSON.stringify(partnerTag));
+    console.log('[AmazonFancy] DEBUG req:', JSON.stringify(req));
+    const response = await api.searchItems('www.amazon.com', req);
 
     // Validar respuesta
     const items = response && response.searchResult && response.searchResult.items;
