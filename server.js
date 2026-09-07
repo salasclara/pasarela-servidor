@@ -893,8 +893,6 @@ async function getAmazonProductFancy(searchTerm) {
     ];
 
     // Llamada al API — marketplace US
-    console.log('[AmazonFancy] DEBUG partnerTag:', JSON.stringify(partnerTag));
-    console.log('[AmazonFancy] DEBUG req:', JSON.stringify(req));
     const response = await api.searchItems('www.amazon.com', req);
 
     // Validar respuesta
@@ -940,7 +938,11 @@ async function getAmazonProductFancy(searchTerm) {
     // Loggear error de API sin exponer credenciales
     const errType   = (e.status ? 'HTTP ' + e.status : '') || '';
     const errReason = (e.body && (e.body.message || e.body.type)) || e.message || 'unknown';
-    console.error('[AmazonFancy] ❌ Error API:', errType, errReason);
+    if (e.status === 403) {
+      console.error("[AmazonFancy] AssociateNotEligible — cuenta pendiente de habilitación Creators API");
+    } else {
+      console.error("[AmazonFancy] ❌ Error API:", errType, errReason);
+    }
     return null;
   }
 }
