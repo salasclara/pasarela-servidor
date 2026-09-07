@@ -455,13 +455,17 @@ function elegirIntencionCompraFancy(tipoEditorial, categoria) {
 
 function construirSearchTermFancy(categoria, intencionCompra) {
   const mod = INTENCION_MODIFIER[intencionCompra] || '';
-  return (categoria.searchBase + (mod ? ' ' + mod : '')).trim();
+  const result = (categoria.searchBase + (mod ? ' ' + mod : '')).trim();
+  console.log('[Fancy] searchTerm:', result);
+  return result;
 }
 
 function obtenerEnlaceFancy(categoria, intencionCompra) {
   const AMAZON_TAG = process.env.AMAZON_TAG || 'fancybyroxette-20';
   const searchTerm = construirSearchTermFancy(categoria, intencionCompra);
-  return 'https://www.amazon.com/s?k=' + encodeURIComponent(searchTerm) + '&tag=' + AMAZON_TAG;
+  const link = 'https://www.amazon.com/s?k=' + encodeURIComponent(searchTerm) + '&tag=' + AMAZON_TAG;
+  console.log('[Fancy] amazonLink:', link);
+  return link;
 }
 
 async function getImagenFancy(categoria, tipoEditorial, intencionCompra) {
@@ -481,6 +485,7 @@ async function getImagenFancy(categoria, tipoEditorial, intencionCompra) {
     query = categoria.queryPexels + ' ' + variants[Math.floor(Math.random() * variants.length)];
   }
   fancyMemPush(FANCY_STATE.lastPexelsQueries, query, 5);
+  console.log('[Fancy] queryPexels:', query);
   const url = await getImagenCategoria('DEFAULT', query);
   if (!url) return null;
   return await descargarImagen(url);
@@ -2158,6 +2163,34 @@ INSTRUCCIONES:
       }
     })();
     res.end(JSON.stringify({ mensaje: 'Generando imagen de prueba — ver logs Railway' }));
+    return;
+  }
+
+  // TEST FANCY — dispara publicarCoverParaPagina SOLO para Fancy by Roxette
+  if (req.method === 'GET' && req.url === '/test-fancy') {
+    const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
+    if (!fancyPage) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Fancy page config no encontrada' }));
+      return;
+    }
+    if (!fancyPage.token) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'FANCY_BY_TOKEN no configurado en Railway' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ mensaje: 'Publicando en Fancy by Roxette — ver logs Railway', pagina: fancyPage.nombre }));
+    (async () => {
+      console.log('[TEST FANCY] ── INICIO ──────────────────────────────');
+      try {
+        await publicarCoverParaPagina(fancyPage, 'Editorial Fancy');
+        console.log('[TEST FANCY] ── FIN OK ──────────────────────────────');
+      } catch(e) {
+        console.error('[TEST FANCY] ERROR:', e.message);
+        console.log('[TEST FANCY] ── FIN CON ERROR ──────────────────────');
+      }
+    })();
     return;
   }
 
