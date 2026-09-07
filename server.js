@@ -851,56 +851,52 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 
   return canvas.toBuffer('image/png');
 }
-// ── AMAZON PRODUCT ADVERTISING API — FANCY BY ROXETTE ─────────────────────
+// ── AMAZON CREATORS API — FANCY BY ROXETTE ────────────────────────────────
 // Función EXCLUSIVA de Fancy — NO compartida con otras páginas
-// Variables Railway: AMAZON_CREATORS_CREDENTIAL_ID, AMAZON_CREATORS_CREDENTIAL_SECRET, AMAZON_TAG
-// SDK oficial: paapi5-nodejs-sdk v1.1.0
+// SDK oficial: @amzn/creatorsapi-nodejs-sdk v1.3.0 (OAuth 2.0 / LWA)
+// Variables Railway: AMAZON_CREATORS_CREDENTIAL_ID, AMAZON_CREATORS_CREDENTIAL_SECRET,
+//                    AMAZON_CREATORS_CREDENTIAL_VERSION, AMAZON_TAG
 // NO publicar — solo obtener producto real y loggear
 
 async function getAmazonProductFancy(searchTerm) {
-  const accessKey  = process.env.AMAZON_CREATORS_CREDENTIAL_ID;
-  const secretKey  = process.env.AMAZON_CREATORS_CREDENTIAL_SECRET;
-  const partnerTag = process.env.AMAZON_TAG || 'fancybyroxette-20';
+  const credentialId      = process.env.AMAZON_CREATORS_CREDENTIAL_ID;
+  const credentialSecret  = process.env.AMAZON_CREATORS_CREDENTIAL_SECRET;
+  const credentialVersion = process.env.AMAZON_CREATORS_CREDENTIAL_VERSION;
+  const partnerTag        = process.env.AMAZON_TAG || 'fancybyroxette-20';
 
-  if (!accessKey || !secretKey) {
-    console.error('[AmazonFancy] ⚠️ Credenciales AMAZON_CREATORS_CREDENTIAL_ID / SECRET no configuradas en Railway');
+  if (!credentialId || !credentialSecret || !credentialVersion) {
+    console.error('[AmazonFancy] ⚠️ Faltan variables Railway: AMAZON_CREATORS_CREDENTIAL_ID / SECRET / VERSION');
     return null;
   }
 
   try {
-    const paapi5 = require('paapi5-nodejs-sdk');
+    const { ApiClient, DefaultApi, SearchItemsRequestContent } = require('@amzn/creatorsapi-nodejs-sdk');
 
-    // Configurar cliente con credenciales de entorno
-    const client      = paapi5.ApiClient.instance;
-    client.accessKey  = accessKey;
-    client.secretKey  = secretKey;
-    client.host       = 'webservices.amazon.com';
-    client.region     = 'us-east-1';
+    // Configurar cliente OAuth 2.0 (el SDK gestiona token, caché y renovación)
+    const apiClient = new ApiClient();
+    apiClient.credentialId      = credentialId;
+    apiClient.credentialSecret  = credentialSecret;
+    apiClient.version           = credentialVersion;
 
-    const api = new paapi5.DefaultApi();
+    const api = new DefaultApi(apiClient);
 
     // Construir SearchItemsRequest
-    const req       = new paapi5.SearchItemsRequest(partnerTag, paapi5.PartnerType.Associates);
-    req.Keywords    = searchTerm;
-    req.SearchIndex = 'All';
-    req.ItemCount   = 5;
-    req.Resources   = [
-      'ItemInfo.Title',
-      'Images.Primary.Large',
-      'Images.Primary.Medium',
-      'Offers.Listings.Price',
+    const req         = new SearchItemsRequestContent(partnerTag);
+    req.keywords      = searchTerm;
+    req.searchIndex   = 'All';
+    req.itemCount     = 5;
+    req.resources     = [
+      'images.primary.large',
+      'images.primary.medium',
+      'itemInfo.title',
+      'offersV2.listings.price',
     ];
 
-    // Llamada al API — callback → Promise
-    const response = await new Promise((resolve, reject) => {
-      api.searchItems(req, (error, data, _httpResponse) => {
-        if (error) return reject(error);
-        resolve(data);
-      });
-    });
+    // Llamada al API — marketplace US
+    const response = await api.searchItems('www.amazon.com', { searchItemsRequestContent: req });
 
     // Validar respuesta
-    const items = response && response.SearchResult && response.SearchResult.Items;
+    const items = response && response.searchResult && response.searchResult.items;
     if (!items || items.length === 0) {
       console.error('[AmazonFancy] NoProductsFound para:', searchTerm);
       return null;
@@ -908,11 +904,11 @@ async function getAmazonProductFancy(searchTerm) {
 
     // Filtrar candidatos válidos: deben tener ASIN + title + URL + imagen
     const candidatos = items.filter(item => {
-      const tieneAsin  = !!item.ASIN;
-      const tieneTitle = item.ItemInfo && item.ItemInfo.Title && item.ItemInfo.Title.DisplayValue;
-      const tieneURL   = !!item.DetailPageURL;
-      const tieneImg   = item.Images && item.Images.Primary &&
-                         (item.Images.Primary.Large || item.Images.Primary.Medium);
+      const tieneAsin  = !!item.asin;
+      const tieneTitle = item.itemInfo && item.itemInfo.title && item.itemInfo.title.displayValue;
+      const tieneURL   = !!item.detailPageURL;
+      const tieneImg   = item.images && item.images.primary &&
+                         (item.images.primary.large || item.images.primary.medium);
       return tieneAsin && tieneTitle && tieneURL && tieneImg;
     });
 
@@ -923,25 +919,26 @@ async function getAmazonProductFancy(searchTerm) {
 
     // Seleccionar primer candidato válido
     const item   = candidatos[0];
-    const imgObj = item.Images.Primary.Large || item.Images.Primary.Medium;
-    const price  = item.Offers && item.Offers.Listings && item.Offers.Listings[0] &&
-                   item.Offers.Listings[0].Price
-                     ? item.Offers.Listings[0].Price.DisplayAmount
+    const imgObj = item.images.primary.large || item.images.primary.medium;
+    const price  = item.offersV2 && item.offersV2.listings && item.offersV2.listings[0] &&
+                   item.offersV2.listings[0].price && item.offersV2.listings[0].price.money
+                     ? item.offersV2.listings[0].price.money.displayAmount
                      : null; // precio es OPCIONAL — no es error si es null
 
     // Producto normalizado — estructura interna Fancy
     return {
-      asin:          item.ASIN,
-      title:         item.ItemInfo.Title.DisplayValue,
-      image:         imgObj.URL || null,
+      asin:          item.asin,
+      title:         item.itemInfo.title.displayValue,
+      image:         imgObj.url || null,
       price:         price,           // string displayable o null
-      detailPageURL: item.DetailPageURL, // URL devuelta por Amazon — NO reconstruir
+      detailPageURL: item.detailPageURL, // URL devuelta por Amazon — NO reconstruir
     };
 
   } catch (e) {
     // Loggear error de API sin exponer credenciales
-    const errCode = e.message || (e.data && e.data.__type) || 'unknown';
-    console.error('[AmazonFancy] ❌ Error API:', errCode);
+    const errType   = (e.status ? 'HTTP ' + e.status : '') || '';
+    const errReason = (e.body && (e.body.message || e.body.type)) || e.message || 'unknown';
+    console.error('[AmazonFancy] ❌ Error API:', errType, errReason);
     return null;
   }
 }
