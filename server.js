@@ -370,6 +370,150 @@ async function descargarImagen(url) {
 }
 
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
+
+// ============================================================
+// FANCY COMMERCE ENGINE — Constantes y estado en RAM
+// NO compartir con otras páginas — exclusivo Fancy by Roxette
+// ============================================================
+const FANCY_CATEGORIAS = [
+  { tema: 'vestidos y looks de ocasión',     searchBase: 'women occasion dress elegant',      queryPexels: 'elegant woman dress fashion',         emoji: '👗', tiposModoA: ['DISCOVER_FANCY','FASHION_PICK','GIFT_IDEA','ESSENTIAL'],       intenciones: ['elevar_un_look','autocuidado','regalo','descubrir_algo_util'] },
+  { tema: 'tacones y zapatos de tendencia',  searchBase: 'women heels fashion shoes',          queryPexels: 'fashion heels shoes woman',            emoji: '👠', tiposModoA: ['DISCOVER_FANCY','FASHION_PICK','HOW_TO_STYLE'],                intenciones: ['elevar_un_look','comodidad','regalo','descubrir_algo_util'] },
+  { tema: 'bolsos y carteras estructurados', searchBase: 'women structured handbag tote',      queryPexels: 'woman handbag fashion accessories',   emoji: '👜', tiposModoA: ['DISCOVER_FANCY','FASHION_PICK','ESSENTIAL','GIFT_IDEA'],       intenciones: ['organizar','elevar_un_look','regalo','comodidad'] },
+  { tema: 'joyería fina y accesorios',       searchBase: 'women fine jewelry set elegant',     queryPexels: 'woman jewelry accessories elegant',   emoji: '✨', tiposModoA: ['DISCOVER_FANCY','GIFT_IDEA','FASHION_PICK'],                   intenciones: ['elevar_un_look','regalo','autocuidado','descubrir_algo_util'] },
+  { tema: 'maquillaje y sets de belleza',    searchBase: 'makeup set women beauty kit',        queryPexels: 'makeup beauty cosmetics woman',       emoji: '💄', tiposModoA: ['BEAUTY_FIND','DISCOVER_FANCY','GIFT_IDEA','HOW_TO_STYLE'],    intenciones: ['autocuidado','simplificar_rutina','elevar_un_look','regalo'] },
+  { tema: 'ropa casual chic diaria',         searchBase: 'women casual chic everyday outfit',  queryPexels: 'casual chic woman street fashion',    emoji: '🛍️', tiposModoA: ['FASHION_PICK','HOW_TO_STYLE','ESSENTIAL'],                     intenciones: ['comodidad','elevar_un_look','descubrir_algo_util'] },
+  { tema: 'skincare y rutina de piel',       searchBase: 'skincare routine set women glow',    queryPexels: 'skincare beauty routine woman',       emoji: '🧴', tiposModoA: ['BEAUTY_FIND','DISCOVER_FANCY','HOW_TO_STYLE'],                intenciones: ['autocuidado','simplificar_rutina','resolver_un_problema'] },
+  { tema: 'organización del hogar',          searchBase: 'home organization storage elegant',  queryPexels: 'home organization aesthetic storage', emoji: '🏠', tiposModoA: ['HOME_FIND','DISCOVER_FANCY','ESSENTIAL'],                      intenciones: ['organizar','resolver_un_problema','ahorrar_tiempo','simplificar_rutina'] },
+  { tema: 'bolsos de trabajo y oficina',     searchBase: 'women work tote bag office laptop',  queryPexels: 'professional woman work bag office',  emoji: '💼', tiposModoA: ['ESSENTIAL','DISCOVER_FANCY','FASHION_PICK'],                   intenciones: ['organizar','comodidad','elevar_un_look','resolver_un_problema'] },
+  { tema: 'regalo para ella',                searchBase: 'gift for women fashion accessories', queryPexels: 'gift box woman elegant fashion',      emoji: '🎁', tiposModoA: ['GIFT_IDEA','DISCOVER_FANCY','BEAUTY_FIND'],                    intenciones: ['regalo','descubrir_algo_util','autocuidado'] },
+];
+
+// Tipos editoriales Modo A — Modo B (FIND_OF_THE_DAY, LOOK_FOR_LESS, TRENDING) se activa cuando Amazon Creators API sea elegible
+const FANCY_TIPOS_MODO_A = ['DISCOVER_FANCY','FASHION_PICK','BEAUTY_FIND','HOME_FIND','HOW_TO_STYLE','GIFT_IDEA','ESSENTIAL'];
+
+// Modificadores de intención → sufijo de búsqueda Amazon
+const INTENCION_MODIFIER = {
+  organizar:             'organizer storage',
+  simplificar_rutina:    'kit set easy',
+  resolver_un_problema:  'solution for women',
+  elevar_un_look:        'elegant chic',
+  autocuidado:           'self care women',
+  regalo:                'gift set',
+  comodidad:             'comfortable everyday',
+  descubrir_algo_util:   'useful women',
+  ahorrar_tiempo:        'quick easy',
+};
+
+// Estado anti-repetición en RAM — se reinicia en cada redeploy de Railway
+const FANCY_STATE = {
+  lastTipos:         [],  // últimos 3 tipoEditorial usados
+  lastCategorias:    [],  // últimas 3 categorías usadas
+  lastPexelsQueries: [],  // últimas 5 queries Pexels
+};
+
+// ── Helpers Fancy ────────────────────────────────────────────────────────────
+
+function fancyMemPush(arr, val, max) {
+  arr.push(val);
+  if (arr.length > (max || 3)) arr.shift();
+}
+
+function elegirTipoEditorialFancy() {
+  const disponibles = FANCY_TIPOS_MODO_A.filter(t => !FANCY_STATE.lastTipos.includes(t));
+  const pool = disponibles.length > 0 ? disponibles : FANCY_TIPOS_MODO_A;
+  const tipo = pool[Math.floor(Math.random() * pool.length)];
+  fancyMemPush(FANCY_STATE.lastTipos, tipo, 3);
+  return tipo;
+}
+
+function elegirCategoriaFancy(tipoEditorial) {
+  const compatibles = FANCY_CATEGORIAS.filter(c =>
+    c.tiposModoA.includes(tipoEditorial) && !FANCY_STATE.lastCategorias.includes(c.tema)
+  );
+  const pool = compatibles.length > 0 ? compatibles
+    : FANCY_CATEGORIAS.filter(c => !FANCY_STATE.lastCategorias.includes(c.tema));
+  const pool2 = pool.length > 0 ? pool : FANCY_CATEGORIAS;
+  const cat = pool2[Math.floor(Math.random() * pool2.length)];
+  fancyMemPush(FANCY_STATE.lastCategorias, cat.tema, 3);
+  return cat;
+}
+
+function elegirIntencionCompraFancy(tipoEditorial, categoria) {
+  const MAP = {
+    DISCOVER_FANCY: 'descubrir_algo_util',
+    FASHION_PICK:   'elevar_un_look',
+    BEAUTY_FIND:    'autocuidado',
+    HOME_FIND:      'organizar',
+    HOW_TO_STYLE:   'elevar_un_look',
+    GIFT_IDEA:      'regalo',
+    ESSENTIAL:      'comodidad',
+  };
+  const preferred = MAP[tipoEditorial];
+  if (preferred && categoria.intenciones.includes(preferred)) return preferred;
+  return categoria.intenciones[Math.floor(Math.random() * categoria.intenciones.length)];
+}
+
+function construirSearchTermFancy(categoria, intencionCompra) {
+  const mod = INTENCION_MODIFIER[intencionCompra] || '';
+  return (categoria.searchBase + (mod ? ' ' + mod : '')).trim();
+}
+
+function obtenerEnlaceFancy(categoria, intencionCompra) {
+  const AMAZON_TAG = process.env.AMAZON_TAG || 'fancybyroxette-20';
+  const searchTerm = construirSearchTermFancy(categoria, intencionCompra);
+  return 'https://www.amazon.com/s?k=' + encodeURIComponent(searchTerm) + '&tag=' + AMAZON_TAG;
+}
+
+async function getImagenFancy(categoria, tipoEditorial, intencionCompra) {
+  const TIPO_PEXELS_MOD = {
+    DISCOVER_FANCY: 'editorial fashion',
+    FASHION_PICK:   'fashion look outfit',
+    BEAUTY_FIND:    'beauty makeup',
+    HOME_FIND:      'home decor aesthetic',
+    HOW_TO_STYLE:   'style fashion woman',
+    GIFT_IDEA:      'gift elegant woman',
+    ESSENTIAL:      'everyday fashion woman',
+  };
+  const tipoMod  = TIPO_PEXELS_MOD[tipoEditorial] || 'fashion editorial';
+  let query      = categoria.queryPexels + ' ' + tipoMod;
+  if (FANCY_STATE.lastPexelsQueries.includes(query)) {
+    const variants = ['luxury','elegant','chic','trendy','glamour'];
+    query = categoria.queryPexels + ' ' + variants[Math.floor(Math.random() * variants.length)];
+  }
+  fancyMemPush(FANCY_STATE.lastPexelsQueries, query, 5);
+  const url = await getImagenCategoria('DEFAULT', query);
+  if (!url) return null;
+  return await descargarImagen(url);
+}
+
+async function generarCopyFancy(tipoEditorial, categoria, intencionCompra) {
+  const TIPO_VOZ = {
+    DISCOVER_FANCY: 'Eres editora de descubrimiento. Presenta este hallazgo como algo especial que pocas conocen. Primera persona plural ("descubrimos", "encontramos"). Voz entusiasta pero sofisticada.',
+    FASHION_PICK:   'Eres editora de moda. Presenta el look que define esta temporada. Segunda persona ("tu look perfecto", "te imaginas"). Voz autoritativa y aspiracional.',
+    BEAUTY_FIND:    'Eres editora de belleza. Habla de este ritual como inversión en una misma. Primera persona ("nos encanta", "lo que toda mujer merece"). Voz cómplice y empática.',
+    HOME_FIND:      'Eres editora de estilo de vida. Presenta este producto como la solución que transforma el espacio. Segunda persona ("imagina tu espacio", "el cambio que necesitas"). Voz práctica y aspiracional.',
+    HOW_TO_STYLE:   'Eres editora de how-to. Guía el look o uso del producto paso a paso. Segunda persona directa ("primero", "luego", "resultado"). Voz didáctica e inspiradora.',
+    GIFT_IDEA:      'Eres editora de regalos. Presenta esta idea como el detalle que demuestra que la conoces. Segunda persona ("para la mujer especial en tu vida", "un regalo que habla por ti"). Voz cálida e íntima.',
+    ESSENTIAL:      'Eres editora de básicos. Presenta este artículo como el indispensable que falta en su closet/vida. Segunda persona ("necesitas", "no puede faltar"). Voz directa y convincente.',
+  };
+  const voz = TIPO_VOZ[tipoEditorial] || TIPO_VOZ['DISCOVER_FANCY'];
+  const prompt = voz + '\nCategoría: ' + categoria.tema + ' ' + categoria.emoji
+    + '\nIntención de compra: ' + intencionCompra.replace(/_/g, ' ')
+    + '\n\nCONTEXTO: Estás curating CATEGORÍAS de productos en Amazon (Modo A), no un producto específico. El enlace se publica directamente en el post, no en comentarios.'
+    + '\n\nPROHIBIDO en CAPTION y CTA:\n- Afirmar o insinuar que otras personas eligieron/compraron/recomendaron el producto\n- Mencionar número de compradores, bestseller, tendencia de ventas, opiniones, reviews, rating, popularidad, stock, precio o descuentos\n- Frases como "link en los comentarios", "enlace en comentarios", "te dejo el link abajo", "lo encuentras en mi perfil"\n\nCTA: invita a descubrir/explorar/hacer clic. Ejemplos de tono: "🛍️ Descubre las opciones aquí 👇", "✨ Mira lo que encontramos 👇", "🎁 Encuentra ideas para regalar aquí 👇", "🛒 Ver opciones disponibles 👇". El emoji va al inicio, máx 10 palabras.'
+    + '\n\nGenera exactamente este formato (sin comillas, sin asteriscos):\nTITULAR: [frase de portada de revista, máx 6 palabras, español, MAYÚSCULAS, impactante]\nSUBTITULO: [frase editorial corta máx 8 palabras, español, minúsculas]\nCAPTION: [2-3 líneas editoriales en español — describe por qué esta CATEGORÍA es relevante ahora — sin prueba social inventada, sin datos no verificados]\nCTA: [invitación a explorar — emoji al inicio — máx 10 palabras — NUNCA mencionar comentarios]\nHASHTAGS: #FancyByRoxette — añade exactamente 3 hashtags relevantes a: ' + categoria.tema;
+  const payload = JSON.stringify({
+    model: 'claude-sonnet-4-6', max_tokens: 300,
+    system: 'Eres la editora de Fancy by Roxette, boutique de moda y accesorios en Dallas. Voz chic, aspiracional. Solo español. NUNCA menciones nombres de marcas externas. NUNCA repitas hashtags. NUNCA inventes datos, estadísticas, ventas, o prueba social que no te hayan dado.',
+    messages: [{ role: 'user', content: prompt }]
+  });
+  return new Promise((resolve, reject) => {
+    const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(payload) } };
+    const r = https.request(opts, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+    r.on('error', reject); r.write(payload); r.end();
+  });
+}
+
 async function getImagenCategoria(categoria, query) {
   const QUERIES = {
     'MODA': ['fashion editorial woman', 'elegant fashion latina', 'runway model', 'luxury fashion'],
@@ -947,15 +1091,13 @@ async function getAmazonProductFancy(searchTerm) {
   }
 }
 
-async function generarCoverFancy(branding, titular, subtitulo) {
+async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = branding.colorBarra || '#2C1A2E'; ctx.fillRect(0, 0, 1080, 1080);
-  const imgUrl = await getImagenCategoria('MODA', 'fashion accessories elegant woman');
-  if (imgUrl) {
+  if (imagenBuffer) {
     try {
-      const buf = await descargarImagen(imgUrl);
-      if (buf) { const img = await loadImage(buf); ctx.globalAlpha = 0.4; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1; }
+      const img = await loadImage(imagenBuffer); ctx.globalAlpha = 0.4; ctx.drawImage(img, 0, 0, 1080, 1080); ctx.globalAlpha = 1;
     } catch(e) {}
   }
   const grad = ctx.createLinearGradient(0, 0, 0, 1080);
@@ -1237,17 +1379,7 @@ async function publicarCoverParaPagina(pageConfig, titulo) {
     const esAmor       = pageConfig.tipo === 'amor';
     const esFancy      = pageConfig.tipo === 'fancy';
     const esTrabajando = pageConfig.tipo === 'trabajando';
-    const FANCY_CATEGORIAS = [
-      { tema: 'vestidos elegantes mujer',        searchTerm: 'vestidos mujer elegantes',          emoji: '👗' },
-      { tema: 'zapatos tacones tendencia',        searchTerm: 'tacones mujer moda',                emoji: '👠' },
-      { tema: 'bolsos y carteras de moda',        searchTerm: 'bolso de mano mujer elegante',      emoji: '👜' },
-      { tema: 'joyería collares y aretes',        searchTerm: 'joyeria mujer elegante set',        emoji: '✨' },
-      { tema: 'maquillaje y belleza latina',      searchTerm: 'maquillaje set completo mujer',     emoji: '💄' },
-      { tema: 'ropa casual chic mujer',           searchTerm: 'ropa casual elegante mujer',        emoji: '🛍️' },
-    ];
-    const fancyCat = esFancy ? FANCY_CATEGORIAS[Math.floor(Math.random()*FANCY_CATEGORIAS.length)] : null;
-    const AMAZON_TAG = process.env.AMAZON_TAG || 'fancybyroxette-20';
-    const formatoFancy = 'Eres la editora jefa de Fancy by Roxette, medio digital de moda para la mujer latina en Dallas. Voz: chic, directa, aspiracional. Responde en este formato exacto (sin comillas ni asteriscos):\nTITULAR: [frase de portada de revista, máx 6 palabras en español, mayúsculas, impactante]\nSUBTITULO: [frase editorial corta máx 10 palabras, española, minúsculas]\nCAPTION: [2 a 3 líneas editoriales en español — por qué esta tendencia/producto es indispensable ahora, primera o segunda persona, voz chic]\nCTA: [llamada a acción corta mencionando que el link está en los comentarios — máx 10 palabras]\nHASHTAGS: #FancyByRoxette — añade 2 más relevantes a: ' + (fancyCat ? fancyCat.tema : 'moda');
+    // Fancy Commerce Engine — lógica movida a funciones globales (elegirTipoEditorialFancy, etc.)
     console.log('[MultiPage] tipo:', pageConfig.tipo, '| esFe:', esFe, '| esAmor:', esAmor, '| nombre:', pageConfig.nombre);
     const temaActual = pageConfig.temas && pageConfig.temas.length ? pageConfig.temas[Math.floor(Math.random() * pageConfig.temas.length)] : titulo;
     const formatoAmor = 'Responde en este formato exacto (sin comillas, sin asteriscos, sin texto adicional):\nSCENE: [describe in English a specific romantic scene for the Amor Es chibi couple — location, lighting, specific action, emotion — max 200 chars]\nGANCHO: [frase gancho max 7 palabras en español, mayúsculas, impactante, 2ª persona]\nREFLEXION: [una sola línea poética emotiva max 12 palabras, español, minúsculas]\nMICROHISTORIA: [2 a 3 líneas en segunda persona, emotivas, sin hashtags — narra el momento como si le hablaras directamente a ella]\nCTA: [pregunta conversacional corta para invitar a comentar, español]\nPILAR: [elige uno: amor de pareja | amor propio | relaciones sanas | pequeños gestos cotidianos | sanar y dejar ir | familia y complicidad]\nHASHTAGS: ' + (pageConfig.hashtags || '#AmarEs #AmorPropio') + ' — escoge máximo 3 hashtags relevantes al pilar elegido, sin repetición';
@@ -1266,17 +1398,21 @@ REVELACION: [1-3 frases que desarrollen el gancho — clara, útil, realista, pr
 CTA: [escribe directamente el llamado a acción sin la palabra CTA — varía el tipo: invita a comentar / guardar / compartir / hacer algo hoy — máx 20 palabras]
 HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — de este pool: ${hashSampleTrab}]`;
 
-    const captionPayload = JSON.stringify({
-      model: 'claude-sonnet-4-6', max_tokens: esAmor ? 520 : esFe ? 220 : esFancy ? 260 : esTrabajando ? 350 : 200,
-      system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : esFancy ? formatoFancy : esTrabajando ? formatoTrabajando : formatoGenerico),
-      messages: [{ role: 'user', content: esFancy && fancyCat ? 'Tendencia del día: ' + fancyCat.tema + ' ' + fancyCat.emoji : 'Tema: ' + temaActual }]
-    });
-    const caption = await new Promise((resolve, reject) => {
-      const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
-      const r = https.request(opts, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
-      r.on('error', reject); r.write(captionPayload); r.end();
-    });
-    if (!caption) { console.error('[MultiPage] Caption vacío para:', pageConfig.nombre); return; }
+    // Fancy usa su propio flujo de copy (generarCopyFancy) — se salta la llamada principal
+    let caption = '';
+    if (!esFancy) {
+      const captionPayload = JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: esAmor ? 520 : esFe ? 220 : esTrabajando ? 350 : 200,
+        system: pageConfig.voice + ' ' + (esFe ? formatoFe : esAmor ? formatoAmor : esTrabajando ? formatoTrabajando : formatoGenerico),
+        messages: [{ role: 'user', content: 'Tema: ' + temaActual }]
+      });
+      caption = await new Promise((resolve, reject) => {
+        const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(captionPayload) } };
+        const r = https.request(opts, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
+        r.on('error', reject); r.write(captionPayload); r.end();
+      });
+      if (!caption) { console.error('[MultiPage] Caption vacío para:', pageConfig.nombre); return; }
+    }
     // Extraer campos según tipo
     let coverBuffer;
     let captionTexto = '';
@@ -1314,20 +1450,29 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       console.log('[AmarEs] Llamando gpt-image-1...');
       coverBuffer = await generarCoverAmarEs(pageConfig.branding, gancho, reflexion, dallePrompt);
     } else if (esFancy) {
-      const titularMatch  = caption.match(/TITULAR:\s*(.+)/i);
-      const subMatch      = caption.match(/SUBTITULO:\s*(.+)/i);
-      const capMatch      = caption.match(/CAPTION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
-      const ctaMatch      = caption.match(/CTA:\s*(.+)/i);
-      const hashMatch     = caption.match(/HASHTAGS:\s*(.+)/i);
-      const titular       = titularMatch ? titularMatch[1].trim() : (fancyCat ? fancyCat.tema.toUpperCase() : titulo);
-      const subtitulo     = subMatch     ? subMatch[1].trim()     : '';
-      const capTexto      = capMatch     ? capMatch[1].trim()     : '';
-      const ctaTexto      = ctaMatch     ? ctaMatch[1].trim()     : 'El link está en los comentarios 👇';
-      const hashArr       = [...new Set((hashMatch ? hashMatch[1].trim() : '#FancyByRoxette #Moda').split(/\s+/).filter(h => h.startsWith('#')))].slice(0,4).join(' ');
-      const amazonLink    = fancyCat ? 'https://www.amazon.com/s?k=' + encodeURIComponent(fancyCat.searchTerm) + '&tag=' + AMAZON_TAG : '';
-      captionTexto = capTexto + '\n\n' + ctaTexto + (amazonLink ? '\n🔗 ' + amazonLink + '\n*(enlace de afiliado)' : '') + '\n\n— Fancy by Roxette ✨\n\n' + hashArr;
-      console.log('[Fancy] TITULAR:', titular, '| CAT:', fancyCat ? fancyCat.tema : 'genérico');
-      coverBuffer = await generarCoverFancy(pageConfig.branding, titular, subtitulo);
+      // ── Fancy Commerce Engine Fase 2 ─────────────────────────────────────
+      const tipoEditorial  = elegirTipoEditorialFancy();
+      const categoria      = elegirCategoriaFancy(tipoEditorial);
+      const intencion      = elegirIntencionCompraFancy(tipoEditorial, categoria);
+      const amazonLink     = obtenerEnlaceFancy(categoria, intencion);
+      console.log('[Fancy] tipoEditorial:', tipoEditorial, '| cat:', categoria.tema, '| intencion:', intencion);
+      // Obtener imagen dinámica Pexels (anti-repetición)
+      const imagenBuffer   = await getImagenFancy(categoria, tipoEditorial, intencion);
+      // Generar copy type-specific
+      const copyRaw        = await generarCopyFancy(tipoEditorial, categoria, intencion);
+      const titularMatch   = copyRaw.match(/TITULAR:\s*(.+)/i);
+      const subMatch       = copyRaw.match(/SUBTITULO:\s*(.+)/i);
+      const capMatch       = copyRaw.match(/CAPTION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
+      const ctaMatch       = copyRaw.match(/CTA:\s*(.+)/i);
+      const hashMatch      = copyRaw.match(/HASHTAGS:\s*(.+)/i);
+      const titular        = titularMatch ? titularMatch[1].trim() : categoria.tema.toUpperCase();
+      const subtitulo      = subMatch     ? subMatch[1].trim()     : '';
+      const capTexto       = capMatch     ? capMatch[1].trim()     : '';
+      const ctaTexto       = ctaMatch     ? ctaMatch[1].trim()     : 'El link está en los comentarios 👇';
+      const hashArr        = [...new Set((hashMatch ? hashMatch[1].trim() : '#FancyByRoxette #Moda').split(/\s+/).filter(h => h.startsWith('#')))].slice(0, 4).join(' ');
+      captionTexto = capTexto + '\n\n' + ctaTexto + '\n🔗 ' + amazonLink + '\n*(enlace de afiliado)' + '\n\n— Fancy by Roxette ✨\n\n' + hashArr;
+      console.log('[Fancy] TITULAR:', titular, '| SUBTITULO:', subtitulo);
+      coverBuffer = await generarCoverFancy(pageConfig.branding, titular, subtitulo, imagenBuffer);
     } else if (esTrabajando) {
       const ganchoMatch = caption.match(/GANCHO:\s*(.+)/i);
       const revelMatch  = caption.match(/REVELACION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
@@ -1390,7 +1535,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
     } catch(e) {}
     const FormData = require('form-data');
     const form = new FormData();
-    form.append('caption', esTrabajando ? captionTexto : captionTexto + '\n\n' + pageConfig.hashtags);
+    form.append('caption', (esTrabajando || esFancy) ? captionTexto : captionTexto + '\n\n' + pageConfig.hashtags);
     form.append('access_token', pageToken);
     form.append('source', coverBuffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
     await new Promise((resolve, reject) => {
