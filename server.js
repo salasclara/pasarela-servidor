@@ -1525,14 +1525,14 @@ async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
   grad.addColorStop(1, 'rgba(13,10,11,0.97)');
   ctx.fillStyle = grad; ctx.fillRect(0, HEADER_H, 1080, 1080 - HEADER_H);
   // ── HEADER BAND ─────────────────────────────────────────────────────────────
-  ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, HEADER_H);
+  ctx.fillStyle = '#CC006E'; ctx.fillRect(0, 0, 1080, HEADER_H);
   ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 26px Roboto'; ctx.textAlign = 'center';
   ctx.fillText('PASARELA STUDIO INTERNACIONAL', 540, 54);
   // Línea dorada decorativa bajo el header
   ctx.fillStyle = '#C9A66B'; ctx.fillRect(0, HEADER_H, 1080, 2);
   // ── BADGE EDITORIAL ──────────────────────────────────────────────────────────
   const bx = 52, by = HEADER_H + 22, bw = 118, bh = 28;
-  ctx.fillStyle = '#C4826A';
+  ctx.fillStyle = '#A0004E';
   ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 4); ctx.fill();
   ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 13px Roboto'; ctx.textAlign = 'left';
   ctx.fillText('EDITORIAL', bx + 14, by + 18);
@@ -2654,12 +2654,13 @@ async function autoPublicarPasarela() {
     }
     coverBuffer = await generarCoverBlogArticulo(_imgBuf, noticia.titulo, fechaStr);
 
-    // 5. Caption y publicar — limpiar Markdown
-    const primerParrafo = contenido
+    // 5. Caption completo limpio (sin Markdown) + 3 hashtags
+    const articuloLimpio = contenido
       .split('\n')
       .map(p => p.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
-      .filter(p => p.length > 40)[0] || contenido.substring(0, 350);
-    const caption = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion #EleganciaLatina #ModelajeLatino';
+      .filter(p => p.length > 0)
+      .join('\n\n');
+    const caption = articuloLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
     const fbRes = await publicarFotoBuffer(coverBuffer, caption);
     console.log('[AutoPublish-Pasarela] ✅ Publicado:', noticia.titulo, '| FB ID:', fbRes?.id || fbRes);
     return { ok: true, titulo: noticia.titulo, facebook_id: fbRes?.id || null, error: null };
