@@ -1499,49 +1499,41 @@ async function generarCoverGenerico(branding, coverTitulo) {
 }
 
 async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
-  // Diseño Magazine Editorial — 1080x1080
+  // Diseño Magazine Editorial Pasarela — 1080x1080
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
-  const HEADER_H = 84;
+  const HEADER_H = 84, FOOTER_H = 52;
+  const FUCSIA = '#FF1493';
   // Fondo negro
   ctx.fillStyle = '#0D0A0B'; ctx.fillRect(0, 0, 1080, 1080);
-  // Foto protagonista (debajo del header)
+  // Foto protagonista — object-fit cover, canvas completo
   if (imgBuf) {
     try {
       const img = await loadImage(imgBuf);
-      ctx.save(); ctx.rect(0, HEADER_H, 1080, 1080 - HEADER_H); ctx.clip();
       const aspect = img.width / img.height;
       let dw, dh, dx, dy;
-      if (aspect > 1) { dh = 1080 - HEADER_H; dw = dh * aspect; dx = (1080 - dw) / 2; dy = HEADER_H; }
-      else { dw = 1080; dh = dw / aspect; dx = 0; dy = HEADER_H + ((1080 - HEADER_H) - dh) / 2; }
+      if (aspect > 1) { dh = 1080; dw = dh * aspect; dx = (1080 - dw) / 2; dy = 0; }
+      else { dw = 1080; dh = dw / aspect; dx = 0; dy = (1080 - dh) / 2; }
       ctx.globalAlpha = 0.88; ctx.drawImage(img, dx, dy, dw, dh); ctx.globalAlpha = 1;
-      ctx.restore();
-    } catch(e) { console.error('[Cover] img:', e.message); }
+    } catch(e) { console.error('[Cover] img error:', e.message); }
   }
-  // Gradiente oscuro en zona inferior (para legibilidad del título)
-  const grad = ctx.createLinearGradient(0, 520, 0, 1080);
+  // Gradiente oscuro zona inferior (legibilidad del título)
+  const grad = ctx.createLinearGradient(0, 460, 0, 1080 - FOOTER_H);
   grad.addColorStop(0, 'rgba(13,10,11,0)');
-  grad.addColorStop(0.35, 'rgba(13,10,11,0.65)');
+  grad.addColorStop(0.4, 'rgba(13,10,11,0.72)');
   grad.addColorStop(1, 'rgba(13,10,11,0.97)');
   ctx.fillStyle = grad; ctx.fillRect(0, HEADER_H, 1080, 1080 - HEADER_H);
-  // ── HEADER BAND ─────────────────────────────────────────────────────────────
-  ctx.fillStyle = '#CC006E'; ctx.fillRect(0, 0, 1080, HEADER_H);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 26px Roboto'; ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL', 540, 54);
-  // Línea dorada decorativa bajo el header
-  ctx.fillStyle = '#C9A66B'; ctx.fillRect(0, HEADER_H, 1080, 2);
-  // ── BADGE EDITORIAL ──────────────────────────────────────────────────────────
-  const bx = 52, by = HEADER_H + 22, bw = 118, bh = 28;
-  ctx.fillStyle = '#A0004E';
-  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 4); ctx.fill();
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 13px Roboto'; ctx.textAlign = 'left';
-  ctx.fillText('EDITORIAL', bx + 14, by + 18);
-  // Fecha
-  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '13px Roboto'; ctx.textAlign = 'right';
-  ctx.fillText(fecha || new Date().toLocaleDateString('es-MX', {day:'numeric',month:'long',year:'numeric'}), 1028, by + 18);
-  // ── TÍTULO PRINCIPAL ─────────────────────────────────────────────────────────
-  const hFont = _cormorantLoaded ? 'bold 62px Cormorant' : 'bold 54px Roboto';
-  ctx.font = hFont; ctx.textAlign = 'left'; ctx.fillStyle = '#FFFFFF';
+  // ── HEADER FUCSIA ────────────────────────────────────────────────────────────
+  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 0, 1080, HEADER_H);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 34px Roboto'; ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL', 540, 56);
+  // ── FOOTER FUCSIA ────────────────────────────────────────────────────────────
+  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 1080 - FOOTER_H, 1080, FOOTER_H);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 17px Roboto'; ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL  -  pasarelastudiointer.com', 540, 1080 - FOOTER_H + 34);
+  // ── CALCULAR POSICIÓN DEL TÍTULO ─────────────────────────────────────────────
+  let hFont = _cormorantLoaded ? 'bold 62px Cormorant' : 'bold 54px Roboto';
+  ctx.font = hFont; ctx.textAlign = 'left';
   const maxW = 960, words = titulo.split(' ');
   let lines = [], cur = '';
   for (const w of words) {
@@ -1549,10 +1541,9 @@ async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
     if (ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
   }
   if (cur) lines.push(cur);
-  // Si el título es muy largo, reducir fuente
   if (lines.length > 4) {
-    ctx.font = _cormorantLoaded ? 'bold 48px Cormorant' : 'bold 42px Roboto';
-    lines = []; cur = '';
+    hFont = _cormorantLoaded ? 'bold 48px Cormorant' : 'bold 42px Roboto';
+    ctx.font = hFont; lines = []; cur = '';
     for (const w of words) {
       const t = cur ? cur + ' ' + w : w;
       if (ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
@@ -1560,15 +1551,22 @@ async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
     if (cur) lines.push(cur);
   }
   const lineH = _cormorantLoaded ? 74 : 66;
-  const titleBottom = 1020;
-  let ty = titleBottom - (lines.length - 1) * lineH;
+  const titleBottom = 1080 - FOOTER_H - 22;
+  const titleTop    = titleBottom - (lines.length - 1) * lineH;
+  // ── BADGE EDITORIAL + FECHA (encima del título) ───────────────────────────────
+  const by = titleTop - 54, bx = 52, bw = 120, bh = 30;
+  ctx.fillStyle = FUCSIA;
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 5); ctx.fill();
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 14px Roboto'; ctx.textAlign = 'left';
+  ctx.fillText('EDITORIAL', bx + 14, by + 20);
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '13px Roboto'; ctx.textAlign = 'right';
+  ctx.fillText(fecha || new Date().toLocaleDateString('es-MX', {day:'numeric',month:'long',year:'numeric'}), 1028, by + 20);
   // Acento dorado sobre el título
-  ctx.fillStyle = '#C9A66B'; ctx.fillRect(52, ty - 20, 70, 3);
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = '#C9A66B'; ctx.fillRect(52, titleTop - 14, 70, 3);
+  // ── TÍTULO ───────────────────────────────────────────────────────────────────
+  ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'left'; ctx.font = hFont;
+  let ty = titleTop;
   for (const ln of lines) { ctx.fillText(ln, 52, ty); ty += lineH; }
-  // ── FOOTER ───────────────────────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '14px Roboto'; ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL  \u00b7  pasarelastudiointer.com', 540, 1063);
   return canvas.toBuffer('image/png');
 }
 
