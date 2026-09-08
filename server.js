@@ -1250,7 +1250,7 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
   const titEndY = TIT_START_Y + Math.min(titLines.length, 3) * TIT_LINE_H;
 
   // ── CAPA 6: MICROTEXTO — posición dinámica desde titEndY ────────────────
-  const MICRO_GAP    = 48;
+  const MICRO_GAP    = 28;
   const MICRO_LINE_H = 36;
   const MICRO_SAFE   = 920;
   let renderedMicroLines = 0;
@@ -2369,7 +2369,7 @@ INSTRUCCIONES:
     };
     let imagenBuffer = null;
     try {
-      const imgUrl = await getImagenCategoria('MODA', 'stylish woman structured handbag fashion');
+      const imgUrl = await getImagenCategoria('MODA', 'fashion woman full body handbag copy space right');
       if (imgUrl) {
         imagenBuffer = await descargarImagen(imgUrl);
         console.log('[ FancyV2 ] Imagen Pexels obtenida OK');
