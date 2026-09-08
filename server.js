@@ -1124,28 +1124,27 @@ async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
   return canvas.toBuffer('image/png');
 }
 
-// ── VISUAL ENGINE V2 — Fancy by Roxette ───────────────────────────────────
+// ── VISUAL ENGINE V2 — Fancy by Roxette ─────────────────────────────────────────────
 // generarCoverFancyV2: renderer experimental INDEPENDIENTE de generarCoverFancy()
 // Layout LIFESTYLE_HERO: zona editorial izquierda | zona visual derecha (fotografía protagonista)
 // NO modifica ni llama ninguna función de producción existente.
-async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto, imagenBuffer, layout }) {
+async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto, imagenBuffer, layout, fuchsiaWord }) {
   const canvas = createCanvas(1080, 1080);
   const ctx    = canvas.getContext('2d');
 
-  // Paleta de identidad Fancy V2
   const CREAM   = '#FFF8F1';
   const FUCHSIA = '#D50067';
   const YELLOW  = '#FFD52A';
   const BLACK   = '#111111';
   const GRAY    = '#555555';
 
-  // Geometría LIFESTYLE_HERO
-  const LEFT_SOLID = 380;   // x hasta donde el crema es sólido
-  const LEFT_FADE  = 520;   // x hasta donde el crema desvanece a transparente
-  const MARGIN_L   = 60;    // margen izquierdo del contenido editorial
-  const MAX_TXT_W  = 295;   // ancho máximo para wrapping de texto
+  // Geometría LIFESTYLE_HERO — Iteración 2
+  const LEFT_SOLID  = 490;
+  const LEFT_FADE   = 590;
+  const MARGIN_L    = 60;
+  const EDITORIAL_W = LEFT_SOLID - MARGIN_L - 30;   // ≈400px
 
-  // ── CAPA 1: FOTOGRAFÍA FULL CANVAS (protagonista · sin alpha · sin overlay) ──
+  // ── CAPA 1: FOTOGRAFÍA FULL CANVAS ──────────────────────────────────────
   let photoLoaded = false;
   if (imagenBuffer) {
     try {
@@ -1162,32 +1161,27 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
     ctx.fillRect(0, 0, 1080, 1080);
   }
 
-  // ── CAPA 2: PANEL CREMA IZQUIERDO + GRADIENTE HORIZONTAL LOCALIZADO ────────
-  // Sólido x=0 → LEFT_SOLID
+  // ── CAPA 2: PANEL CREMA + GRADIENTE HORIZONTAL ──────────────────────────
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, LEFT_SOLID, 1080);
-  // Gradiente crema→transparente x=LEFT_SOLID → LEFT_FADE (transición suave)
   const leftGrad = ctx.createLinearGradient(LEFT_SOLID, 0, LEFT_FADE, 0);
   leftGrad.addColorStop(0, 'rgba(255,248,241,1)');
   leftGrad.addColorStop(1, 'rgba(255,248,241,0)');
   ctx.fillStyle = leftGrad;
   ctx.fillRect(LEFT_SOLID, 0, LEFT_FADE - LEFT_SOLID, 1080);
 
-  // ── CAPA 3: BRANDING "FANCY / by ROXETTE" ──────────────────────────────────
+  // ── CAPA 3: BRANDING ─────────────────────────────────────────────────────
   ctx.textAlign = 'left';
-  // "FANCY"
   ctx.font      = 'bold 42px Roboto';
   ctx.fillStyle = BLACK;
   ctx.fillText('FANCY', MARGIN_L, 108);
-  // Línea fuchsia decorativa bajo "FANCY"
   ctx.fillStyle = FUCHSIA;
   ctx.fillRect(MARGIN_L, 116, 210, 3);
-  // "by ROXETTE"
   ctx.font      = '15px Roboto';
   ctx.fillStyle = GRAY;
   ctx.fillText('by ROXETTE', MARGIN_L, 142);
 
-  // ── CAPA 4: VISUAL LABEL sobre bloque amarillo ─────────────────────────────
+  // ── CAPA 4: VISUAL LABEL ─────────────────────────────────────────────────
   const label  = (visualLabel || 'STYLE IT').toUpperCase();
   ctx.font     = 'bold 19px Roboto';
   const labelW = ctx.measureText(label).width + 30;
@@ -1198,66 +1192,91 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
   ctx.fillStyle = BLACK;
   ctx.fillText(label, MARGIN_L + 15, labelY + 34);
 
-  // ── CAPA 5: TITULAR (máx 3 líneas · wrapping · línea central en fuchsia) ───
-  ctx.font = 'bold 78px Roboto';
-  // Wrapping: máx 3 líneas — si hay exceso se acumula en la línea 3
+  // ── CAPA 5: TITULAR — fuente adaptativa + wrapping equilibrado ───────────
   const titWords = (titular || '').toUpperCase().split(' ');
-  const titLines = [];
-  let   titCurr  = '';
-  for (const word of titWords) {
-    if (titLines.length >= 2) {
-      titCurr = titCurr ? `${titCurr} ${word}` : word;
-      continue;
-    }
-    const test = titCurr ? `${titCurr} ${word}` : word;
-    if (ctx.measureText(test).width > MAX_TXT_W && titCurr) {
-      titLines.push(titCurr);
-      titCurr = word;
-    } else {
-      titCurr = test;
-    }
-  }
-  if (titCurr) titLines.push(titCurr);
 
-  // Colores por línea: negro / fuchsia / negro
-  const LINE_COLORS = [BLACK, FUCHSIA, BLACK];
+  function wrapTitular(size) {
+    ctx.font = `bold ${size}px Roboto`;
+    const lines = []; let curr = '';
+    for (let i = 0; i < titWords.length; i++) {
+      if (lines.length >= 2) {
+        curr = curr ? `${curr} ${titWords[i]}` : titWords[i]; continue;
+      }
+      const test = curr ? `${curr} ${titWords[i]}` : titWords[i];
+      if (ctx.measureText(test).width > EDITORIAL_W && curr) {
+        const isOrphan = !curr.includes(' ') && curr.length <= 3;
+        if (isOrphan) {
+          const withNext = `${curr} ${titWords[i]}`;
+          if (ctx.measureText(withNext).width <= EDITORIAL_W * 1.05) {
+            curr = withNext; continue;
+          }
+        }
+        lines.push(curr); curr = titWords[i];
+      } else { curr = test; }
+    }
+    if (curr) lines.push(curr);
+    return lines;
+  }
+
+  // Adaptativo: 78px → 54px safety fallback (rango normal 60–78px)
+  let titFontSize = 78;
+  let titLines = wrapTitular(titFontSize);
+  while (titFontSize > 54 && titLines.some(l => ctx.measureText(l).width > EDITORIAL_W)) {
+    titFontSize -= 2;
+    titLines = wrapTitular(titFontSize);
+  }
+  ctx.font = `bold ${titFontSize}px Roboto`;
+
+  // Acento fuchsia en palabra específica (default: segunda palabra del titular)
+  const accentWord = (fuchsiaWord || titWords[1] || '').toUpperCase();
+
   const TIT_START_Y = 310;
-  const TIT_LINE_H  = 90;
+  const TIT_LINE_H  = Math.round(titFontSize * 1.18);
   titLines.slice(0, 3).forEach((line, i) => {
-    ctx.fillStyle = LINE_COLORS[i] || BLACK;
-    ctx.fillText(line, MARGIN_L, TIT_START_Y + i * TIT_LINE_H);
+    const lineWords = line.split(' ');
+    if (lineWords.includes(accentWord)) {
+      let x = MARGIN_L;
+      lineWords.forEach(w => {
+        ctx.fillStyle = (w === accentWord) ? FUCHSIA : BLACK;
+        ctx.fillText(w, x, TIT_START_Y + i * TIT_LINE_H);
+        x += ctx.measureText(w + ' ').width;
+      });
+    } else {
+      ctx.fillStyle = BLACK;
+      ctx.fillText(line, MARGIN_L, TIT_START_Y + i * TIT_LINE_H);
+    }
   });
 
   const titEndY = TIT_START_Y + Math.min(titLines.length, 3) * TIT_LINE_H;
 
-  // ── CAPA 6: MICROTEXTO (máx 2 líneas) ────────────────────────────────────
+  // ── CAPA 6: MICROTEXTO — posición dinámica desde titEndY ────────────────
+  const MICRO_GAP    = 48;
+  const MICRO_LINE_H = 36;
+  const MICRO_SAFE   = 920;
+  let renderedMicroLines = 0;
   if (microtexto) {
     ctx.font      = '26px Roboto';
     ctx.fillStyle = GRAY;
     const mWords = microtexto.split(' ');
-    const mLines = [];
-    let   mCurr  = '';
+    const mLines = []; let mCurr = '';
     for (const w of mWords) {
-      if (mLines.length >= 1) {
-        mCurr = mCurr ? `${mCurr} ${w}` : w;
-        continue;
-      }
+      if (mLines.length >= 1) { mCurr = mCurr ? `${mCurr} ${w}` : w; continue; }
       const t = mCurr ? `${mCurr} ${w}` : w;
-      if (ctx.measureText(t).width > MAX_TXT_W && mCurr) {
-        mLines.push(mCurr);
-        mCurr = w;
-      } else {
-        mCurr = t;
-      }
+      if (ctx.measureText(t).width > EDITORIAL_W && mCurr) { mLines.push(mCurr); mCurr = w; }
+      else { mCurr = t; }
     }
     if (mCurr) mLines.push(mCurr);
+    const microStartY = titEndY + MICRO_GAP;
     mLines.slice(0, 2).forEach((line, i) => {
-      ctx.fillText(line, MARGIN_L, titEndY + 50 + i * 36);
+      const lineY = microStartY + i * MICRO_LINE_H;
+      if (lineY <= MICRO_SAFE) { ctx.fillText(line, MARGIN_L, lineY); renderedMicroLines++; }
     });
   }
 
-  // ── CAPA 7: ACENTO FUCHSIA (línea decorativa mínima) ─────────────────────
-  const decoY = titEndY + (microtexto ? 108 : 44);
+  // ── CAPA 7: ACENTO FUCHSIA ───────────────────────────────────────────────
+  const decoY = titEndY + (renderedMicroLines > 0
+    ? MICRO_GAP + renderedMicroLines * MICRO_LINE_H + 16
+    : 32);
   if (decoY < 980) {
     ctx.fillStyle = FUCHSIA;
     ctx.fillRect(MARGIN_L, decoY, 68, 3);
