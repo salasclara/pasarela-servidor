@@ -2501,6 +2501,32 @@ async function autoPublicarPaginasExtra() {
   console.log('[AutoPublish] Ciclo completado');
 }
 // ── AUTO-PUBLICADOR PASARELA STUDIO — misma hora que páginas extra ──────────
+async function fetchBuf(url) {
+  return descargarImagen(url);
+}
+
+async function publicarFotoBuffer(buffer, caption) {
+  if (!FB_PAGE_TOKEN || !buffer) { console.log('[FB Buffer] Token o buffer faltante'); return null; }
+  const FormData = require('form-data');
+  const form = new FormData();
+  form.append('caption', caption || '');
+  form.append('access_token', FB_PAGE_TOKEN);
+  form.append('source', buffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
+  return new Promise((resolve, reject) => {
+    const req = require('https').request({
+      hostname: 'graph.facebook.com',
+      path: '/v19.0/' + FB_PAGE_ID + '/photos',
+      method: 'POST',
+      headers: form.getHeaders(),
+    }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+    });
+    req.on('error', reject);
+    form.pipe(req);
+  });
+}
+
 async function autoPublicarPasarela() {
   if (!FB_PAGE_TOKEN) { console.log('[AutoPublish-Pasarela] Sin FB_PAGE_TOKEN — omitiendo'); return; }
   console.log('[AutoPublish-Pasarela] Iniciando publicación editorial...');
