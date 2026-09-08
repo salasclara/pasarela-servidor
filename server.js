@@ -2328,6 +2328,18 @@ INSTRUCCIONES:
   }
 
   // TEST FANCY — dispara publicarCoverParaPagina SOLO para Fancy by Roxette
+  if (req.method === 'GET' && req.url === '/test-pasarela-auto') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ mensaje: 'Ejecutando autoPublicarPasarela — ver logs Railway' }));
+    (async () => {
+      console.log('[TEST-PASARELA-AUTO] ── INICIO ───────────────────────────');
+      const resultado = await autoPublicarPasarela();
+      console.log('[TEST-PASARELA-AUTO] RESULTADO:', JSON.stringify(resultado));
+      console.log('[TEST-PASARELA-AUTO] ── FIN ──────────────────────────────');
+    })();
+    return;
+  }
+
   if (req.method === 'GET' && req.url === '/test-fancy') {
     const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
     if (!fancyPage) {
@@ -2511,7 +2523,7 @@ async function publicarFotoBuffer(buffer, caption) {
   const form = new FormData();
   form.append('caption', caption || '');
   form.append('access_token', FB_PAGE_TOKEN);
-  form.append('source', buffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
+  form.append('source', buffer, { filename: 'cover.png', contentType: 'image/png' });
   return new Promise((resolve, reject) => {
     const req = require('https').request({
       hostname: 'graph.facebook.com',
@@ -2520,7 +2532,18 @@ async function publicarFotoBuffer(buffer, caption) {
       headers: form.getHeaders(),
     }, res => {
       let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(d);
+          if (res.statusCode !== 200 || json.error) {
+            console.error('[Pasarela FB] ERROR HTTP', res.statusCode, ':', JSON.stringify(json.error || json));
+            reject(new Error(json.error ? json.error.message : 'HTTP ' + res.statusCode));
+          } else {
+            console.log('[Pasarela FB] ✅ PUBLICADO:', json.id);
+            resolve(json);
+          }
+        } catch(e) { reject(e); }
+      });
     });
     req.on('error', reject);
     form.pipe(req);
@@ -2581,8 +2604,10 @@ async function autoPublicarPasarela() {
     const caption = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion #EleganciaLatina #ModelajeLatino';
     const fbRes = await publicarFotoBuffer(coverBuffer, caption);
     console.log('[AutoPublish-Pasarela] ✅ Publicado:', noticia.titulo, '| FB ID:', fbRes?.id || fbRes);
+    return { ok: true, titulo: noticia.titulo, facebook_id: fbRes?.id || null, error: null };
   } catch(e) {
     console.error('[AutoPublish-Pasarela] Error:', e.message);
+    return { ok: false, titulo: null, facebook_id: null, error: e.message };
   }
 }
 
