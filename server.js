@@ -1499,22 +1499,76 @@ async function generarCoverGenerico(branding, coverTitulo) {
 }
 
 async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
-  const canvas = createCanvas(1080, 566);
+  // Diseño Magazine Editorial — 1080x1080
+  const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0D0A0B'; ctx.fillRect(0, 0, 1080, 566);
+  const HEADER_H = 84;
+  // Fondo negro
+  ctx.fillStyle = '#0D0A0B'; ctx.fillRect(0, 0, 1080, 1080);
+  // Foto protagonista (debajo del header)
   if (imgBuf) {
-    try { const img = await loadImage(imgBuf); ctx.globalAlpha = 0.5; ctx.drawImage(img, 0, 0, 1080, 566); ctx.globalAlpha = 1; } catch(e) {}
+    try {
+      const img = await loadImage(imgBuf);
+      ctx.save(); ctx.rect(0, HEADER_H, 1080, 1080 - HEADER_H); ctx.clip();
+      const aspect = img.width / img.height;
+      let dw, dh, dx, dy;
+      if (aspect > 1) { dh = 1080 - HEADER_H; dw = dh * aspect; dx = (1080 - dw) / 2; dy = HEADER_H; }
+      else { dw = 1080; dh = dw / aspect; dx = 0; dy = HEADER_H + ((1080 - HEADER_H) - dh) / 2; }
+      ctx.globalAlpha = 0.88; ctx.drawImage(img, dx, dy, dw, dh); ctx.globalAlpha = 1;
+      ctx.restore();
+    } catch(e) { console.error('[Cover] img:', e.message); }
   }
-  const grad = ctx.createLinearGradient(0, 0, 0, 566);
-  grad.addColorStop(0, 'rgba(13,10,11,0.2)'); grad.addColorStop(1, 'rgba(13,10,11,0.9)');
-  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 566);
-  ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, 4);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 50px Roboto'; ctx.textAlign = 'center';
-  const tw = titulo.split(' '); let tl = ''; let ty = 330;
-  for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 940) { ctx.fillText(tl, 540, ty); tl = w; ty += 60; } else tl = t; }
-  if (tl) ctx.fillText(tl, 540, ty);
-  ctx.fillStyle = '#C9A66B'; ctx.font = '19px Roboto';
-  ctx.fillText('PASARELA\u2122  \u00b7  ' + (fecha || new Date().toLocaleDateString('es-US')), 540, ty + 40);
+  // Gradiente oscuro en zona inferior (para legibilidad del título)
+  const grad = ctx.createLinearGradient(0, 520, 0, 1080);
+  grad.addColorStop(0, 'rgba(13,10,11,0)');
+  grad.addColorStop(0.35, 'rgba(13,10,11,0.65)');
+  grad.addColorStop(1, 'rgba(13,10,11,0.97)');
+  ctx.fillStyle = grad; ctx.fillRect(0, HEADER_H, 1080, 1080 - HEADER_H);
+  // ── HEADER BAND ─────────────────────────────────────────────────────────────
+  ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, HEADER_H);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 26px Roboto'; ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL', 540, 54);
+  // Línea dorada decorativa bajo el header
+  ctx.fillStyle = '#C9A66B'; ctx.fillRect(0, HEADER_H, 1080, 2);
+  // ── BADGE EDITORIAL ──────────────────────────────────────────────────────────
+  const bx = 52, by = HEADER_H + 22, bw = 118, bh = 28;
+  ctx.fillStyle = '#C4826A';
+  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 4); ctx.fill();
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 13px Roboto'; ctx.textAlign = 'left';
+  ctx.fillText('EDITORIAL', bx + 14, by + 18);
+  // Fecha
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '13px Roboto'; ctx.textAlign = 'right';
+  ctx.fillText(fecha || new Date().toLocaleDateString('es-MX', {day:'numeric',month:'long',year:'numeric'}), 1028, by + 18);
+  // ── TÍTULO PRINCIPAL ─────────────────────────────────────────────────────────
+  const hFont = _cormorantLoaded ? 'bold 62px Cormorant' : 'bold 54px Roboto';
+  ctx.font = hFont; ctx.textAlign = 'left'; ctx.fillStyle = '#FFFFFF';
+  const maxW = 960, words = titulo.split(' ');
+  let lines = [], cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
+  }
+  if (cur) lines.push(cur);
+  // Si el título es muy largo, reducir fuente
+  if (lines.length > 4) {
+    ctx.font = _cormorantLoaded ? 'bold 48px Cormorant' : 'bold 42px Roboto';
+    lines = []; cur = '';
+    for (const w of words) {
+      const t = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
+    }
+    if (cur) lines.push(cur);
+  }
+  const lineH = _cormorantLoaded ? 74 : 66;
+  const titleBottom = 1020;
+  let ty = titleBottom - (lines.length - 1) * lineH;
+  // Acento dorado sobre el título
+  ctx.fillStyle = '#C9A66B'; ctx.fillRect(52, ty - 20, 70, 3);
+  ctx.fillStyle = '#FFFFFF';
+  for (const ln of lines) { ctx.fillText(ln, 52, ty); ty += lineH; }
+  // ── FOOTER ───────────────────────────────────────────────────────────────────
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '14px Roboto'; ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL  \u00b7  pasarelastudiointer.com', 540, 1063);
   return canvas.toBuffer('image/png');
 }
 
@@ -2585,10 +2639,20 @@ async function autoPublicarPasarela() {
     const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
     const fechaStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
     let coverBuffer = null;
-    // Diseño Master aprobado — generarCoverPasarela siempre
-    const _tituloCorto = noticia.titulo.split(' ').slice(0,5).join(' ');
-    const _imgFondo = noticia.imagen || await getImagenCategoria('MODA', _tituloCorto);
-    coverBuffer = await generarCoverPasarela(_tituloCorto, _imgFondo);
+    // Diseño magazine editorial — descarga buffer y usa generarCoverBlogArticulo
+    let _imgBuf = null;
+    if (noticia.imagen) {
+      try { _imgBuf = await fetchBuf(noticia.imagen); } catch(e) {
+        console.log('[AutoPublish-Pasarela] Imagen RSS no descargable, usando Pexels:', e.message);
+      }
+    }
+    if (!_imgBuf) {
+      try {
+        const _imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
+        _imgBuf = await fetchBuf(_imgUrl);
+      } catch(e) { console.error('[AutoPublish-Pasarela] Pexels fallback error:', e.message); }
+    }
+    coverBuffer = await generarCoverBlogArticulo(_imgBuf, noticia.titulo, fechaStr);
 
     // 5. Caption y publicar — limpiar Markdown
     const primerParrafo = contenido
