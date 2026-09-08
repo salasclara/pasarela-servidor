@@ -1554,7 +1554,7 @@ async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
   const titleBottom = 1080 - FOOTER_H - 22;
   const titleTop    = titleBottom - (lines.length - 1) * lineH;
   // ── BADGE EDITORIAL + FECHA (encima del título) ───────────────────────────────
-  const by = titleTop - 54, bx = 52, bw = 120, bh = 30;
+  const by = titleTop - 92, bx = 52, bw = 120, bh = 30;
   ctx.fillStyle = FUCSIA;
   ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 5); ctx.fill();
   ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 14px Roboto'; ctx.textAlign = 'left';
@@ -2609,13 +2609,20 @@ async function autoPublicarPasarela() {
     // 1. Tomar noticia del cache RSS (con imagen preferida)
     const pool_noticias = cacheNoticias.length > 0 ? cacheNoticias : [];
     if (pool_noticias.length === 0) { console.log('[AutoPublish-Pasarela] Cache RSS vacío — omitiendo'); return; }
-    const conImagen = pool_noticias.filter(n => n.imagen && n.imagen.startsWith('http'));
+    // Filtro línea editorial Pasarela: solo moda, belleza, modelaje, tendencias
+    const _KW_MODA = ['moda','fashion','style','estilo','belleza','beauty','model','modelo','runway','pasarela','tendencia','trend','look','outfit','ropa','clothing','lujo','luxury','elegancia','elegance','vogue','couture','diseño','design','temporada','season','coleccion','collection','latina','latin','vestido','dress','zapato','shoe','accesorio','accessory','makeup','maquillaje'];
+    const _noticiasFiltradas = pool_noticias.filter(n => {
+      const txt = (n.titulo + ' ' + (n.descripcion || '')).toLowerCase();
+      return _KW_MODA.some(kw => txt.includes(kw));
+    });
+    const _poolFinal = _noticiasFiltradas.length > 0 ? _noticiasFiltradas : pool_noticias;
+    const conImagen = _poolFinal.filter(n => n.imagen && n.imagen.startsWith('http'));
     const noticia = conImagen.length > 0
       ? conImagen[Math.floor(Math.random() * conImagen.length)]
-      : pool_noticias[Math.floor(Math.random() * pool_noticias.length)];
+      : _poolFinal[Math.floor(Math.random() * _poolFinal.length)];
 
-    // 2. Generar artículo editorial con Claude
-    const promptEditorial = 'Escribe un artículo editorial original e inspirador sobre: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas. Voz editorial propia.';
+    // 2. Generar artículo editorial con Claude — incluye TITULAR en español para el cover
+    const promptEditorial = 'Escribe un artículo editorial sobre este tema de moda/estilo: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas.\n\nFormato EXACTO de respuesta:\nTITULAR: [título editorial en ESPAÑOL, máx 8 palabras, impactante]\n\n[artículo completo en español]';
     const payload = JSON.stringify({
       model: 'claude-sonnet-4-6', max_tokens: 900,
       system: 'Eres la editora de PASARELA STUDIO INTERNACIONAL™, escuela de modelaje y elegancia latina de Dallas, TX. Voz sofisticada, empoderada, latina. NUNCA cites fuentes. Primera persona editorial.',
@@ -2650,12 +2657,15 @@ async function autoPublicarPasarela() {
         _imgBuf = await fetchBuf(_imgUrl);
       } catch(e) { console.error('[AutoPublish-Pasarela] Pexels fallback error:', e.message); }
     }
-    coverBuffer = await generarCoverBlogArticulo(_imgBuf, noticia.titulo, fechaStr);
+    // Extraer titular en español generado por Claude
+    const _titularMatch = contenido.match(/TITULAR:\s*(.+)/i);
+    const _titularCover = _titularMatch ? _titularMatch[1].trim() : noticia.titulo;
+    coverBuffer = await generarCoverBlogArticulo(_imgBuf, _titularCover, fechaStr);
 
     // 5. Caption completo limpio (sin Markdown) + 3 hashtags
     const articuloLimpio = contenido
       .split('\n')
-      .map(p => p.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
+      .map(p => p.replace(/^TITULAR:\s*/i, '').replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
       .filter(p => p.length > 0)
       .join('\n\n');
     const caption = articuloLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
