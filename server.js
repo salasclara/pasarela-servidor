@@ -2585,22 +2585,16 @@ async function autoPublicarPasarela() {
     const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
     const fechaStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
     let coverBuffer = null;
-    if (noticia.imagen) {
-      try {
-        const imgBuf = await fetchBuf(noticia.imagen);
-        coverBuffer = await generarCoverBlogArticulo(imgBuf, noticia.titulo, fechaStr);
-      } catch(e) {
-        console.log('[AutoPublish-Pasarela] Imagen RSS no accesible, usando Pexels:', e.message);
-        const imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
-        coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '), imgUrl);
-      }
-    } else {
-      const imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
-      coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '), imgUrl);
-    }
+    // Diseño Master aprobado — generarCoverPasarela siempre
+    const _tituloCorto = noticia.titulo.split(' ').slice(0,5).join(' ');
+    const _imgFondo = noticia.imagen || await getImagenCategoria('MODA', _tituloCorto);
+    coverBuffer = await generarCoverPasarela(_tituloCorto, _imgFondo);
 
-    // 5. Caption y publicar
-    const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
+    // 5. Caption y publicar — limpiar Markdown
+    const primerParrafo = contenido
+      .split('\n')
+      .map(p => p.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
+      .filter(p => p.length > 40)[0] || contenido.substring(0, 350);
     const caption = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion #EleganciaLatina #ModelajeLatino';
     const fbRes = await publicarFotoBuffer(coverBuffer, caption);
     console.log('[AutoPublish-Pasarela] ✅ Publicado:', noticia.titulo, '| FB ID:', fbRes?.id || fbRes);
