@@ -2785,10 +2785,15 @@ async function autoPublicarPasarela() {
     });
     if (!contenido) throw new Error('Claude sin respuesta');
 
-    // 3. Guardar en DB
+    // 3. Guardar en DB — contenido limpio (sin markers de Claude)
+    const _contenidoLimpio = contenido
+      .split('\n')
+      .map(p => p.replace(/^TITULAR:\s*/i, '').replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
+      .filter(p => p.length > 0)
+      .join('\n\n');
     const slug = generarSlug(noticia.titulo);
     await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
-      [noticia.titulo, contenido, 'editorial', slug, true, noticia.imagen || '']);
+      [noticia.titulo, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '']);
 
     // 4. Generar cover con plantilla aprobada
     const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
@@ -2812,13 +2817,8 @@ async function autoPublicarPasarela() {
     const _titularCover = _titularMatch ? _titularMatch[1].trim() : noticia.titulo;
     coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: _titularCover, fecha: fechaStr });
 
-    // 5. Caption completo limpio (sin Markdown) + 3 hashtags
-    const articuloLimpio = contenido
-      .split('\n')
-      .map(p => p.replace(/^TITULAR:\s*/i, '').replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
-      .filter(p => p.length > 0)
-      .join('\n\n');
-    const caption = articuloLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
+    // 5. Caption = mismo contenido limpio que va al blog
+    const caption = _contenidoLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
     const fbRes = await publicarFotoBuffer(coverBuffer, caption);
     console.log('[AutoPublish-Pasarela] ✅ Publicado:', noticia.titulo, '| FB ID:', fbRes?.id || fbRes);
     return { ok: true, titulo: noticia.titulo, facebook_id: fbRes?.id || null, error: null };
