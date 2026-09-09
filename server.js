@@ -2530,17 +2530,6 @@ INSTRUCCIONES:
   }
 
   // TEST FANCY — dispara publicarCoverParaPagina SOLO para Fancy by Roxette
-  if (req.method === 'GET' && req.url === '/test-pasarela-auto') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ mensaje: 'Ejecutando autoPublicarPasarela — ver logs Railway' }));
-    (async () => {
-      console.log('[TEST-PASARELA-AUTO] ── INICIO ───────────────────────────');
-      const resultado = await autoPublicarPasarela();
-      console.log('[TEST-PASARELA-AUTO] RESULTADO:', JSON.stringify(resultado));
-      console.log('[TEST-PASARELA-AUTO] ── FIN ──────────────────────────────');
-    })();
-    return;
-  }
 
   if (req.method === 'GET' && req.url === '/test-fancy') {
     const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
