@@ -2813,9 +2813,8 @@ async function autoPublicarPasarela() {
       } catch(e) { console.error('[AutoPublish-Pasarela] Pexels fallback error:', e.message); }
     }
     // Extraer titular en español generado por Claude
-    const _titularMatch = contenido.match(/TITULAR:\s*(.+)/i);
-    const _titularCover = _titularMatch ? _titularMatch[1].trim() : noticia.titulo;
-    coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: _titularCover, fecha: fechaStr });
+    // Cover usa el título del blog (mismo que el H1 del post)
+    coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: noticia.titulo, fecha: fechaStr });
 
     // 5. Caption = mismo contenido limpio que va al blog
     const caption = _contenidoLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
