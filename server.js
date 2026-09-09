@@ -353,9 +353,43 @@ const _fontPath = require('path').join(__dirname, 'Roboto-Bold.ttf');
       _cormorantLoaded = true;
       console.log('[Fonts] Cormorant registrado para canvas');
     }
+    // Playfair Display Bold — titular editorial Pasarela
+    const _fontPathPF = require('path').join(__dirname, 'PlayfairDisplay-Bold.ttf');
+    if (!require('fs').existsSync(_fontPathPF)) {
+      console.log('[Fonts] Descargando PlayfairDisplay-Bold...');
+      const _bufPF = await new Promise(res => {
+        require('https').get('https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay-Bold.ttf', r => {
+          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
+        }).on('error', () => res(null));
+      });
+      if (_bufPF && _bufPF.length > 10000) { require('fs').writeFileSync(_fontPathPF, _bufPF); console.log('[Fonts] PlayfairDisplay-Bold descargado OK'); }
+    }
+    if (require('fs').existsSync(_fontPathPF)) {
+      GlobalFonts.registerFromPath(_fontPathPF, 'Playfair');
+      _playfairLoaded = true;
+      console.log('[Fonts] Playfair registrado para canvas');
+    }
+    // Montserrat Bold — header/footer/badge Pasarela
+    const _fontPathMT = require('path').join(__dirname, 'Montserrat-Bold.ttf');
+    if (!require('fs').existsSync(_fontPathMT)) {
+      console.log('[Fonts] Descargando Montserrat-Bold...');
+      const _bufMT = await new Promise(res => {
+        require('https').get('https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/static/Montserrat-Bold.ttf', r => {
+          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
+        }).on('error', () => res(null));
+      });
+      if (_bufMT && _bufMT.length > 10000) { require('fs').writeFileSync(_fontPathMT, _bufMT); console.log('[Fonts] Montserrat-Bold descargado OK'); }
+    }
+    if (require('fs').existsSync(_fontPathMT)) {
+      GlobalFonts.registerFromPath(_fontPathMT, 'Montserrat');
+      _montserratLoaded = true;
+      console.log('[Fonts] Montserrat registrado para canvas');
+    }
   } catch(e) { console.error('[Fonts] Error:', e.message); }
 })();
 let _cormorantLoaded = false;
+let _playfairLoaded  = false;
+let _montserratLoaded = false;
 
 async function descargarImagen(url) {
   if (!url) return null;
@@ -1570,6 +1604,122 @@ async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
   return canvas.toBuffer('image/png');
 }
 
+async function generarCoverPasarelaMaster({ imageBuf, titulo, fecha }) {
+  // ═══════════════════════════════════════════════════════════════════════
+  // PLANTILLA MAESTRA — Pasarela Studio Internacional
+  // 1080×1080 · Dark Editorial · Fucsia #FF0A8A · Aprobada Sep 2026
+  // ═══════════════════════════════════════════════════════════════════════
+  const canvas = createCanvas(1080, 1080);
+  const ctx    = canvas.getContext('2d');
+  const FUCSIA  = '#FF0A8A';
+  const GOLD    = '#C9A66B';
+  const NEGRO   = '#0D0A0B';
+  const BLANCO  = '#FFFFFF';
+  const HEADER_H = 88;
+  const FOOTER_H = 56;
+
+  // Fuentes con fallback
+  const fHeader  = _montserratLoaded ? 'Montserrat' : 'Roboto';
+  const fTitular = _playfairLoaded   ? 'Playfair'   : (_cormorantLoaded ? 'Cormorant' : 'Roboto');
+
+  // ── 1. Fondo negro base ──────────────────────────────────────────────────
+  ctx.fillStyle = NEGRO; ctx.fillRect(0, 0, 1080, 1080);
+
+  // ── 2. Foto protagonista — object-fit cover, canvas completo ────────────
+  if (imageBuf) {
+    try {
+      const img = await loadImage(imageBuf);
+      const iA  = img.width / img.height;
+      let dw, dh, dx, dy;
+      if (iA > 1) { dh = 1080; dw = dh * iA; dx = (1080 - dw) / 2; dy = 0; }
+      else        { dw = 1080; dh = dw / iA;  dx = 0; dy = (1080 - dh) / 2; }
+      ctx.globalAlpha = 0.90; ctx.drawImage(img, dx, dy, dw, dh); ctx.globalAlpha = 1;
+    } catch(e) { console.error('[CoverMaster] img error:', e.message); }
+  }
+
+  // ── 3. Gradiente superior (header a 40%) ────────────────────────────────
+  const gTop = ctx.createLinearGradient(0, 0, 0, 420);
+  gTop.addColorStop(0,    'rgba(13,10,11,0.62)');
+  gTop.addColorStop(0.45, 'rgba(13,10,11,0.18)');
+  gTop.addColorStop(1,    'rgba(13,10,11,0)');
+  ctx.fillStyle = gTop; ctx.fillRect(0, HEADER_H, 1080, 420);
+
+  // ── 4. Gradiente inferior (legibilidad título) ────────────────────────────
+  const gBot = ctx.createLinearGradient(0, 440, 0, 1080 - FOOTER_H);
+  gBot.addColorStop(0,    'rgba(13,10,11,0)');
+  gBot.addColorStop(0.38, 'rgba(13,10,11,0.70)');
+  gBot.addColorStop(1,    'rgba(13,10,11,0.97)');
+  ctx.fillStyle = gBot; ctx.fillRect(0, 440, 1080, 1080 - FOOTER_H - 440);
+
+  // ── 5. HEADER FUCSIA ─────────────────────────────────────────────────────
+  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 0, 1080, HEADER_H);
+  ctx.fillStyle = BLANCO;
+  ctx.font      = `bold 30px ${fHeader}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL', 540, 57);
+
+  // ── 6. FOOTER FUCSIA ─────────────────────────────────────────────────────
+  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 1080 - FOOTER_H, 1080, FOOTER_H);
+  ctx.fillStyle = BLANCO;
+  ctx.font      = `bold 15px ${fHeader}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  pasarelastudiointer.com', 540, 1080 - FOOTER_H + 36);
+
+  // ── 7. Word-wrap del título ───────────────────────────────────────────────
+  const maxW    = 970;
+  const words   = titulo.split(' ');
+  let   tSize   = 68;
+  let   lines   = [];
+  let   lineH   = 0;
+  const wrapLines = (sz) => {
+    ctx.font = `bold ${sz}px ${fTitular}`;
+    const ls = []; let cur = '';
+    for (const w of words) {
+      const t = cur ? cur + ' ' + w : w;
+      if (ctx.measureText(t).width > maxW) { if (cur) ls.push(cur); cur = w; } else cur = t;
+    }
+    if (cur) ls.push(cur);
+    return ls;
+  };
+  lines = wrapLines(tSize);
+  if (lines.length > 4) { tSize = 52; lines = wrapLines(tSize); }
+  lineH = Math.round(tSize * 1.22);
+  ctx.font = `bold ${tSize}px ${fTitular}`;
+
+  // ── 8. Posición ancla título (zona inferior, sobre el footer) ────────────
+  const titleBottom = 1080 - FOOTER_H - 24;
+  const titleTop    = titleBottom - (lines.length - 1) * lineH;
+
+  // ── 9. Badge EDITORIAL + fecha ────────────────────────────────────────────
+  const badgeY = titleTop - 94;
+  const badgeX = 52, badgeW = 130, badgeH = 32;
+  ctx.fillStyle = FUCSIA;
+  ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 5); ctx.fill();
+  ctx.fillStyle = BLANCO;
+  ctx.font      = `bold 13px ${fHeader}`;
+  ctx.textAlign = 'left';
+  ctx.fillText('EDITORIAL', badgeX + 16, badgeY + 22);
+  const fechaStr = fecha || new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+  ctx.fillStyle = 'rgba(255,255,255,0.68)';
+  ctx.font      = `12px ${fHeader}`;
+  ctx.textAlign = 'right';
+  ctx.fillText(fechaStr, 1028, badgeY + 22);
+
+  // ── 10. Línea dorada sobre el título ────────────────────────────────────
+  ctx.fillStyle = GOLD; ctx.fillRect(52, titleTop - 16, 80, 3);
+
+  // ── 11. TÍTULO principal ─────────────────────────────────────────────────
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
+  ctx.fillStyle = BLANCO;
+  ctx.font      = `bold ${tSize}px ${fTitular}`;
+  ctx.textAlign = 'left';
+  let ty = titleTop;
+  for (const ln of lines) { ctx.fillText(ln, 52, ty); ty += lineH; }
+  ctx.shadowBlur = 0;
+
+  return canvas.toBuffer('image/png');
+}
+
 function publicarStoryFacebook(imageUrl) {
   if (!FB_PAGE_TOKEN || !imageUrl) return Promise.resolve(null);
   const postData = new URLSearchParams({ url: imageUrl, access_token: FB_PAGE_TOKEN });
@@ -2660,7 +2810,7 @@ async function autoPublicarPasarela() {
     // Extraer titular en español generado por Claude
     const _titularMatch = contenido.match(/TITULAR:\s*(.+)/i);
     const _titularCover = _titularMatch ? _titularMatch[1].trim() : noticia.titulo;
-    coverBuffer = await generarCoverBlogArticulo(_imgBuf, _titularCover, fechaStr);
+    coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: _titularCover, fecha: fechaStr });
 
     // 5. Caption completo limpio (sin Markdown) + 3 hashtags
     const articuloLimpio = contenido
