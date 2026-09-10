@@ -353,43 +353,9 @@ const _fontPath = require('path').join(__dirname, 'Roboto-Bold.ttf');
       _cormorantLoaded = true;
       console.log('[Fonts] Cormorant registrado para canvas');
     }
-    // Playfair Display Bold — titular editorial Pasarela
-    const _fontPathPF = require('path').join(__dirname, 'PlayfairDisplay-Bold.ttf');
-    if (!require('fs').existsSync(_fontPathPF)) {
-      console.log('[Fonts] Descargando PlayfairDisplay-Bold...');
-      const _bufPF = await new Promise(res => {
-        require('https').get('https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay-Bold.ttf', r => {
-          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
-        }).on('error', () => res(null));
-      });
-      if (_bufPF && _bufPF.length > 10000) { require('fs').writeFileSync(_fontPathPF, _bufPF); console.log('[Fonts] PlayfairDisplay-Bold descargado OK'); }
-    }
-    if (require('fs').existsSync(_fontPathPF)) {
-      GlobalFonts.registerFromPath(_fontPathPF, 'Playfair');
-      _playfairLoaded = true;
-      console.log('[Fonts] Playfair registrado para canvas');
-    }
-    // Montserrat Bold — header/footer/badge Pasarela
-    const _fontPathMT = require('path').join(__dirname, 'Montserrat-Bold.ttf');
-    if (!require('fs').existsSync(_fontPathMT)) {
-      console.log('[Fonts] Descargando Montserrat-Bold...');
-      const _bufMT = await new Promise(res => {
-        require('https').get('https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/static/Montserrat-Bold.ttf', r => {
-          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
-        }).on('error', () => res(null));
-      });
-      if (_bufMT && _bufMT.length > 10000) { require('fs').writeFileSync(_fontPathMT, _bufMT); console.log('[Fonts] Montserrat-Bold descargado OK'); }
-    }
-    if (require('fs').existsSync(_fontPathMT)) {
-      GlobalFonts.registerFromPath(_fontPathMT, 'Montserrat');
-      _montserratLoaded = true;
-      console.log('[Fonts] Montserrat registrado para canvas');
-    }
   } catch(e) { console.error('[Fonts] Error:', e.message); }
 })();
 let _cormorantLoaded = false;
-let _playfairLoaded  = false;
-let _montserratLoaded = false;
 
 async function descargarImagen(url) {
   if (!url) return null;
@@ -1158,27 +1124,28 @@ async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
   return canvas.toBuffer('image/png');
 }
 
-// ── VISUAL ENGINE V2 — Fancy by Roxette ─────────────────────────────────────────────
+// ── VISUAL ENGINE V2 — Fancy by Roxette ───────────────────────────────────
 // generarCoverFancyV2: renderer experimental INDEPENDIENTE de generarCoverFancy()
 // Layout LIFESTYLE_HERO: zona editorial izquierda | zona visual derecha (fotografía protagonista)
 // NO modifica ni llama ninguna función de producción existente.
-async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto, imagenBuffer, layout, fuchsiaWord }) {
+async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto, imagenBuffer, layout }) {
   const canvas = createCanvas(1080, 1080);
   const ctx    = canvas.getContext('2d');
 
+  // Paleta de identidad Fancy V2
   const CREAM   = '#FFF8F1';
   const FUCHSIA = '#D50067';
   const YELLOW  = '#FFD52A';
   const BLACK   = '#111111';
   const GRAY    = '#555555';
 
-  // Geometría LIFESTYLE_HERO — Iteración 2
-  const LEFT_SOLID  = 490;
-  const LEFT_FADE   = 590;
-  const MARGIN_L    = 60;
-  const EDITORIAL_W = LEFT_SOLID - MARGIN_L - 30;   // ≈400px
+  // Geometría LIFESTYLE_HERO
+  const LEFT_SOLID = 380;   // x hasta donde el crema es sólido
+  const LEFT_FADE  = 520;   // x hasta donde el crema desvanece a transparente
+  const MARGIN_L   = 60;    // margen izquierdo del contenido editorial
+  const MAX_TXT_W  = 295;   // ancho máximo para wrapping de texto
 
-  // ── CAPA 1: FOTOGRAFÍA FULL CANVAS ──────────────────────────────────────
+  // ── CAPA 1: FOTOGRAFÍA FULL CANVAS (protagonista · sin alpha · sin overlay) ──
   let photoLoaded = false;
   if (imagenBuffer) {
     try {
@@ -1195,27 +1162,32 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
     ctx.fillRect(0, 0, 1080, 1080);
   }
 
-  // ── CAPA 2: PANEL CREMA + GRADIENTE HORIZONTAL ──────────────────────────
+  // ── CAPA 2: PANEL CREMA IZQUIERDO + GRADIENTE HORIZONTAL LOCALIZADO ────────
+  // Sólido x=0 → LEFT_SOLID
   ctx.fillStyle = CREAM;
   ctx.fillRect(0, 0, LEFT_SOLID, 1080);
+  // Gradiente crema→transparente x=LEFT_SOLID → LEFT_FADE (transición suave)
   const leftGrad = ctx.createLinearGradient(LEFT_SOLID, 0, LEFT_FADE, 0);
   leftGrad.addColorStop(0, 'rgba(255,248,241,1)');
   leftGrad.addColorStop(1, 'rgba(255,248,241,0)');
   ctx.fillStyle = leftGrad;
   ctx.fillRect(LEFT_SOLID, 0, LEFT_FADE - LEFT_SOLID, 1080);
 
-  // ── CAPA 3: BRANDING ─────────────────────────────────────────────────────
+  // ── CAPA 3: BRANDING "FANCY / by ROXETTE" ──────────────────────────────────
   ctx.textAlign = 'left';
+  // "FANCY"
   ctx.font      = 'bold 42px Roboto';
   ctx.fillStyle = BLACK;
   ctx.fillText('FANCY', MARGIN_L, 108);
+  // Línea fuchsia decorativa bajo "FANCY"
   ctx.fillStyle = FUCHSIA;
   ctx.fillRect(MARGIN_L, 116, 210, 3);
+  // "by ROXETTE"
   ctx.font      = '15px Roboto';
   ctx.fillStyle = GRAY;
   ctx.fillText('by ROXETTE', MARGIN_L, 142);
 
-  // ── CAPA 4: VISUAL LABEL ─────────────────────────────────────────────────
+  // ── CAPA 4: VISUAL LABEL sobre bloque amarillo ─────────────────────────────
   const label  = (visualLabel || 'STYLE IT').toUpperCase();
   ctx.font     = 'bold 19px Roboto';
   const labelW = ctx.measureText(label).width + 30;
@@ -1226,91 +1198,66 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
   ctx.fillStyle = BLACK;
   ctx.fillText(label, MARGIN_L + 15, labelY + 34);
 
-  // ── CAPA 5: TITULAR — fuente adaptativa + wrapping equilibrado ───────────
+  // ── CAPA 5: TITULAR (máx 3 líneas · wrapping · línea central en fuchsia) ───
+  ctx.font = 'bold 78px Roboto';
+  // Wrapping: máx 3 líneas — si hay exceso se acumula en la línea 3
   const titWords = (titular || '').toUpperCase().split(' ');
-
-  function wrapTitular(size) {
-    ctx.font = `bold ${size}px Roboto`;
-    const lines = []; let curr = '';
-    for (let i = 0; i < titWords.length; i++) {
-      if (lines.length >= 2) {
-        curr = curr ? `${curr} ${titWords[i]}` : titWords[i]; continue;
-      }
-      const test = curr ? `${curr} ${titWords[i]}` : titWords[i];
-      if (ctx.measureText(test).width > EDITORIAL_W && curr) {
-        const isOrphan = !curr.includes(' ') && curr.length <= 3;
-        if (isOrphan) {
-          const withNext = `${curr} ${titWords[i]}`;
-          if (ctx.measureText(withNext).width <= EDITORIAL_W * 1.05) {
-            curr = withNext; continue;
-          }
-        }
-        lines.push(curr); curr = titWords[i];
-      } else { curr = test; }
+  const titLines = [];
+  let   titCurr  = '';
+  for (const word of titWords) {
+    if (titLines.length >= 2) {
+      titCurr = titCurr ? `${titCurr} ${word}` : word;
+      continue;
     }
-    if (curr) lines.push(curr);
-    return lines;
-  }
-
-  // Adaptativo: 78px → 54px safety fallback (rango normal 60–78px)
-  let titFontSize = 78;
-  let titLines = wrapTitular(titFontSize);
-  while (titFontSize > 54 && titLines.some(l => ctx.measureText(l).width > EDITORIAL_W)) {
-    titFontSize -= 2;
-    titLines = wrapTitular(titFontSize);
-  }
-  ctx.font = `bold ${titFontSize}px Roboto`;
-
-  // Acento fuchsia en palabra específica (default: segunda palabra del titular)
-  const accentWord = (fuchsiaWord || titWords[1] || '').toUpperCase();
-
-  const TIT_START_Y = 310;
-  const TIT_LINE_H  = Math.round(titFontSize * 1.18);
-  titLines.slice(0, 3).forEach((line, i) => {
-    const lineWords = line.split(' ');
-    if (lineWords.includes(accentWord)) {
-      let x = MARGIN_L;
-      lineWords.forEach(w => {
-        ctx.fillStyle = (w === accentWord) ? FUCHSIA : BLACK;
-        ctx.fillText(w, x, TIT_START_Y + i * TIT_LINE_H);
-        x += ctx.measureText(w + ' ').width;
-      });
+    const test = titCurr ? `${titCurr} ${word}` : word;
+    if (ctx.measureText(test).width > MAX_TXT_W && titCurr) {
+      titLines.push(titCurr);
+      titCurr = word;
     } else {
-      ctx.fillStyle = BLACK;
-      ctx.fillText(line, MARGIN_L, TIT_START_Y + i * TIT_LINE_H);
+      titCurr = test;
     }
+  }
+  if (titCurr) titLines.push(titCurr);
+
+  // Colores por línea: negro / fuchsia / negro
+  const LINE_COLORS = [BLACK, FUCHSIA, BLACK];
+  const TIT_START_Y = 310;
+  const TIT_LINE_H  = 90;
+  titLines.slice(0, 3).forEach((line, i) => {
+    ctx.fillStyle = LINE_COLORS[i] || BLACK;
+    ctx.fillText(line, MARGIN_L, TIT_START_Y + i * TIT_LINE_H);
   });
 
   const titEndY = TIT_START_Y + Math.min(titLines.length, 3) * TIT_LINE_H;
 
-  // ── CAPA 6: MICROTEXTO — posición dinámica desde titEndY ────────────────
-  const MICRO_GAP    = 28;
-  const MICRO_LINE_H = 36;
-  const MICRO_SAFE   = 920;
-  let renderedMicroLines = 0;
+  // ── CAPA 6: MICROTEXTO (máx 2 líneas) ────────────────────────────────────
   if (microtexto) {
     ctx.font      = '26px Roboto';
     ctx.fillStyle = GRAY;
     const mWords = microtexto.split(' ');
-    const mLines = []; let mCurr = '';
+    const mLines = [];
+    let   mCurr  = '';
     for (const w of mWords) {
-      if (mLines.length >= 1) { mCurr = mCurr ? `${mCurr} ${w}` : w; continue; }
+      if (mLines.length >= 1) {
+        mCurr = mCurr ? `${mCurr} ${w}` : w;
+        continue;
+      }
       const t = mCurr ? `${mCurr} ${w}` : w;
-      if (ctx.measureText(t).width > EDITORIAL_W && mCurr) { mLines.push(mCurr); mCurr = w; }
-      else { mCurr = t; }
+      if (ctx.measureText(t).width > MAX_TXT_W && mCurr) {
+        mLines.push(mCurr);
+        mCurr = w;
+      } else {
+        mCurr = t;
+      }
     }
     if (mCurr) mLines.push(mCurr);
-    const microStartY = titEndY + MICRO_GAP;
     mLines.slice(0, 2).forEach((line, i) => {
-      const lineY = microStartY + i * MICRO_LINE_H;
-      if (lineY <= MICRO_SAFE) { ctx.fillText(line, MARGIN_L, lineY); renderedMicroLines++; }
+      ctx.fillText(line, MARGIN_L, titEndY + 50 + i * 36);
     });
   }
 
-  // ── CAPA 7: ACENTO FUCHSIA ───────────────────────────────────────────────
-  const decoY = titEndY + (renderedMicroLines > 0
-    ? MICRO_GAP + renderedMicroLines * MICRO_LINE_H + 16
-    : 32);
+  // ── CAPA 7: ACENTO FUCHSIA (línea decorativa mínima) ─────────────────────
+  const decoY = titEndY + (microtexto ? 108 : 44);
   if (decoY < 980) {
     ctx.fillStyle = FUCHSIA;
     ctx.fillRect(MARGIN_L, decoY, 68, 3);
@@ -1533,190 +1480,22 @@ async function generarCoverGenerico(branding, coverTitulo) {
 }
 
 async function generarCoverBlogArticulo(imgBuf, titulo, fecha) {
-  // Diseño Magazine Editorial Pasarela — 1080x1080
-  const canvas = createCanvas(1080, 1080);
+  const canvas = createCanvas(1080, 566);
   const ctx = canvas.getContext('2d');
-  const HEADER_H = 84, FOOTER_H = 52;
-  const FUCSIA = '#FF1493';
-  // Fondo negro
-  ctx.fillStyle = '#0D0A0B'; ctx.fillRect(0, 0, 1080, 1080);
-  // Foto protagonista — object-fit cover, canvas completo
+  ctx.fillStyle = '#0D0A0B'; ctx.fillRect(0, 0, 1080, 566);
   if (imgBuf) {
-    try {
-      const img = await loadImage(imgBuf);
-      const aspect = img.width / img.height;
-      let dw, dh, dx, dy;
-      if (aspect > 1) { dh = 1080; dw = dh * aspect; dx = (1080 - dw) / 2; dy = 0; }
-      else { dw = 1080; dh = dw / aspect; dx = 0; dy = (1080 - dh) / 2; }
-      ctx.globalAlpha = 0.88; ctx.drawImage(img, dx, dy, dw, dh); ctx.globalAlpha = 1;
-    } catch(e) { console.error('[Cover] img error:', e.message); }
+    try { const img = await loadImage(imgBuf); ctx.globalAlpha = 0.5; ctx.drawImage(img, 0, 0, 1080, 566); ctx.globalAlpha = 1; } catch(e) {}
   }
-  // Gradiente oscuro zona inferior (legibilidad del título)
-  const grad = ctx.createLinearGradient(0, 460, 0, 1080 - FOOTER_H);
-  grad.addColorStop(0, 'rgba(13,10,11,0)');
-  grad.addColorStop(0.4, 'rgba(13,10,11,0.72)');
-  grad.addColorStop(1, 'rgba(13,10,11,0.97)');
-  ctx.fillStyle = grad; ctx.fillRect(0, HEADER_H, 1080, 1080 - HEADER_H);
-  // ── HEADER FUCSIA ────────────────────────────────────────────────────────────
-  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 0, 1080, HEADER_H);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 34px Roboto'; ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL', 540, 56);
-  // ── FOOTER FUCSIA ────────────────────────────────────────────────────────────
-  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 1080 - FOOTER_H, 1080, FOOTER_H);
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 17px Roboto'; ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL  -  pasarelastudiointer.com', 540, 1080 - FOOTER_H + 34);
-  // ── CALCULAR POSICIÓN DEL TÍTULO ─────────────────────────────────────────────
-  let hFont = _cormorantLoaded ? 'bold 62px Cormorant' : 'bold 54px Roboto';
-  ctx.font = hFont; ctx.textAlign = 'left';
-  const maxW = 960, words = titulo.split(' ');
-  let lines = [], cur = '';
-  for (const w of words) {
-    const t = cur ? cur + ' ' + w : w;
-    if (ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
-  }
-  if (cur) lines.push(cur);
-  if (lines.length > 4) {
-    hFont = _cormorantLoaded ? 'bold 48px Cormorant' : 'bold 42px Roboto';
-    ctx.font = hFont; lines = []; cur = '';
-    for (const w of words) {
-      const t = cur ? cur + ' ' + w : w;
-      if (ctx.measureText(t).width > maxW) { lines.push(cur); cur = w; } else cur = t;
-    }
-    if (cur) lines.push(cur);
-  }
-  const lineH = _cormorantLoaded ? 74 : 66;
-  const titleBottom = 1080 - FOOTER_H - 22;
-  const titleTop    = titleBottom - (lines.length - 1) * lineH;
-  // ── BADGE EDITORIAL + FECHA (encima del título) ───────────────────────────────
-  const by = titleTop - 92, bx = 52, bw = 120, bh = 30;
-  ctx.fillStyle = FUCSIA;
-  ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 5); ctx.fill();
-  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 14px Roboto'; ctx.textAlign = 'left';
-  ctx.fillText('EDITORIAL', bx + 14, by + 20);
-  ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.font = '13px Roboto'; ctx.textAlign = 'right';
-  ctx.fillText(fecha || new Date().toLocaleDateString('es-MX', {day:'numeric',month:'long',year:'numeric'}), 1028, by + 20);
-  // Acento dorado sobre el título
-  ctx.fillStyle = '#C9A66B'; ctx.fillRect(52, titleTop - 14, 70, 3);
-  // ── TÍTULO ───────────────────────────────────────────────────────────────────
-  ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'left'; ctx.font = hFont;
-  let ty = titleTop;
-  for (const ln of lines) { ctx.fillText(ln, 52, ty); ty += lineH; }
-  return canvas.toBuffer('image/png');
-}
-
-async function generarCoverPasarelaMaster({ imageBuf, titulo, fecha }) {
-  // ═══════════════════════════════════════════════════════════════════════
-  // PLANTILLA MAESTRA — Pasarela Studio Internacional
-  // 1080×1080 · Dark Editorial · Fucsia #FF0A8A · Aprobada Sep 2026
-  // ═══════════════════════════════════════════════════════════════════════
-  const canvas = createCanvas(1080, 1080);
-  const ctx    = canvas.getContext('2d');
-  const FUCSIA  = '#FF0A8A';
-  const GOLD    = '#C9A66B';
-  const NEGRO   = '#0D0A0B';
-  const BLANCO  = '#FFFFFF';
-  const HEADER_H = 88;
-  const FOOTER_H = 56;
-
-  // Fuentes con fallback
-  const fHeader  = _montserratLoaded ? 'Montserrat' : 'Roboto';
-  const fTitular = _playfairLoaded   ? 'Playfair'   : (_cormorantLoaded ? 'Cormorant' : 'Roboto');
-
-  // ── 1. Fondo negro base ──────────────────────────────────────────────────
-  ctx.fillStyle = NEGRO; ctx.fillRect(0, 0, 1080, 1080);
-
-  // ── 2. Foto protagonista — object-fit cover, canvas completo ────────────
-  if (imageBuf) {
-    try {
-      const img = await loadImage(imageBuf);
-      const iA  = img.width / img.height;
-      let dw, dh, dx, dy;
-      if (iA > 1) { dh = 1080; dw = dh * iA; dx = (1080 - dw) / 2; dy = 0; }
-      else        { dw = 1080; dh = dw / iA;  dx = 0; dy = (1080 - dh) / 2; }
-      ctx.globalAlpha = 0.90; ctx.drawImage(img, dx, dy, dw, dh); ctx.globalAlpha = 1;
-    } catch(e) { console.error('[CoverMaster] img error:', e.message); }
-  }
-
-  // ── 3. Gradiente superior (header a 40%) ────────────────────────────────
-  const gTop = ctx.createLinearGradient(0, 0, 0, 420);
-  gTop.addColorStop(0,    'rgba(13,10,11,0.62)');
-  gTop.addColorStop(0.45, 'rgba(13,10,11,0.18)');
-  gTop.addColorStop(1,    'rgba(13,10,11,0)');
-  ctx.fillStyle = gTop; ctx.fillRect(0, HEADER_H, 1080, 420);
-
-  // ── 4. Gradiente inferior (legibilidad título) ────────────────────────────
-  const gBot = ctx.createLinearGradient(0, 440, 0, 1080 - FOOTER_H);
-  gBot.addColorStop(0,    'rgba(13,10,11,0)');
-  gBot.addColorStop(0.38, 'rgba(13,10,11,0.70)');
-  gBot.addColorStop(1,    'rgba(13,10,11,0.97)');
-  ctx.fillStyle = gBot; ctx.fillRect(0, 440, 1080, 1080 - FOOTER_H - 440);
-
-  // ── 5. HEADER FUCSIA ─────────────────────────────────────────────────────
-  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 0, 1080, HEADER_H);
-  ctx.fillStyle = BLANCO;
-  ctx.font      = `bold 30px ${fHeader}`;
-  ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL', 540, 57);
-
-  // ── 6. FOOTER FUCSIA ─────────────────────────────────────────────────────
-  ctx.fillStyle = FUCSIA; ctx.fillRect(0, 1080 - FOOTER_H, 1080, FOOTER_H);
-  ctx.fillStyle = BLANCO;
-  ctx.font      = `bold 15px ${fHeader}`;
-  ctx.textAlign = 'center';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL  ·  pasarelastudiointer.com', 540, 1080 - FOOTER_H + 36);
-
-  // ── 7. Word-wrap del título ───────────────────────────────────────────────
-  const maxW    = 970;
-  const words   = titulo.split(' ');
-  let   tSize   = 68;
-  let   lines   = [];
-  let   lineH   = 0;
-  const wrapLines = (sz) => {
-    ctx.font = `bold ${sz}px ${fTitular}`;
-    const ls = []; let cur = '';
-    for (const w of words) {
-      const t = cur ? cur + ' ' + w : w;
-      if (ctx.measureText(t).width > maxW) { if (cur) ls.push(cur); cur = w; } else cur = t;
-    }
-    if (cur) ls.push(cur);
-    return ls;
-  };
-  lines = wrapLines(tSize);
-  if (lines.length > 4) { tSize = 52; lines = wrapLines(tSize); }
-  lineH = Math.round(tSize * 1.22);
-  ctx.font = `bold ${tSize}px ${fTitular}`;
-
-  // ── 8. Posición ancla título (zona inferior, sobre el footer) ────────────
-  const titleBottom = 1080 - FOOTER_H - 24;
-  const titleTop    = titleBottom - (lines.length - 1) * lineH;
-
-  // ── 9. Badge EDITORIAL + fecha ────────────────────────────────────────────
-  const badgeY = titleTop - 94;
-  const badgeX = 52, badgeW = 130, badgeH = 32;
-  ctx.fillStyle = FUCSIA;
-  ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 5); ctx.fill();
-  ctx.fillStyle = BLANCO;
-  ctx.font      = `bold 13px ${fHeader}`;
-  ctx.textAlign = 'left';
-  ctx.fillText('EDITORIAL', badgeX + 16, badgeY + 22);
-  const fechaStr = fecha || new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-  ctx.fillStyle = 'rgba(255,255,255,0.68)';
-  ctx.font      = `12px ${fHeader}`;
-  ctx.textAlign = 'right';
-  ctx.fillText(fechaStr, 1028, badgeY + 22);
-
-  // ── 10. Línea dorada sobre el título ────────────────────────────────────
-  ctx.fillStyle = GOLD; ctx.fillRect(52, titleTop - 16, 80, 3);
-
-  // ── 11. TÍTULO principal ─────────────────────────────────────────────────
-  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
-  ctx.fillStyle = BLANCO;
-  ctx.font      = `bold ${tSize}px ${fTitular}`;
-  ctx.textAlign = 'left';
-  let ty = titleTop;
-  for (const ln of lines) { ctx.fillText(ln, 52, ty); ty += lineH; }
-  ctx.shadowBlur = 0;
-
+  const grad = ctx.createLinearGradient(0, 0, 0, 566);
+  grad.addColorStop(0, 'rgba(13,10,11,0.2)'); grad.addColorStop(1, 'rgba(13,10,11,0.9)');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 566);
+  ctx.fillStyle = '#7B2D3E'; ctx.fillRect(0, 0, 1080, 4);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 50px Roboto'; ctx.textAlign = 'center';
+  const tw = titulo.split(' '); let tl = ''; let ty = 330;
+  for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 940) { ctx.fillText(tl, 540, ty); tl = w; ty += 60; } else tl = t; }
+  if (tl) ctx.fillText(tl, 540, ty);
+  ctx.fillStyle = '#C9A66B'; ctx.font = '19px Roboto';
+  ctx.fillText('PASARELA\u2122  \u00b7  ' + (fecha || new Date().toLocaleDateString('es-US')), 540, ty + 40);
   return canvas.toBuffer('image/png');
 }
 
@@ -2530,7 +2309,6 @@ INSTRUCCIONES:
   }
 
   // TEST FANCY — dispara publicarCoverParaPagina SOLO para Fancy by Roxette
-
   if (req.method === 'GET' && req.url === '/test-fancy') {
     const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
     if (!fancyPage) {
@@ -2572,7 +2350,7 @@ INSTRUCCIONES:
     };
     let imagenBuffer = null;
     try {
-      const imgUrl = await getImagenCategoria('MODA', 'fashion woman full body handbag copy space right');
+      const imgUrl = await getImagenCategoria('MODA', 'stylish woman structured handbag fashion');
       if (imgUrl) {
         imagenBuffer = await descargarImagen(imgUrl);
         console.log('[ FancyV2 ] Imagen Pexels obtenida OK');
@@ -2704,43 +2482,6 @@ async function autoPublicarPaginasExtra() {
   console.log('[AutoPublish] Ciclo completado');
 }
 // ── AUTO-PUBLICADOR PASARELA STUDIO — misma hora que páginas extra ──────────
-async function fetchBuf(url) {
-  return descargarImagen(url);
-}
-
-async function publicarFotoBuffer(buffer, caption) {
-  if (!FB_PAGE_TOKEN || !buffer) { console.log('[FB Buffer] Token o buffer faltante'); return null; }
-  const FormData = require('form-data');
-  const form = new FormData();
-  form.append('caption', caption || '');
-  form.append('access_token', FB_PAGE_TOKEN);
-  form.append('source', buffer, { filename: 'cover.png', contentType: 'image/png' });
-  return new Promise((resolve, reject) => {
-    const req = require('https').request({
-      hostname: 'graph.facebook.com',
-      path: '/v19.0/' + FB_PAGE_ID + '/photos',
-      method: 'POST',
-      headers: form.getHeaders(),
-    }, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(d);
-          if (res.statusCode !== 200 || json.error) {
-            console.error('[Pasarela FB] ERROR HTTP', res.statusCode, ':', JSON.stringify(json.error || json));
-            reject(new Error(json.error ? json.error.message : 'HTTP ' + res.statusCode));
-          } else {
-            console.log('[Pasarela FB] ✅ PUBLICADO:', json.id);
-            resolve(json);
-          }
-        } catch(e) { reject(e); }
-      });
-    });
-    req.on('error', reject);
-    form.pipe(req);
-  });
-}
-
 async function autoPublicarPasarela() {
   if (!FB_PAGE_TOKEN) { console.log('[AutoPublish-Pasarela] Sin FB_PAGE_TOKEN — omitiendo'); return; }
   console.log('[AutoPublish-Pasarela] Iniciando publicación editorial...');
@@ -2748,20 +2489,13 @@ async function autoPublicarPasarela() {
     // 1. Tomar noticia del cache RSS (con imagen preferida)
     const pool_noticias = cacheNoticias.length > 0 ? cacheNoticias : [];
     if (pool_noticias.length === 0) { console.log('[AutoPublish-Pasarela] Cache RSS vacío — omitiendo'); return; }
-    // Filtro línea editorial Pasarela: solo moda, belleza, modelaje, tendencias
-    const _KW_MODA = ['moda','fashion','style','estilo','belleza','beauty','model','modelo','runway','pasarela','tendencia','trend','look','outfit','ropa','clothing','lujo','luxury','elegancia','elegance','vogue','couture','diseño','design','temporada','season','coleccion','collection','latina','latin','vestido','dress','zapato','shoe','accesorio','accessory','makeup','maquillaje'];
-    const _noticiasFiltradas = pool_noticias.filter(n => {
-      const txt = (n.titulo + ' ' + (n.descripcion || '')).toLowerCase();
-      return _KW_MODA.some(kw => txt.includes(kw));
-    });
-    const _poolFinal = _noticiasFiltradas.length > 0 ? _noticiasFiltradas : pool_noticias;
-    const conImagen = _poolFinal.filter(n => n.imagen && n.imagen.startsWith('http'));
+    const conImagen = pool_noticias.filter(n => n.imagen && n.imagen.startsWith('http'));
     const noticia = conImagen.length > 0
       ? conImagen[Math.floor(Math.random() * conImagen.length)]
-      : _poolFinal[Math.floor(Math.random() * _poolFinal.length)];
+      : pool_noticias[Math.floor(Math.random() * pool_noticias.length)];
 
-    // 2. Generar artículo editorial con Claude — incluye TITULAR en español para el cover
-    const promptEditorial = 'Escribe un artículo editorial sobre este tema de moda/estilo: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas.\n\nFormato EXACTO de respuesta:\nTITULAR: [título editorial en ESPAÑOL, máx 8 palabras, impactante]\n\n[artículo completo en español]';
+    // 2. Generar artículo editorial con Claude
+    const promptEditorial = 'Escribe un artículo editorial original e inspirador sobre: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas. Voz editorial propia.';
     const payload = JSON.stringify({
       model: 'claude-sonnet-4-6', max_tokens: 900,
       system: 'Eres la editora de PASARELA STUDIO INTERNACIONAL™, escuela de modelaje y elegancia latina de Dallas, TX. Voz sofisticada, empoderada, latina. NUNCA cites fuentes. Primera persona editorial.',
@@ -2774,45 +2508,36 @@ async function autoPublicarPasarela() {
     });
     if (!contenido) throw new Error('Claude sin respuesta');
 
-    // 3. Guardar en DB — contenido limpio (sin markers de Claude)
-    const _contenidoLimpio = contenido
-      .split('\n')
-      .map(p => p.replace(/^TITULAR:\s*/i, '').replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
-      .filter(p => p.length > 0)
-      .join('\n\n');
+    // 3. Guardar en DB
     const slug = generarSlug(noticia.titulo);
     await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
-      [noticia.titulo, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '']);
+      [noticia.titulo, contenido, 'editorial', slug, true, noticia.imagen || '']);
 
     // 4. Generar cover con plantilla aprobada
     const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
     const fechaStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
     let coverBuffer = null;
-    // Diseño magazine editorial — descarga buffer y usa generarCoverBlogArticulo
-    let _imgBuf = null;
     if (noticia.imagen) {
-      try { _imgBuf = await fetchBuf(noticia.imagen); } catch(e) {
-        console.log('[AutoPublish-Pasarela] Imagen RSS no descargable, usando Pexels:', e.message);
-      }
-    }
-    if (!_imgBuf) {
       try {
-        const _imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
-        _imgBuf = await fetchBuf(_imgUrl);
-      } catch(e) { console.error('[AutoPublish-Pasarela] Pexels fallback error:', e.message); }
+        const imgBuf = await fetchBuf(noticia.imagen);
+        coverBuffer = await generarCoverBlogArticulo(imgBuf, noticia.titulo, fechaStr);
+      } catch(e) {
+        console.log('[AutoPublish-Pasarela] Imagen RSS no accesible, usando Pexels:', e.message);
+        const imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
+        coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '), imgUrl);
+      }
+    } else {
+      const imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
+      coverBuffer = await generarCoverPasarela(noticia.titulo.split(' ').slice(0,5).join(' '), imgUrl);
     }
-    // Extraer titular en español generado por Claude
-    // Cover usa el título del blog (mismo que el H1 del post)
-    coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: noticia.titulo, fecha: fechaStr });
 
-    // 5. Caption = mismo contenido limpio que va al blog
-    const caption = _contenidoLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
+    // 5. Caption y publicar
+    const primerParrafo = contenido.split('\n').filter(p => p.trim().length > 40)[0] || contenido.substring(0, 350);
+    const caption = primerParrafo.trim() + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion #EleganciaLatina #ModelajeLatino';
     const fbRes = await publicarFotoBuffer(coverBuffer, caption);
     console.log('[AutoPublish-Pasarela] ✅ Publicado:', noticia.titulo, '| FB ID:', fbRes?.id || fbRes);
-    return { ok: true, titulo: noticia.titulo, facebook_id: fbRes?.id || null, error: null };
   } catch(e) {
     console.error('[AutoPublish-Pasarela] Error:', e.message);
-    return { ok: false, titulo: null, facebook_id: null, error: e.message };
   }
 }
 
