@@ -1427,6 +1427,41 @@ Face MUST be visible and expressive.`;
 }
 
 
+
+// ── FANCY HUMAN STRATEGY — constantes de arquitectura (no conectado aún) ────
+const FANCY_HUMAN_STRATEGY = Object.freeze({
+  ROXETTE:       'ROXETTE',
+  GENERIC_MODEL: 'GENERIC_MODEL',
+  NO_MODEL:      'NO_MODEL'
+});
+
+// ── ROXETTE REFERENCE — FASE 1 ───────────────────────────────────────────────
+// getRoxetteReferences(): localiza y valida las referencias reales de Roxette.
+// AISLADA — no llama OpenAI, no modifica estado global, no genera imágenes.
+function getRoxetteReferences() {
+  const _path = require('path');
+  const _fs   = require('fs');
+  const basePath = _path.join(__dirname, 'assets', 'fancy', 'roxette');
+  const expected = ['reference-01.jpg', 'reference-02.jpg', 'reference-03.jpg'];
+  const result = { ok: false, count: 0, files: [], missing: [] };
+  for (const file of expected) {
+    const fullPath = _path.join(basePath, file);
+    if (_fs.existsSync(fullPath)) {
+      result.files.push(file);
+      result.count++;
+    } else {
+      result.missing.push(file);
+      console.log('[ RoxetteRef ] FALTA archivo:', file);
+    }
+  }
+  result.ok = result.missing.length === 0;
+  if (!result.ok) {
+    console.log('[ RoxetteRef ] Referencias incompletas. Faltantes:', result.missing);
+  }
+  return result;
+}
+
+
 async function generarCoverTrabajando(branding, gancho) {
   const canvas   = createCanvas(1080, 1080);
   const ctx      = canvas.getContext('2d');
@@ -2743,6 +2778,27 @@ INSTRUCCIONES:
 
 
   // TEST AMAZON FANCY — SOLO LOGS, NO PUBLICA NADA
+
+  if (req.method === 'GET' && req.url === '/test-roxette-reference') {
+    try {
+      const refs = getRoxetteReferences();
+      const status = refs.ok ? 200 : 503;
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ok:      refs.ok,
+        count:   refs.count,
+        files:   refs.files,
+        missing: refs.missing.length > 0 ? refs.missing : undefined
+      }));
+    } catch (err) {
+      console.log('[ RoxetteRef ] Error en /test-roxette-reference:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
+    }
+    return;
+  }
+
+
   if (req.method === 'GET' && req.url === '/test-amazon-fancy') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ mensaje: 'Consultando Amazon Creators API — ver logs Railway para resultado' }));
