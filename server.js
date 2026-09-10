@@ -1461,6 +1461,122 @@ function getRoxetteReferences() {
   return result;
 }
 
+// ── ROXETTE_REFERENCE FASE 2 — Escena con identidad visual real ──────────────
+// generarEscenaRoxetteAI: genera escena lifestyle usando las fotos reales de Roxette
+// como referencias visuales de identidad vía OpenAI Image Editing.
+// COMPLETAMENTE AISLADA — no modifica getRoxetteReferences(), ni FANCY_STATE, ni producción.
+async function generarEscenaRoxetteAI({ category, visualFamily, editorialType, intention, searchTerm }) {
+  const _path = require('path');
+  const _fs   = require('fs');
+
+  try {
+    // ── 1. Verificar referencias ──────────────────────────────────────────────
+    const refs = getRoxetteReferences();
+    if (!refs.ok) {
+      console.log('[ RoxetteAI ] Referencias incompletas — abortando. Faltantes:', refs.missing);
+      return null;
+    }
+    console.log('[ RoxetteAI ] Referencias OK:', refs.count, 'archivos');
+
+    // ── 2. Cargar imágenes de referencia ──────────────────────────────────────
+    const FormData = require('form-data');
+    const basePath  = _path.join(__dirname, 'assets', 'fancy', 'roxette');
+    const form      = new FormData();
+
+    const scenePrompt = `You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle brand.
+
+VISUAL FAMILY: ${visualFamily}
+EDITORIAL TYPE: ${editorialType}
+CATEGORY: ${category}
+INTENTION: ${intention}
+SEARCH TERM: ${searchTerm}
+
+IDENTITY DIRECTION — ROXETTE_REFERENCE:
+The reference images show the real identity of Roxette — the brand face.
+Recreate her visual identity faithfully:
+- Her face structure, skin tone, and facial features must be recognizable
+- Brown hair with natural highlights, as in the references
+- Natural glam makeup similar to the references
+- Confident, relaxed, genuinely happy expression
+- Eyes open and clearly visible
+- Complete face fully inside the frame — no cropping of head or neck
+
+SCENE — URBAN LIFESTYLE EDITORIAL:
+Roxette is seated or naturally interacting at a bright, elegant urban café terrace.
+Warm daylight, luminous, real environment — not a studio.
+Visible street, architectural depth, greenery or open-air terrace feeling.
+
+OUTFIT:
+Cream blazer, light top, jeans, subtle gold accessories.
+
+PRODUCT:
+She carries a structured fuchsia handbag — generic, no logos, no brand marks.
+The bag is part of her overall look, not the center of the composition.
+
+COMPOSITION:
+Square format. Roxette positioned naturally in center or right area.
+Leave 30–40% of natural photographic space on the LEFT — derived from the environment:
+blurred architecture, open sky, soft-focus background, café depth.
+NOT an artificial empty panel. Three-dimensional depth with natural bokeh.
+
+COLOR & ENERGY:
+Warm, bright natural daylight. Rich, luminous, not flat.
+Feminine, aspirational, editorial, scroll-stopping.
+
+ABSOLUTE PROHIBITIONS:
+NO text. NO logos. NO watermarks. NO brand names.
+NO studio background. NO flat monocolor wall. NO split screen.
+FACE MUST BE FULLY VISIBLE — identity over composition.`;
+
+    form.append('model', 'gpt-image-1');
+    form.append('prompt', scenePrompt);
+    form.append('n', '1');
+    form.append('size', '1024x1024');
+    form.append('quality', 'high');
+
+    for (const filename of refs.files) {
+      const fullPath = _path.join(basePath, filename);
+      const imgBuf   = _fs.readFileSync(fullPath);
+      form.append('image[]', imgBuf, { filename: filename, contentType: 'image/jpeg' });
+      console.log('[ RoxetteAI ] Referencia cargada:', filename, imgBuf.length, 'bytes');
+    }
+
+    // ── 3. Llamar OpenAI Image Editing ────────────────────────────────────────
+    console.log('[ RoxetteAI ] Enviando a OpenAI /v1/images/edits...');
+    const r = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY,
+        ...form.getHeaders()
+      },
+      body: form
+    });
+
+    const j = await r.json();
+
+    if (!j.data || !j.data[0] || !j.data[0].b64_json) {
+      console.log('[ RoxetteAI ] OpenAI no devolvio b64_json. Respuesta:', JSON.stringify(j).slice(0, 300));
+      return null;
+    }
+
+    const buf = Buffer.from(j.data[0].b64_json, 'base64');
+
+    if (buf.slice(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+      console.log('[ RoxetteAI ] Buffer recibido no es PNG valido.');
+      return null;
+    }
+
+    console.log('[ RoxetteAI ] Escena con identidad Roxette generada. Tamano:', buf.length, 'bytes');
+    return buf;
+
+  } catch (err) {
+    console.log('[ RoxetteAI ] Error en generarEscenaRoxetteAI:', err.message);
+    return null;
+  }
+}
+
+
+
 
 async function generarCoverTrabajando(branding, gancho) {
   const canvas   = createCanvas(1080, 1080);
@@ -2797,6 +2913,37 @@ INSTRUCCIONES:
     }
     return;
   }
+
+  if (req.method === 'GET' && req.url === '/test-fancy-roxette-scene') {
+    try {
+      console.log('[ test-fancy-roxette-scene ] Iniciando prueba FASE 2 — identidad visual Roxette');
+
+      const escenaBuffer = await generarEscenaRoxetteAI({
+        category:      'fashion / handbags / accessories',
+        visualFamily:  'STYLE_LIFESTYLE',
+        editorialType: 'STYLE_IT',
+        intention:     'style transformation / discovery',
+        searchTerm:    'structured handbag for everyday outfits'
+      });
+
+      if (!escenaBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteAI devolvio null. Revisar logs Railway.' }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(escenaBuffer);
+
+    } catch (err) {
+      console.log('[ test-fancy-roxette-scene ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+
 
 
   if (req.method === 'GET' && req.url === '/test-amazon-fancy') {
