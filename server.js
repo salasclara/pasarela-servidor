@@ -1334,17 +1334,57 @@ CATEGORY: ${category}
 INTENTION: ${intention}
 SEARCH TERM: ${searchTerm}
 
-Generate a photographic scene with these properties:
-- Style: Editorial lifestyle photography, natural light, warm tones, cream and white backgrounds preferred
-- Subject: ${searchTerm}
-- Mood: aspirational, modern, feminine elegance — never clinical or catalog-flat
-- Composition: leave generous space on the LEFT THIRD of the frame for brand text overlay (soft background, no busy detail on the left)
-- No text, no logos, no watermarks in the image
-- Format: square 1:1, full bleed
-- Lighting: soft directional, golden hour or studio-natural
-- Color palette: creams, warm whites, blush tones, occasional fuchsia or yellow accent object
-- Do NOT include people's faces — hands, body details, flat-lay or object-hero compositions preferred
-Output: a vivid present-tense image generation prompt describing the scene directly.`;
+SCENE DIRECTION — STYLE_LIFESTYLE ITERATION 2:
+
+Create a PREMIUM LIFESTYLE EDITORIAL PHOTOGRAPH.
+Style reference: fashion magazine meets social commerce. Bright, luminous, warm natural daylight.
+
+SUBJECT:
+A stylish adult woman, naturally beautiful, with her face CLEARLY VISIBLE.
+Three-quarter shot preferred. Relaxed, happy expression. Natural pose.
+She is interacting authentically with her environment — not posing for a catalog.
+Contemporary outfit, accessible yet aspirational.
+
+PRODUCT:
+She carries or holds a structured handbag — attractive, generic, no logos or brand marks.
+The bag feels integrated into her life and look, not presented as an isolated product.
+
+ENVIRONMENT — choose one real lifestyle setting:
+- A bright urban café with warm interior light and architectural depth
+- An elegant outdoor terrace with natural greenery
+- A lively modern street with interesting background depth
+- An attractive commercial or shopping zone, open-air
+- A luminous urban exterior with architecture and sky
+
+STRICTLY AVOID: white or beige studio backdrop, monochromaticminimalist background, ecommerce catalog appearance, split-screen layout.
+
+COLOR & ENERGY:
+The image must feel luminous, fresh, optimistic, scroll-stopping.
+Warm but NOT beige. Natural but NOT flat.
+Organically incorporate small Fancy brand-compatible accent elements — fuchsia / hot pink, yellow, cream, white, or black — through:
+  - the bag color (fuchsia or structured neutral)
+  - flowers, café props, architectural detail, outfit accent
+Do NOT tint the entire photograph fuchsia or yellow.
+
+COMPOSITION:
+Full photographic canvas. Editorial asymmetric composition.
+Woman + product integrated naturally in center or right area.
+Leave NATURAL negative space for brand headline — derived from the environment itself:
+  wall, blurred architecture, open sky, luminous facade, depth of field.
+Do NOT create an artificial empty panel.
+The image must have three-dimensional depth: foreground + subject + background.
+Use natural photographic depth of field — background softly bokeh.
+
+AESTHETIC KEYWORDS:
+premium lifestyle editorial, fashion editorial, social commerce, bright natural daylight,
+warm fresh luminous, optimistic, stylish, approachable, commercially attractive, scroll-stopping,
+feminine energy, real life, joyful, aspirational
+
+ABSOLUTE RESTRICTIONS:
+NO text. NO logos. NO watermarks. NO brand names. NO monograms.
+NO split screen. NO canva-style template layout. NO ecommerce catalog look.
+NO beige studio. NO monochromaticbackground. NO disembodied hands only.
+Face MUST be visible and expressive.`;
 
     const body = JSON.stringify({
       model: 'gpt-image-1',
