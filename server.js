@@ -1479,9 +1479,9 @@ async function generarEscenaRoxetteAI({ category, visualFamily, editorialType, i
     console.log('[ RoxetteAI ] Referencias OK:', refs.count, 'archivos');
 
     // ── 2. Cargar imágenes de referencia ──────────────────────────────────────
-    const FormData = require('form-data');
+    const { Blob } = require('buffer');
     const basePath  = _path.join(__dirname, 'assets', 'fancy', 'roxette');
-    const form      = new FormData();
+    const form      = new FormData(); // native FormData — Node 18+
 
     const scenePrompt = `You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle brand.
 
@@ -1537,7 +1537,8 @@ FACE MUST BE FULLY VISIBLE — identity over composition.`;
     for (const filename of refs.files) {
       const fullPath = _path.join(basePath, filename);
       const imgBuf   = _fs.readFileSync(fullPath);
-      form.append('image[]', imgBuf, { filename: filename, contentType: 'image/jpeg' });
+      const blob     = new Blob([imgBuf], { type: 'image/jpeg' });
+      form.append('image[]', blob, filename);
       console.log('[ RoxetteAI ] Referencia cargada:', filename, imgBuf.length, 'bytes');
     }
 
@@ -1546,8 +1547,8 @@ FACE MUST BE FULLY VISIBLE — identity over composition.`;
     const r = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY,
-        ...form.getHeaders()
+        'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
+        // Content-Type con boundary lo fija native fetch automaticamente
       },
       body: form
     });
