@@ -1582,6 +1582,123 @@ NO ecommerce catalog look.`;
 }
 
 
+// ── ROXETTE_REFERENCE FASE 2 — MASTER B: BEAUTY FIND ─────────────────────────
+// generarEscenaRoxetteBeautyAI: genera escena beauty usando las fotos reales de Roxette.
+// COMPLETAMENTE AISLADA — no modifica generarEscenaRoxetteAI(), ni FANCY_STATE, ni producción.
+async function generarEscenaRoxetteBeautyAI() {
+  const _path = require('path');
+  const _fs   = require('fs');
+
+  try {
+    // ── 1. Verificar referencias ──────────────────────────────────────────────
+    const refs = getRoxetteReferences();
+    if (!refs.ok) {
+      console.log('[ RoxetteBeautyAI ] Referencias incompletas — abortando. Faltantes:', refs.missing);
+      return null;
+    }
+    console.log('[ RoxetteBeautyAI ] Referencias OK:', refs.count, 'archivos');
+
+    // ── 2. Cargar imágenes de referencia ──────────────────────────────────────
+    const { Blob } = require('buffer');
+    const basePath  = _path.join(__dirname, 'assets', 'fancy', 'roxette');
+    const form      = new FormData(); // native FormData — Node 18+
+
+    const beautyPrompt = `Create a highly photorealistic beauty lifestyle editorial photograph
+using the provided photographs as the primary identity references for the woman.
+
+IDENTITY — PRESERVE THE PERSON, CHANGE THE SCENE:
+The reference images show the person whose identity must be preserved.
+Treat them as identity references, not as inspiration for a similar-looking model.
+This must look like the same person photographed during a new beauty lifestyle moment.
+Preserve her distinctive facial appearance, facial proportions, hair, skin appearance,
+and recognizable visual characteristics.
+Do not redesign, reinterpret, or idealize her face.
+Do not substitute another woman with similar coloring or styling.
+Identity preservation has absolute priority over art direction and styling.
+
+SCENE — BEAUTY VANITY EDITORIAL:
+Place her at a bright, sophisticated contemporary vanity or beauty dressing area.
+Warm natural window light from the side. Modern feminine interior.
+Cream, white, and soft warm neutral environment.
+Small fuchsia or yellow accents may naturally appear through flowers, a compact, or decor detail.
+Premium beauty editorial photography. Luminous, modern, feminine, aspirational, approachable.
+NOT dark luxury. NOT ecommerce catalog. NOT beauty-store advertisement.
+
+ACTION:
+Choose ONE natural action — applying blush with a makeup brush,
+OR holding a generic compact while glancing naturally,
+OR finishing her makeup with a relaxed, confident expression.
+Do not create an exaggerated influencer pose.
+Expression: natural, confident, warm, authentic.
+
+BEAUTY PRODUCTS:
+All beauty products visible must be completely generic — no brand logos, no product names,
+no recognizable cosmetics brand, no text on packaging.
+Visual and category representations only.
+
+COMPOSITION — ASYMMETRIC RIGHT:
+Square format 1:1.
+Subject positioned in the RIGHT 60–65% of the frame.
+LEFT 35–40%: natural photographic negative space from the environment —
+vanity surface, mirror edge, soft products, flowers, interior depth, window light, bokeh.
+This left space must remain calm and uncluttered for future Fancy brand typography.
+Do NOT center the subject. Do NOT create split screen. Do NOT create artificial blank panels.
+
+ABSOLUTE PROHIBITIONS:
+NO text. NO logos. NO watermarks. NO brand names. NO labels.
+NO graphic overlays. NO split screen. NO ecommerce catalog look.
+NO dark or dramatic lighting — this is bright beauty editorial.
+Full face clearly visible. Complete head visible. Eyes visible.
+Do not convert this into a close-up portrait.`;
+
+    form.append('model', 'gpt-image-1');
+    form.append('prompt', beautyPrompt);
+    form.append('n', '1');
+    form.append('size', '1024x1024');
+    form.append('quality', 'high');
+
+    for (const filename of refs.files) {
+      const fullPath = _path.join(basePath, filename);
+      const imgBuf   = _fs.readFileSync(fullPath);
+      const blob     = new Blob([imgBuf], { type: 'image/jpeg' });
+      form.append('image[]', blob, filename);
+      console.log('[ RoxetteBeautyAI ] Referencia cargada:', filename, imgBuf.length, 'bytes');
+    }
+
+    // ── 3. Llamar OpenAI Image Editing ────────────────────────────────────────
+    console.log('[ RoxetteBeautyAI ] Enviando a OpenAI /v1/images/edits...');
+    const r = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
+        // Content-Type con boundary lo fija native fetch automaticamente
+      },
+      body: form
+    });
+
+    const j = await r.json();
+
+    if (!j.data || !j.data[0] || !j.data[0].b64_json) {
+      console.log('[ RoxetteBeautyAI ] OpenAI no devolvio b64_json. Respuesta:', JSON.stringify(j).slice(0, 300));
+      return null;
+    }
+
+    const buf = Buffer.from(j.data[0].b64_json, 'base64');
+
+    if (buf.slice(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+      console.log('[ RoxetteBeautyAI ] Buffer recibido no es PNG valido.');
+      return null;
+    }
+
+    console.log('[ RoxetteBeautyAI ] Beauty scene generada. Tamano:', buf.length, 'bytes');
+    return buf;
+
+  } catch (err) {
+    console.log('[ RoxetteBeautyAI ] Error en generarEscenaRoxetteBeautyAI:', err.message);
+    return null;
+  }
+}
+
 async function generarCoverTrabajando(branding, gancho) {
   const canvas   = createCanvas(1080, 1080);
   const ctx      = canvas.getContext('2d');
@@ -2946,6 +3063,30 @@ INSTRUCCIONES:
     }
     return;
   }
+
+  if (req.method === 'GET' && req.url === '/test-fancy-roxette-beauty') {
+    try {
+      console.log('[ test-fancy-roxette-beauty ] Iniciando prueba MASTER B — Beauty Find');
+
+      const beautyBuffer = await generarEscenaRoxetteBeautyAI();
+
+      if (!beautyBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteBeautyAI devolvio null. Revisar logs Railway.' }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(beautyBuffer);
+
+    } catch (err) {
+      console.log('[ test-fancy-roxette-beauty ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
 
 
 
