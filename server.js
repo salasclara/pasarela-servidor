@@ -1534,7 +1534,7 @@ NO text. NO logos. NO watermarks. NO brand names. NO labels.
 NO studio background. NO flat monocolor wall. NO split screen. NO artificial panels.
 NO ecommerce catalog look.`;
 
-    form.append('model', 'gpt-image-1');
+    form.append('model', 'gpt-image-2');
     form.append('prompt', scenePrompt);
     form.append('n', '1');
     form.append('size', '1024x1024');
