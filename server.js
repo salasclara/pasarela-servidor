@@ -1935,8 +1935,8 @@ She should be interacting naturally with the room — NOT simply standing and po
 The visual story communicates: a small detail can transform a space.
 
 ROXETTE WARDROBE:
-Modern casual-chic clothing suitable for home lifestyle content.
-Cream or white blouse or top, well-fitted jeans or neutral trousers, subtle gold accessories.
+Elegant casual clothing appropriate for a home lifestyle editorial.
+Cream or white blouse or top, straight-leg jeans or tailored trousers, subtle gold accessories.
 Do NOT use the exact cream blazer and structured fuchsia handbag from previous scenes.
 This must visually feel like a DIFFERENT Fancy story.
 
