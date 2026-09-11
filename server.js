@@ -1435,6 +1435,187 @@ const FANCY_HUMAN_STRATEGY = Object.freeze({
   NO_MODEL:      'NO_MODEL'
 });
 
+
+// ── FANCY VISUAL FAMILY ───────────────────────────────────────────────────────
+const FANCY_VISUAL_FAMILY = Object.freeze({
+  STYLE_LIFESTYLE: 'STYLE_LIFESTYLE',
+  BEAUTY_FIND:     'BEAUTY_FIND',
+  HOME_FIND:       'HOME_FIND',
+  TECH_LIFESTYLE:  'TECH_LIFESTYLE'
+});
+
+// ── FANCY VISUAL DIRECTOR v1 ──────────────────────────────────────────────────
+// Función pura: recibe contexto editorial, devuelve decisión visual estructurada.
+// NO llama OpenAI. NO modifica estado global. NO accede a filesystem.
+// NO genera imágenes. Serializable y sin efectos secundarios.
+//
+// recentVisuals: array de decisiones previas { humanStrategy, sceneType, visualFamily }
+// Solo INPUT — no escribe nada, FANCY_STATE intacto.
+function dirigirVisualFancy({ editorialType, category, intention, searchTerm, recentVisuals = [] }) {
+
+  // ── 1. Determinar familia visual ──────────────────────────────────────────
+  const cat = (category || '').toLowerCase();
+  const et  = (editorialType || '').toUpperCase();
+  const st  = (searchTerm || '').toLowerCase();
+
+  let visualFamily = 'STYLE_LIFESTYLE';
+
+  if (et === 'BEAUTY_FIND' || cat.includes('beauty') || cat.includes('makeup') ||
+      cat.includes('skincare') || cat.includes('cosmetic')) {
+    visualFamily = 'BEAUTY_FIND';
+  } else if (et === 'HOME_FIND' || cat.includes('home') || cat.includes('decor') ||
+             cat.includes('organization') || cat.includes('kitchen') || cat.includes('living')) {
+    visualFamily = 'HOME_FIND';
+  } else if (et === 'TECH_LIFESTYLE' || cat.includes('tech') || cat.includes('laptop') ||
+             cat.includes('gadget') || cat.includes('productivity') || cat.includes('headphone')) {
+    visualFamily = 'TECH_LIFESTYLE';
+  }
+
+  // ── 2. Pools de escenas por familia ──────────────────────────────────────
+  const SCENE_POOLS = {
+    STYLE_LIFESTYLE: [
+      'URBAN_CAFE', 'CITY_WALK', 'MIRROR_STYLE',
+      'CLOSET_MOMENT', 'ACCESSORY_DETAIL', 'EDITORIAL_FLATLAY'
+    ],
+    BEAUTY_FIND: [
+      'VANITY_RITUAL', 'MORNING_SKINCARE', 'MAKEUP_DETAIL',
+      'BEAUTY_DESK', 'PRODUCT_TEXTURE', 'EDITORIAL_FLATLAY'
+    ],
+    HOME_FIND: [
+      'LIVING_ROOM_DETAIL', 'CONSOLE_STYLING', 'KITCHEN_DISCOVERY',
+      'COZY_CORNER', 'DECOR_DETAIL', 'ORGANIZATION'
+    ],
+    TECH_LIFESTYLE: [
+      'HOME_OFFICE', 'MOBILE_PRODUCTIVITY', 'CREATIVE_DESK',
+      'TRAVEL_TECH', 'TECH_FLATLAY', 'SMART_HOME_DETAIL'
+    ]
+  };
+
+  // ── 3. Anti-repetición: escenas recientes usadas ──────────────────────────
+  const recentScenes    = recentVisuals.map(function(v) { return v.sceneType || ''; });
+  const recentFamilies  = recentVisuals.map(function(v) { return v.visualFamily || ''; });
+  const recentStrategies = recentVisuals.slice(0, 3).map(function(v) { return v.humanStrategy || ''; });
+
+  const pool = SCENE_POOLS[visualFamily] || SCENE_POOLS['STYLE_LIFESTYLE'];
+  const available = pool.filter(function(s) { return recentScenes.indexOf(s) === -1; });
+  const scenePool = available.length > 0 ? available : pool;
+
+  // Elegir escena: determinista por hash de searchTerm (sin random, reproducible)
+  const stHash = (st + et).split('').reduce(function(acc, c) { return acc + c.charCodeAt(0); }, 0);
+  const sceneType = scenePool[stHash % scenePool.length];
+
+  // ── 4. Determinar humanStrategy ───────────────────────────────────────────
+  // Regla 1: si las últimas 2 fueron ROXETTE → forzar variación
+  const lastTwoRoxette = recentStrategies.length >= 2 &&
+    recentStrategies[0] === 'ROXETTE' && recentStrategies[1] === 'ROXETTE';
+
+  // Regla 2: preferencias por familia
+  // HOME_FIND:    prefiere NO_MODEL o ROXETTE (no generic)
+  // TECH_LIFESTYLE: prefiere ROXETTE o NO_MODEL
+  // BEAUTY_FIND:  los 3 válidos, ligera preferencia ROXETTE
+  // STYLE_LIFESTYLE: los 3 válidos
+
+  // Distribución base por familia (índice: 0=ROXETTE, 1=GENERIC_MODEL, 2=NO_MODEL)
+  const STRATEGY_WEIGHTS = {
+    STYLE_LIFESTYLE: ['ROXETTE', 'NO_MODEL', 'GENERIC_MODEL', 'NO_MODEL', 'NO_MODEL', 'GENERIC_MODEL'],
+    BEAUTY_FIND:     ['ROXETTE', 'NO_MODEL', 'ROXETTE', 'GENERIC_MODEL', 'NO_MODEL', 'NO_MODEL'],
+    HOME_FIND:       ['NO_MODEL', 'ROXETTE', 'NO_MODEL', 'NO_MODEL', 'ROXETTE', 'NO_MODEL'],
+    TECH_LIFESTYLE:  ['ROXETTE', 'NO_MODEL', 'ROXETTE', 'NO_MODEL', 'NO_MODEL', 'GENERIC_MODEL']
+  };
+
+  const weights = STRATEGY_WEIGHTS[visualFamily] || STRATEGY_WEIGHTS['STYLE_LIFESTYLE'];
+  let humanStrategy = weights[stHash % weights.length];
+
+  // Aplicar regla anti-repetición
+  if (lastTwoRoxette && humanStrategy === 'ROXETTE') {
+    humanStrategy = (visualFamily === 'TECH_LIFESTYLE' || visualFamily === 'HOME_FIND')
+      ? 'NO_MODEL'
+      : (stHash % 2 === 0 ? 'NO_MODEL' : 'GENERIC_MODEL');
+  }
+
+  // ── 5. Detalles de escena por tipo ────────────────────────────────────────
+  const SCENE_DETAILS = {
+    // STYLE
+    URBAN_CAFE:        { environment: 'bright open-air urban cafe terrace, warm daylight', action: 'seated naturally with coffee, interacting with environment', primaryObject: 'structured handbag or fashion accessory' },
+    CITY_WALK:         { environment: 'elegant city street, warm afternoon light', action: 'walking naturally, confident stride', primaryObject: 'handbag or fashion detail' },
+    MIRROR_STYLE:      { environment: 'stylish dressing room or boutique mirror area', action: 'checking style naturally in mirror', primaryObject: 'outfit or accessory being evaluated' },
+    CLOSET_MOMENT:     { environment: 'bright organized feminine closet', action: 'selecting an item from closet naturally', primaryObject: 'fashion item or accessory' },
+    ACCESSORY_DETAIL:  { environment: 'clean editorial surface, natural soft light', action: 'no person — editorial flat lay', primaryObject: 'accessory or fashion item, styled editorially' },
+    // BEAUTY
+    VANITY_RITUAL:     { environment: 'bright contemporary vanity, warm window light', action: 'applying blush or finishing makeup naturally', primaryObject: 'generic beauty compact or brush' },
+    MORNING_SKINCARE:  { environment: 'bright modern bathroom or vanity, morning light', action: 'applying skincare product gently', primaryObject: 'generic skincare bottle or serum' },
+    MAKEUP_DETAIL:     { environment: 'close editorial beauty scene, soft diffused light', action: 'precise makeup application', primaryObject: 'generic makeup product' },
+    BEAUTY_DESK:       { environment: 'styled beauty desk, feminine aesthetic', action: 'organizing or selecting beauty products', primaryObject: 'curated beauty product arrangement' },
+    PRODUCT_TEXTURE:   { environment: 'clean bright editorial surface', action: 'no person — beauty product flat lay', primaryObject: 'beauty product with texture detail' },
+    // HOME
+    LIVING_ROOM_DETAIL: { environment: 'bright contemporary living room, natural daylight', action: 'finishing a small decorating moment naturally', primaryObject: 'generic decorative object or vase with flowers' },
+    CONSOLE_STYLING:   { environment: 'elegant console table area, natural light', action: 'arranging a decorative vase or object on console', primaryObject: 'generic decorative vase or sculpture' },
+    KITCHEN_DISCOVERY: { environment: 'bright modern kitchen, warm daylight', action: 'discovering or using a useful kitchen item', primaryObject: 'generic kitchen or home organization item' },
+    COZY_CORNER:       { environment: 'warm reading nook or cozy living corner', action: 'settling into a cozy moment naturally', primaryObject: 'soft textile, candle, or decorative detail' },
+    DECOR_DETAIL:      { environment: 'beautiful home interior, editorial angle', action: 'no person — styled home object flat lay', primaryObject: 'decorative home object editorially styled' },
+    ORGANIZATION:      { environment: 'organized bright home shelf or drawer', action: 'placing or organizing items naturally', primaryObject: 'generic organization item or storage solution' },
+    // TECH
+    HOME_OFFICE:       { environment: 'bright contemporary home-office, natural window light', action: 'naturally using laptop, typing or reviewing screen', primaryObject: 'generic modern laptop' },
+    MOBILE_PRODUCTIVITY: { environment: 'stylish workspace or cafe, bright light', action: 'working on phone and laptop simultaneously', primaryObject: 'generic smartphone and laptop' },
+    CREATIVE_DESK:     { environment: 'creative feminine workspace, warm natural light', action: 'working at desk, focused and engaged', primaryObject: 'generic laptop with notebook and accessories' },
+    TRAVEL_TECH:       { environment: 'bright airport lounge or hotel workspace', action: 'working efficiently while traveling', primaryObject: 'generic laptop and earbuds' },
+    TECH_FLATLAY:      { environment: 'clean editorial surface, soft natural light', action: 'no person — tech items editorial flat lay', primaryObject: 'generic tech objects styled editorially' },
+    SMART_HOME_DETAIL: { environment: 'modern bright living space', action: 'naturally interacting with a smart home device', primaryObject: 'generic smart speaker or home device' }
+  };
+
+  const details = SCENE_DETAILS[sceneType] || {
+    environment: 'bright contemporary editorial space, natural daylight',
+    action: 'natural lifestyle moment',
+    primaryObject: 'generic lifestyle object'
+  };
+
+  // ── 6. Wardrobe por humanStrategy y familia ───────────────────────────────
+  const WARDROBE = {
+    STYLE_LIFESTYLE: 'cream blazer or chic neutral jacket, elegant jeans or trousers, subtle gold accessories',
+    BEAUTY_FIND:     'feminine neutral top or blouse, simple styling, hair down or effortless, natural glam makeup',
+    HOME_FIND:       'cream or white blouse, straight-leg jeans or tailored trousers, subtle gold accessories',
+    TECH_LIFESTYLE:  'light neutral blouse or fitted top, straight-leg jeans or casual trousers, subtle gold accessories'
+  };
+
+  const wardrobeDirection = humanStrategy === 'NO_MODEL'
+    ? 'no person in frame — editorial object styling'
+    : (WARDROBE[visualFamily] || WARDROBE['STYLE_LIFESTYLE']);
+
+  // ── 7. Visual labels por familia ──────────────────────────────────────────
+  const VISUAL_LABELS = {
+    STYLE_LIFESTYLE: 'STYLE IT',
+    BEAUTY_FIND:     'BEAUTY FIND',
+    HOME_FIND:       'HOME FIND',
+    TECH_LIFESTYLE:  'TECH LIFESTYLE'
+  };
+
+  // ── 8. Razón editorial ────────────────────────────────────────────────────
+  const REASONS = {
+    ROXETTE:       'Recurring brand face reinforces Fancy editorial identity and personal discovery voice',
+    GENERIC_MODEL: 'Generic lifestyle model provides fresh visual variety while maintaining editorial quality',
+    NO_MODEL:      'Editorial object scene allows product/category to breathe — cleaner and more versatile for overlay'
+  };
+
+  // ── 9. Ensamble de la decisión visual ────────────────────────────────────
+  return {
+    visualFamily:      visualFamily,
+    humanStrategy:     humanStrategy,
+    sceneType:         sceneType,
+    action:            humanStrategy === 'NO_MODEL' ? 'no person — editorial styling' : details.action,
+    environment:       details.environment,
+    composition:       'SUBJECT_RIGHT_NEGATIVE_LEFT',
+    cameraAngle:       sceneType.includes('FLATLAY') ? 'top-down editorial' : 'medium editorial lifestyle',
+    wardrobeDirection: wardrobeDirection,
+    primaryObject:     details.primaryObject,
+    lightingMood:      'bright natural window light, warm and luminous',
+    negativeSpace:     'LEFT',
+    visualLabel:       VISUAL_LABELS[visualFamily] || 'STYLE IT',
+    modeA:             true,
+    reason:            REASONS[humanStrategy] || REASONS['NO_MODEL']
+  };
+}
+
+
 // ── ROXETTE REFERENCE — FASE 1 ───────────────────────────────────────────────
 // getRoxetteReferences(): localiza y valida las referencias reales de Roxette.
 // AISLADA — no llama OpenAI, no modifica estado global, no genera imágenes.
@@ -3398,6 +3579,31 @@ INSTRUCCIONES:
 
 
 
+
+
+  if (req.method === 'GET' && req.url === '/test-fancy-visual-director') {
+    try {
+      const scenarios = [
+        { editorialType: 'STYLE_LIFESTYLE', category: 'fashion accessories', intention: 'product discovery', searchTerm: 'structured handbag' },
+        { editorialType: 'BEAUTY_FIND',     category: 'skincare beauty',     intention: 'beauty find',       searchTerm: 'vitamin c serum' },
+        { editorialType: 'HOME_FIND',       category: 'home decor',          intention: 'home find',         searchTerm: 'ceramic vase' },
+        { editorialType: 'TECH_LIFESTYLE',  category: 'laptop productivity',  intention: 'tech lifestyle',    searchTerm: 'wireless headphones' }
+      ];
+      const recentVisuals = [];
+      const results = scenarios.map(function(s) {
+        const decision = dirigirVisualFancy(Object.assign({}, s, { recentVisuals: recentVisuals }));
+        recentVisuals.push(decision);
+        return { input: s, decision: decision };
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, director: 'FANCY VISUAL DIRECTOR v1', tests: results }, null, 2));
+    } catch (err) {
+      console.log('[ test-fancy-visual-director ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
 
   if (req.method === 'GET' && req.url === '/test-amazon-fancy') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
