@@ -1371,11 +1371,11 @@ async function generarCoverFancyV3({
   // ── CAPA 2: DEGRADADO CREMA LOCALIZADO — NO panel solido ────────────────
   // Ocupa ~39% del canvas con fade progresivo. Foto visible desde el primer tercio.
   // DIFERENCIA CLAVE vs V2: V2 usaba fillRect solido hasta x=490. V3 es degradado suave.
-  const GRAD_END  = 420;
+  const GRAD_END  = 380;
   const softGrad  = ctx.createLinearGradient(0, 0, GRAD_END, 0);
-  softGrad.addColorStop(0,    'rgba(255,248,241,0.90)');
-  softGrad.addColorStop(0.50, 'rgba(255,248,241,0.65)');
-  softGrad.addColorStop(0.80, 'rgba(255,248,241,0.25)');
+  softGrad.addColorStop(0,    'rgba(255,248,241,0.68)');
+  softGrad.addColorStop(0.45, 'rgba(255,248,241,0.38)');
+  softGrad.addColorStop(0.75, 'rgba(255,248,241,0.08)');
   softGrad.addColorStop(1,    'rgba(255,248,241,0)');
   ctx.fillStyle = softGrad;
   ctx.fillRect(0, 0, GRAD_END, 1080);
@@ -1409,7 +1409,7 @@ async function generarCoverFancyV3({
     ctx.shadowBlur  = 4;
     ctx.font        = 'bold 38px Roboto';
     ctx.fillStyle   = BLACK;
-    ctx.fillText('FANCY♥', MARGIN, MARGIN + 44);
+    ctx.fillText('FANCY', MARGIN, MARGIN + 44);
     ctx.font        = '14px Roboto';
     ctx.fillStyle   = '#666666';
     ctx.fillText('by ROXETTE', MARGIN, MARGIN + 64);
@@ -1448,7 +1448,7 @@ async function generarCoverFancyV3({
 
   var headSize  = 72;
   var headLines = wrapHead(headSize);
-  while (headSize > 48 && headLines.some(function(l) { return ctx.measureText(l).width > EDITORIAL_W; })) {
+  while (headSize > 36 && (headLines.length > 3 || headLines.some(function(l) { return ctx.measureText(l).width > EDITORIAL_W; }))) {
     headSize -= 2;
     headLines = wrapHead(headSize);
   }
@@ -3816,7 +3816,32 @@ INSTRUCCIONES:
     }
     return;
   }
-
+    if (req.method === 'GET' && req.url === '/test-fancy-v3-photo-only') {
+    try {
+      const _path = require('path');
+      const _fs   = require('fs');
+      const photoPath = _path.join(__dirname, 'assets', 'fancy', 'roxette', 'reference-01.jpg');
+      if (!_fs.existsSync(photoPath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Photo not found: ' + photoPath);
+        return;
+      }
+      const imageBuffer = _fs.readFileSync(photoPath);
+      const img         = await loadImage(imageBuffer);
+      const canvas      = createCanvas(1080, 1080);
+      const ctx         = canvas.getContext('2d');
+      drawImageCover(ctx, img, 1080, 1080);
+      const png = canvas.toBuffer('image/png');
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': png.length });
+      res.end(png);
+    } catch (err) {
+      console.log('[ test-fancy-v3-photo-only ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+  
   if (req.method === 'GET' && req.url === '/test-fancy-visual-director') {
     try {
       const scenarios = [
