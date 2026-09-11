@@ -2327,7 +2327,7 @@ NO text. NO logos. NO watermarks. NO brand names. NO labels.
 NO graphic overlays. NO split screen. NO product catalog look.
 NO corporate office. NO gaming setup. NO dark tech room.
 Full face clearly visible. Complete head visible. Eyes visible.
-Do not convert this into a close-up portrait.\`;
+Do not convert this into a close-up portrait.`;
 
     form.append('model', 'gpt-image-2');
     form.append('prompt', techPrompt);
