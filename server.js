@@ -1491,42 +1491,60 @@ CATEGORY: ${category}
 INTENTION: ${intention}
 SEARCH TERM: ${searchTerm}
 
-IDENTITY DIRECTION — ROXETTE_REFERENCE:
-The reference images show the real identity of Roxette — the brand face.
-Recreate her visual identity faithfully:
-- Her face structure, skin tone, and facial features must be recognizable
-- Brown hair with natural highlights, as in the references
-- Natural glam makeup similar to the references
-- Confident, relaxed, genuinely happy expression
-- Eyes open and clearly visible
-- Complete face fully inside the frame — no cropping of head or neck
+── IDENTITY PRESERVATION — MAXIMUM PRIORITY ──────────────────────────────────────────────
+The reference images show the REAL PERSON who is Roxette — the brand face and sole identity of this brand.
+This is NOT a new model. This is NOT an interpretation. This is the SAME PERSON recreated in a new scene.
 
-SCENE — URBAN LIFESTYLE EDITORIAL:
-Roxette is seated or naturally interacting at a bright, elegant urban café terrace.
-Warm daylight, luminous, real environment — not a studio.
-Visible street, architectural depth, greenery or open-air terrace feeling.
+PRESERVE WITH EXACT FIDELITY — these features are NON-NEGOTIABLE:
+- Face structure: bone shape, proportions, width, jawline, cheeks — identical to references
+- Eyes: shape, size, color, distance between them — identical to references
+- Eyebrows: arch, thickness, color — identical to references
+- Nose: shape, size, profile — identical to references
+- Lips and smile: shape, fullness, natural expression — identical to references
+- Skin tone: exact warm medium tone as in references — no lightening, no darkening
+- Hair: dark brown with natural warm highlights, same volume and texture as references
+- Age and naturalness: she looks exactly as she does in the references — no rejuvenation, no idealization
 
-OUTFIT:
-Cream blazer, light top, jeans, subtle gold accessories.
+IDENTITY HAS ABSOLUTE PRIORITY over wardrobe, bag, background, composition, lighting, and styling.
+If in doubt between a better composition and a more faithful face — choose the face.
 
-PRODUCT:
-She carries a structured fuchsia handbag — generic, no logos, no brand marks.
-The bag is part of her overall look, not the center of the composition.
+── SCENE — URBAN LIFESTYLE EDITORIAL ─────────────────────────────────────────────────────
+Roxette is naturally seated or standing at a bright, elegant open-air urban café terrace.
+Real environment — warm natural daylight, luminous, three-dimensional.
+Visible street depth, architectural elements, greenery or terrace atmosphere in background.
 
-COMPOSITION:
-Square format. Roxette positioned naturally in center or right area.
-Leave 30–40% of natural photographic space on the LEFT — derived from the environment:
-blurred architecture, open sky, soft-focus background, café depth.
-NOT an artificial empty panel. Three-dimensional depth with natural bokeh.
+── COMPOSITION — ASYMMETRIC RIGHT ───────────────────────────────────────────────────────────────────────────
+CAMERA: Medium shot. Roxette from approximately waist up — NOT a close portrait, NOT full body.
+Camera slightly farther back than typical editorial portrait to include environment context.
 
-COLOR & ENERGY:
-Warm, bright natural daylight. Rich, luminous, not flat.
-Feminine, aspirational, editorial, scroll-stopping.
+POSITION: Roxette occupies the RIGHT 60–65% of the frame.
+Her body and face are positioned in the RIGHT THIRD of the image.
 
-ABSOLUTE PROHIBITIONS:
-NO text. NO logos. NO watermarks. NO brand names.
-NO studio background. NO flat monocolor wall. NO split screen.
-FACE MUST BE FULLY VISIBLE — identity over composition.`;
+LEFT SPACE: 35–40% of the frame on the LEFT is natural photographic negative space.
+This space comes ONLY from the environment — blurred café architecture, open sky, soft-focus background, bokeh depth.
+NOT an artificial empty panel. NOT a flat color. Three-dimensional depth with natural bokeh.
+This left space is intentionally left open for future Fancy brand text or overlay — it must be photographic and uncluttered.
+
+Square format 1:1.
+
+── OUTFIT ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+Elegant yet casual: cream blazer, light top, jeans.
+Subtle gold accessories (earrings, bracelet). Natural, polished, not overdressed.
+
+── PRODUCT ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Roxette carries or holds a structured fuchsia handbag — generic shape, no logos, no brand marks.
+The bag is visible but supporting — it is PART OF HER LOOK, not the subject of the image.
+Do NOT center the bag. Do NOT make it the largest visual element.
+
+── COLOR & LIGHT ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+Warm natural sunlight. Rich, luminous, alive — not flat, not studio-cold.
+Feminine, aspirational, editorial. Scroll-stopping energy.
+
+── ABSOLUTE PROHIBITIONS ──────────────────────────────────────────────────────────────────────────────────────────────
+NO text. NO logos. NO watermarks. NO brand names. NO labels.
+NO studio background. NO flat monocolor wall. NO split screen. NO artificial panels.
+NO tight portrait crop — include environment context.
+FACE FULLY VISIBLE — complete face inside the frame, eyes open, no cropping of head or neck.`
 
     form.append('model', 'gpt-image-1');
     form.append('prompt', scenePrompt);
