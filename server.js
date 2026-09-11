@@ -2245,6 +2245,137 @@ function publicarStoryFacebook(imageUrl) {
 }
 
 
+// ── ROXETTE_REFERENCE FASE 2 — MASTER D: TECH LIFESTYLE ────────────────────────────────────────────────────────────
+// generarEscenaRoxetteTechAI: genera escena tech/lifestyle usando las fotos reales de Roxette.
+// COMPLETAMENTE AISLADA — no modifica Masters A, B, C, FANCY_STATE, ni producción.
+async function generarEscenaRoxetteTechAI() {
+  const _path = require('path');
+  const _fs   = require('fs');
+
+  try {
+    const refs = getRoxetteReferences();
+    if (!refs.ok) {
+      console.log('[ RoxetteTechAI ] Referencias incompletas — abortando. Faltantes:', refs.missing);
+      return null;
+    }
+    console.log('[ RoxetteTechAI ] Referencias OK:', refs.count, 'archivos');
+
+    const { Blob } = require('buffer');
+    const basePath  = _path.join(__dirname, 'assets', 'fancy', 'roxette');
+    const form      = new FormData(); // native FormData — Node 18+
+
+    const techPrompt = `Create a highly photorealistic modern lifestyle editorial photograph
+using the provided photographs as the primary identity references for the woman.
+
+IDENTITY — PRESERVE THE PERSON, CHANGE THE SCENE:
+The reference images show the person whose identity must be preserved.
+Treat them as identity references, not as inspiration for a similar-looking model.
+This must look like the same person photographed during a real technology and productivity moment.
+Preserve her distinctive facial appearance, facial proportions, hair, skin appearance,
+and recognizable visual characteristics.
+Do not redesign, reinterpret, or idealize her face.
+Do not substitute another woman with similar coloring or styling.
+Identity preservation has absolute priority over art direction and styling.
+
+SCENE — TECH LIFESTYLE WORKSPACE EDITORIAL:
+A bright, stylish contemporary home-office or creative workspace.
+Natural daylight from a window. Modern desk. Cream, white and warm neutral environment.
+Subtle wood details. Small natural Fancy touches may appear: a fuchsia notebook,
+a small fuchsia accessory, yellow flowers, or a warm yellow decorative accent (use sparingly).
+The environment should feel modern, bright, feminine, productive, creative, aspirational and organized.
+NOT a corporate office. NOT a gaming setup. NOT a dark tech room. NOT a product catalog.
+
+PRIMARY ACTION:
+Roxette is naturally seated at the desk actively using a modern laptop.
+She may have one hand on the laptop or trackpad while looking toward the screen
+or naturally interacting with her workspace.
+She should appear to be DOING something: typing, reviewing content, using the trackpad.
+Choose ONE primary action. Do NOT have her simply sitting and smiling at the camera.
+Avoid exaggerated influencer poses.
+The scene communicates: technology makes my day easier.
+
+SECONDARY TECH OBJECTS:
+Integrate naturally into the workspace: a modern laptop anchoring the action,
+a smartphone nearby, wireless headphones or earbuds as a detail.
+All technology objects are completely generic — no Apple logo, no Samsung logo,
+no Google logo, no recognizable brand marks, no product names, no ASIN, no price,
+no discount, no ratings. Do not make every device equally prominent.
+The laptop should anchor the action. Other technology appears as lifestyle details.
+
+ROXETTE WARDROBE:
+Modern casual-chic styling. Light blouse or fitted neutral top,
+straight-leg jeans or elegant casual trousers, subtle gold accessories.
+Do NOT reuse the exact cream blazer from Master A, the beauty look from Master B,
+or the exact home outfit from Master C. Each Master tells a different story.
+
+COMPOSITION — MEDIUM-WIDE ASYMMETRIC RIGHT:
+Square format 1:1. Medium-wide lifestyle framing — we need to understand Roxette, workspace and technology.
+Roxette and primary action occupy the RIGHT 55–65% of the frame.
+LEFT 35–45%: natural editorial space with real environmental depth —
+window light, desk surface, plant, wall, shelving, soft workspace depth.
+This left space should feel photographic and uncluttered for future Fancy brand typography.
+Do NOT create an artificial blank panel. Do NOT create split screen. Do NOT center Roxette.
+Do NOT create a close-up portrait.
+
+VISUAL PRIORITY ORDER:
+1. Roxette identity. 2. Believable lifestyle action. 3. Beautiful workspace.
+4. Technology. 5. Future branding space.
+Technology must support the story, not overpower Roxette.
+
+ABSOLUTE PROHIBITIONS:
+NO text. NO logos. NO watermarks. NO brand names. NO labels.
+NO graphic overlays. NO split screen. NO product catalog look.
+NO corporate office. NO gaming setup. NO dark tech room.
+Full face clearly visible. Complete head visible. Eyes visible.
+Do not convert this into a close-up portrait.\`;
+
+    form.append('model', 'gpt-image-2');
+    form.append('prompt', techPrompt);
+    form.append('n', '1');
+    form.append('size', '1024x1024');
+    form.append('quality', 'high');
+
+    for (const filename of refs.files) {
+      const fullPath = _path.join(basePath, filename);
+      const imgBuf   = _fs.readFileSync(fullPath);
+      const blob     = new Blob([imgBuf], { type: 'image/jpeg' });
+      form.append('image[]', blob, filename);
+      console.log('[ RoxetteTechAI ] Referencia cargada:', filename, imgBuf.length, 'bytes');
+    }
+
+    console.log('[ RoxetteTechAI ] Enviando a OpenAI /v1/images/edits...');
+    const r = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
+      },
+      body: form
+    });
+
+    const j = await r.json();
+
+    if (!j.data || !j.data[0] || !j.data[0].b64_json) {
+      console.log('[ RoxetteTechAI ] OpenAI no devolvio b64_json. Respuesta:', JSON.stringify(j).slice(0, 300));
+      return null;
+    }
+
+    const buf = Buffer.from(j.data[0].b64_json, 'base64');
+
+    if (buf.slice(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+      console.log('[ RoxetteTechAI ] Buffer recibido no es PNG valido.');
+      return null;
+    }
+
+    console.log('[ RoxetteTechAI ] Tech scene generada. Tamano:', buf.length, 'bytes');
+    return buf;
+
+  } catch (err) {
+    console.log('[ RoxetteTechAI ] Error en generarEscenaRoxetteTechAI:', err.message);
+    return null;
+  }
+}
+
+
 async function publicarCoverParaPagina(pageConfig, titulo) {
   if (!pageConfig.token || !pageConfig.id) {
     console.log('[MultiPage] Token o ID faltante para:', pageConfig.nombre);
@@ -3238,6 +3369,30 @@ INSTRUCCIONES:
     }
     return;
   }
+
+  if (req.method === 'GET' && req.url === '/test-fancy-roxette-tech') {
+    try {
+      console.log('[ test-fancy-roxette-tech ] Iniciando prueba MASTER D — Tech Lifestyle');
+
+      const techBuffer = await generarEscenaRoxetteTechAI();
+
+      if (!techBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteTechAI devolvio null. Revisar logs Railway.' }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(techBuffer);
+
+    } catch (err) {
+      console.log('[ test-fancy-roxette-tech ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
 
 
 
