@@ -3772,27 +3772,13 @@ INSTRUCCIONES:
     return;
   }
 
-
-
-
-
-
-
-
-
   if (req.method === 'GET' && req.url === '/test-fancy-brand-v3') {
     try {
-      // Foto simulada — degradado lifestyle calido (sin OpenAI, sin Pexels, sin Facebook)
-      const testCanvas  = createCanvas(1080, 1080);
-      const testCtx     = testCanvas.getContext('2d');
-      const warmGrad    = testCtx.createLinearGradient(300, 0, 1080, 1080);
-      warmGrad.addColorStop(0,   '#D8C4A8');
-      warmGrad.addColorStop(0.35,'#C8A882');
-      warmGrad.addColorStop(0.7, '#B08060');
-      warmGrad.addColorStop(1,   '#7A5840');
-      testCtx.fillStyle = warmGrad;
-      testCtx.fillRect(0, 0, 1080, 1080);
-      const testImageBuffer = testCanvas.toBuffer('image/png');
+      // Foto real — reference-01.jpg (roxette)
+      const _path = require('path');
+      const _fs   = require('fs');
+      const photoPath = _path.join(__dirname, 'assets', 'fancy', 'roxette', 'reference-01.jpg');
+      const testImageBuffer = _fs.readFileSync(photoPath);
 
       const coverBuffer = await generarCoverFancyV3({
         imageBuffer: testImageBuffer,
