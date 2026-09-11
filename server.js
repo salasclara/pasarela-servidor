@@ -1651,7 +1651,7 @@ NO dark or dramatic lighting — this is bright beauty editorial.
 Full face clearly visible. Complete head visible. Eyes visible.
 Do not convert this into a close-up portrait.`;
 
-    form.append('model', 'gpt-image-1');
+    form.append('model', 'gpt-image-2');
     form.append('prompt', beautyPrompt);
     form.append('n', '1');
     form.append('size', '1024x1024');
