@@ -3702,8 +3702,48 @@ INSTRUCCIONES:
     }
     return;
   }
+    if (req.method === 'GET' && req.url === '/test-fancy-ai-v3') {
+    try {
+      console.log('[ test-fancy-ai-v3 ] Pipeline completo: Master A → V3 branding');
 
-  if (req.method === 'GET' && req.url === '/test-fancy-roxette-beauty') {
+      const imageBuffer = await generarEscenaRoxetteAI({
+        category:      'fashion / handbags / accessories',
+        visualFamily:  'STYLE_LIFESTYLE',
+        editorialType: 'STYLE_IT',
+        intention:     'style transformation / discovery',
+        searchTerm:    'structured handbag for everyday outfits'
+      });
+
+      if (!imageBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteAI devolvio null. Revisar logs Railway.' }));
+        return;
+      }
+
+      const coverBuffer = await generarCoverFancyV3({
+        imageBuffer,
+        visualLabel: 'STYLE IT',
+        headline:    'EL DETALLE QUE CAMBIA TODO',
+        microtext:   'Un hallazgo. Otro look.'
+      });
+
+      if (!coverBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarCoverFancyV3 devolvio null.' }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(coverBuffer);
+
+    } catch (err) {
+      console.log('[ test-fancy-ai-v3 ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+      if (req.method === 'GET' && req.url === '/test-fancy-roxette-beauty') {
     try {
       console.log('[ test-fancy-roxette-beauty ] Iniciando prueba MASTER B — Beauty Find');
 
@@ -3772,9 +3812,17 @@ INSTRUCCIONES:
     return;
   }
 
+
+
+
+
+
+
+
+
   if (req.method === 'GET' && req.url === '/test-fancy-brand-v3') {
     try {
-      // Foto real — reference-01.jpg (roxette)
+      // Foto real — reference-01.jpg (roxette) — TEMP TEST ASSET
       const _path = require('path');
       const _fs   = require('fs');
       const photoPath = _path.join(__dirname, 'assets', 'fancy', 'roxette', 'reference-01.jpg');
