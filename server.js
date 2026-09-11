@@ -1483,68 +1483,56 @@ async function generarEscenaRoxetteAI({ category, visualFamily, editorialType, i
     const basePath  = _path.join(__dirname, 'assets', 'fancy', 'roxette');
     const form      = new FormData(); // native FormData — Node 18+
 
-    const scenePrompt = `You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle brand.
+    const scenePrompt = `Create a highly photorealistic lifestyle editorial photograph
+using the provided reference photographs as the primary identity source for the woman.
 
-VISUAL FAMILY: ${visualFamily}
-EDITORIAL TYPE: ${editorialType}
-CATEGORY: ${category}
-INTENTION: ${intention}
-SEARCH TERM: ${searchTerm}
+IDENTITY — PRESERVE THE PERSON, CHANGE THE SCENE:
+The reference images show the person whose identity must be preserved.
+Treat them as identity references, not as inspiration for a similar-looking model.
+The result should look like the person from the reference photographs photographed in a new environment.
+Preserve her distinctive facial appearance, facial proportions, hair, and recognizable visual characteristics.
+Do not redesign, reinterpret, beautify, or average her face into a generic commercial model.
+Do not substitute another woman with similar coloring or styling.
+Do not apply excessive beauty retouching or plastic skin.
+Maintain natural skin texture. Maintain her natural expression.
+Identity preservation has absolute priority over styling, composition, and art direction.
 
-── IDENTITY PRESERVATION — MAXIMUM PRIORITY ──────────────────────────────────────────────
-The reference images show the REAL PERSON who is Roxette — the brand face and sole identity of this brand.
-This is NOT a new model. This is NOT an interpretation. This is the SAME PERSON recreated in a new scene.
+SCENE — URBAN LIFESTYLE EDITORIAL:
+Bright, elegant open-air urban café terrace.
+Warm natural daylight. Contemporary architecture. Natural depth.
+Subtle vegetation. Tables and city environment in background.
+Professional lifestyle photography. Natural photographic bokeh.
+Aspirational but approachable. NOT studio photography. NOT ecommerce catalog.
 
-PRESERVE WITH EXACT FIDELITY — these features are NON-NEGOTIABLE:
-- Face structure: bone shape, proportions, width, jawline, cheeks — identical to references
-- Eyes: shape, size, color, distance between them — identical to references
-- Eyebrows: arch, thickness, color — identical to references
-- Nose: shape, size, profile — identical to references
-- Lips and smile: shape, fullness, natural expression — identical to references
-- Skin tone: exact warm medium tone as in references — no lightening, no darkening
-- Hair: dark brown with natural warm highlights, same volume and texture as references
-- Age and naturalness: she looks exactly as she does in the references — no rejuvenation, no idealization
-
-IDENTITY HAS ABSOLUTE PRIORITY over wardrobe, bag, background, composition, lighting, and styling.
-If in doubt between a better composition and a more faithful face — choose the face.
-
-── SCENE — URBAN LIFESTYLE EDITORIAL ─────────────────────────────────────────────────────
-Roxette is naturally seated or standing at a bright, elegant open-air urban café terrace.
-Real environment — warm natural daylight, luminous, three-dimensional.
-Visible street depth, architectural elements, greenery or terrace atmosphere in background.
-
-── COMPOSITION — ASYMMETRIC RIGHT ───────────────────────────────────────────────────────────────────────────
-CAMERA: Medium shot. Roxette from approximately waist up — NOT a close portrait, NOT full body.
-Camera slightly farther back than typical editorial portrait to include environment context.
-
-POSITION: Roxette occupies the RIGHT 60–65% of the frame.
-Her body and face are positioned in the RIGHT THIRD of the image.
-
-LEFT SPACE: 35–40% of the frame on the LEFT is natural photographic negative space.
-This space comes ONLY from the environment — blurred café architecture, open sky, soft-focus background, bokeh depth.
-NOT an artificial empty panel. NOT a flat color. Three-dimensional depth with natural bokeh.
-This left space is intentionally left open for future Fancy brand text or overlay — it must be photographic and uncluttered.
-
+COMPOSITION — ASYMMETRIC RIGHT:
+Medium shot — subject from approximately waist up.
+Camera far enough back to include the environment naturally.
+Subject positioned in the RIGHT 60–65% of the frame.
+LEFT 35–40% of the frame: natural photographic negative space from the environment
+(blurred architecture, open sky, bokeh depth — NOT an artificial empty panel, NOT a flat color).
+This left space must remain clean and uncluttered for future brand overlay.
 Square format 1:1.
+Do NOT center the subject. Do NOT create split screen.
 
-── OUTFIT ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-Elegant yet casual: cream blazer, light top, jeans.
-Subtle gold accessories (earrings, bracelet). Natural, polished, not overdressed.
+OUTFIT:
+Cream blazer, light neutral top, jeans.
+Subtle gold accessories (earrings, bracelet).
+Natural, polished, not overdressed.
 
-── PRODUCT ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-Roxette carries or holds a structured fuchsia handbag — generic shape, no logos, no brand marks.
-The bag is visible but supporting — it is PART OF HER LOOK, not the subject of the image.
-Do NOT center the bag. Do NOT make it the largest visual element.
+HANDBAG:
+One structured fuchsia handbag. Generic fashion object.
+No brand. No logo. No text. No badges.
+Naturally integrated — not enlarged, not centered, not the hero object.
 
-── COLOR & LIGHT ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-Warm natural sunlight. Rich, luminous, alive — not flat, not studio-cold.
-Feminine, aspirational, editorial. Scroll-stopping energy.
+FACE & CAMERA:
+Full face clearly visible. Complete head visible. Eyes visible.
+Natural expression. Avoid dramatic retouching. Avoid facial reshaping.
+Do not convert this into a close-up portrait.
 
-── ABSOLUTE PROHIBITIONS ──────────────────────────────────────────────────────────────────────────────────────────────
+ABSOLUTE PROHIBITIONS:
 NO text. NO logos. NO watermarks. NO brand names. NO labels.
 NO studio background. NO flat monocolor wall. NO split screen. NO artificial panels.
-NO tight portrait crop — include environment context.
-FACE FULLY VISIBLE — complete face inside the frame, eyes open, no cropping of head or neck.`
+NO ecommerce catalog look.`;
 
     form.append('model', 'gpt-image-1');
     form.append('prompt', scenePrompt);
@@ -1560,7 +1548,6 @@ FACE FULLY VISIBLE — complete face inside the frame, eyes open, no cropping of
       console.log('[ RoxetteAI ] Referencia cargada:', filename, imgBuf.length, 'bytes');
     }
 
-    // ── 3. Llamar OpenAI Image Editing ────────────────────────────────────────
     console.log('[ RoxetteAI ] Enviando a OpenAI /v1/images/edits...');
     const r = await fetch('https://api.openai.com/v1/images/edits', {
       method: 'POST',
@@ -1595,8 +1582,6 @@ FACE FULLY VISIBLE — complete face inside the frame, eyes open, no cropping of
 }
 
 
-
-
 async function generarCoverTrabajando(branding, gancho) {
   const canvas   = createCanvas(1080, 1080);
   const ctx      = canvas.getContext('2d');
@@ -1607,7 +1592,7 @@ async function generarCoverTrabajando(branding, gancho) {
   const FOOTER_H = 95;
   const PHOTO_H  = FOOTER_Y - HEADER_H; // 890px
 
-  // ── 1. HEADER sólido ──────────────────────────────────────────────────────
+  // ── 1. HEADER sólido ────────────────────────────────────────────────────────────────────────────────────
   ctx.fillStyle = VERDE; ctx.fillRect(0, 0, 1080, HEADER_H);
   ctx.fillStyle = DORADO; ctx.fillRect(0, HEADER_H - 3, 1080, 3);
   ctx.textAlign = 'center';
@@ -1617,7 +1602,7 @@ async function generarCoverTrabajando(branding, gancho) {
   ctx.font = 'bold 15px Roboto'; ctx.fillStyle = DORADO;
   ctx.fillText((branding.subtituloMarca || 'EMPRENDIMIENTO LATINO').toUpperCase(), 540, 82);
 
-  // ── 2. FOTO protagonista — cover crop en zona y=95..985 ──────────────────
+  // ── 2. FOTO protagonista — cover crop en zona y=95..985 ──────────────────────────────────────────────
   ctx.fillStyle = '#1A2A20'; ctx.fillRect(0, HEADER_H, 1080, PHOTO_H);
   const query = getQueryTrabajandoByContent(null, gancho);
   const imgUrl = await getImagenTrabajando(query);
@@ -1648,7 +1633,7 @@ async function generarCoverTrabajando(branding, gancho) {
   grad.addColorStop(1,    'rgba(0,0,0,0.80)');
   ctx.fillStyle = grad; ctx.fillRect(0, gradY, 1080, FOOTER_Y - gradY);
 
-  // ── 4. GANCHO — protagonista visual, tercio inferior ─────────────────────
+  // ── 4. GANCHO — protagonista visual, tercio inferior ─────────────────
   // El gancho puede ser 6–12 palabras, wrap dinámico
   const hf = _cormorantLoaded ? 'Cormorant' : 'Roboto';
   let heroSize = 72;
