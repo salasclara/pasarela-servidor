@@ -1883,6 +1883,135 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
 }
 
 
+// ── ROXETTE_REFERENCE FASE 2 — MASTER C: HOME FIND ────────────────────────────────────────────────────────────────
+// generarEscenaRoxetteHomeAI: genera escena home/lifestyle usando las fotos reales de Roxette.
+// COMPLETAMENTE AISLADA — no modifica Master A, Master B, FANCY_STATE, ni producción.
+async function generarEscenaRoxetteHomeAI() {
+  const _path = require('path');
+  const _fs   = require('fs');
+
+  try {
+    // ── 1. Verificar referencias ───────────────────────────────────────────────────────────────────────────────────────
+    const refs = getRoxetteReferences();
+    if (!refs.ok) {
+      console.log('[ RoxetteHomeAI ] Referencias incompletas — abortando. Faltantes:', refs.missing);
+      return null;
+    }
+    console.log('[ RoxetteHomeAI ] Referencias OK:', refs.count, 'archivos');
+
+    // ── 2. Cargar imágenes de referencia ───────────────────────────────────────────────────────────────────────────────────────
+    const { Blob } = require('buffer');
+    const basePath  = _path.join(__dirname, 'assets', 'fancy', 'roxette');
+    const form      = new FormData(); // native FormData — Node 18+
+
+    const homePrompt = `Create a highly photorealistic lifestyle home editorial photograph
+using the provided photographs as the primary identity references for the woman.
+
+IDENTITY — PRESERVE THE PERSON, CHANGE THE SCENE:
+The reference images show the person whose identity must be preserved.
+Treat them as identity references, not as inspiration for a similar-looking model.
+This must look like the same person photographed during a new home lifestyle moment.
+Preserve her distinctive facial appearance, facial proportions, hair, skin appearance,
+and recognizable visual characteristics.
+Do not redesign, reinterpret, or idealize her face.
+Do not substitute another woman with similar coloring or styling.
+Identity preservation has absolute priority over art direction and styling.
+
+SCENE — HOME LIFESTYLE EDITORIAL:
+A bright, modern, stylish contemporary living room with abundant natural daylight.
+Warm natural window light. Cream, white and warm neutral palette.
+Light wood surfaces. Soft textiles. A few tasteful fuchsia or warm yellow accents may appear naturally.
+Fresh flowers and subtle greenery welcome.
+The home should feel beautiful, modern, lived-in, warm, feminine, attainable and inspiring.
+NOT luxury real-estate photography. NOT furniture catalog. NOT IKEA catalog.
+NOT hotel lobby. NOT dark luxury interior. NOT artificial showroom.
+
+ACTION:
+The woman is naturally finishing a small decorating moment.
+Preferred action: arranging a beautiful vase with flowers on a console table.
+Alternative if composition requires: placing a decorative object on a side table,
+or adjusting one stylish cushion on a sofa.
+She should be interacting naturally with the room — NOT simply standing and posing.
+The visual story communicates: a small detail can transform a space.
+
+ROXETTE WARDROBE:
+Modern casual-chic clothing suitable for home lifestyle content.
+Cream or white blouse or top, well-fitted jeans or neutral trousers, subtle gold accessories.
+Do NOT use the exact cream blazer and structured fuchsia handbag from previous scenes.
+This must visually feel like a DIFFERENT Fancy story.
+
+HOME OBJECT:
+The decorative object is completely generic.
+No brand. No logo. No Amazon product identification. No ASIN. No price. No discount.
+No rating. No promotional badge.
+The object creates visual curiosity but remains part of the lifestyle story.
+This is NOT a product advertisement.
+
+COMPOSITION — WIDER ASYMMETRIC RIGHT:
+Square format 1:1.
+Slightly wider camera framing than a portrait editorial — we need to understand the ROOM as well as Roxette.
+Roxette and her action occupy the RIGHT 55–65% of the frame.
+LEFT 35–45%: natural editorial space showing real environmental depth —
+living room interior, sofa edge, window light, console, wall, plant, architecture.
+This left space should feel photographic and uncluttered for future Fancy brand typography.
+Do NOT create an artificial blank panel. Do NOT create split screen. Do NOT center Roxette.
+Do NOT fill the entire frame with her face or body. HOME FIND must sell the feeling of the SPACE.
+
+ABSOLUTE PROHIBITIONS:
+NO text. NO logos. NO watermarks. NO brand names. NO labels.
+NO graphic overlays. NO split screen. NO ecommerce catalog look.
+NO dark or dramatic lighting — this is bright home editorial.
+Full face clearly visible. Complete head visible. Eyes visible.
+Do not convert this into a close-up portrait.`;
+
+    form.append('model', 'gpt-image-2');
+    form.append('prompt', homePrompt);
+    form.append('n', '1');
+    form.append('size', '1024x1024');
+    form.append('quality', 'high');
+
+    for (const filename of refs.files) {
+      const fullPath = _path.join(basePath, filename);
+      const imgBuf   = _fs.readFileSync(fullPath);
+      const blob     = new Blob([imgBuf], { type: 'image/jpeg' });
+      form.append('image[]', blob, filename);
+      console.log('[ RoxetteHomeAI ] Referencia cargada:', filename, imgBuf.length, 'bytes');
+    }
+
+    // ── 3. Llamar OpenAI Image Editing ─────────────────────────────────────────────────────────────────────────────────
+    console.log('[ RoxetteHomeAI ] Enviando a OpenAI /v1/images/edits...');
+    const r = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY
+        // Content-Type con boundary lo fija native fetch automaticamente
+      },
+      body: form
+    });
+
+    const j = await r.json();
+
+    if (!j.data || !j.data[0] || !j.data[0].b64_json) {
+      console.log('[ RoxetteHomeAI ] OpenAI no devolvio b64_json. Respuesta:', JSON.stringify(j).slice(0, 300));
+      return null;
+    }
+
+    const buf = Buffer.from(j.data[0].b64_json, 'base64');
+
+    if (buf.slice(0, 8).toString('hex') !== '89504e470d0a1a0a') {
+      console.log('[ RoxetteHomeAI ] Buffer recibido no es PNG valido.');
+      return null;
+    }
+
+    console.log('[ RoxetteHomeAI ] Home scene generada. Tamano:', buf.length, 'bytes');
+    return buf;
+
+  } catch (err) {
+    console.log('[ RoxetteHomeAI ] Error en generarEscenaRoxetteHomeAI:', err.message);
+    return null;
+  }
+}
+
 async function generarCoverGenerico(branding, coverTitulo) {
   const canvas = createCanvas(1080, 1080);
   const ctx = canvas.getContext('2d');
@@ -3086,6 +3215,30 @@ INSTRUCCIONES:
     }
     return;
   }
+
+  if (req.method === 'GET' && req.url === '/test-fancy-roxette-home') {
+    try {
+      console.log('[ test-fancy-roxette-home ] Iniciando prueba MASTER C — Home Find');
+
+      const homeBuffer = await generarEscenaRoxetteHomeAI();
+
+      if (!homeBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteHomeAI devolvio null. Revisar logs Railway.' }));
+        return;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(homeBuffer);
+
+    } catch (err) {
+      console.log('[ test-fancy-roxette-home ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
 
 
 
