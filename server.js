@@ -1324,6 +1324,204 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
 // generarEscenaFancyAI: genera la escena fotográfica base vía GPT-Image.
 // COMPLETAMENTE AISLADA — no llama ni modifica ninguna función de producción existente.
 // No usa Pexels. No usa getImagenFancy(). No crashea en fallo — devuelve null.
+
+// ── BRAND RENDERER V3 ────────────────────────────────────────────────────────
+// Renderer editorial puro. Recibe foto base + metadatos. Devuelve PNG 1080x1080.
+// NO genera imagenes. NO llama OpenAI. NO Facebook. NO Commerce Engine.
+// COMPLETAMENTE AISLADA — no modifica ninguna funcion de produccion existente.
+// Logo: carga asset /assets/fancy/brand/fancy-logo.png si existe.
+//       Si no existe, usa fallback tipografico — reemplazar cuando este el asset.
+async function generarCoverFancyV3({
+  imageBuffer,
+  visualLabel,
+  headline,
+  microtext,
+  composition
+}) {
+  composition = composition || 'SUBJECT_RIGHT_NEGATIVE_LEFT';
+
+  const _path    = require('path');
+  const _fs      = require('fs');
+  const canvas   = createCanvas(1080, 1080);
+  const ctx      = canvas.getContext('2d');
+
+  const CREAM   = '#FFF8F1';
+  const FUCHSIA = '#D50067';
+  const YELLOW  = '#FFD52A';
+  const BLACK   = '#111111';
+  const DARK    = '#444444';
+  const MARGIN  = 60;
+
+  // ── CAPA 1: FOTOGRAFIA FULL CANVAS ──────────────────────────────────────
+  // PHOTO FIRST — la foto domina el 100% del canvas, sin recortes.
+  if (imageBuffer) {
+    try {
+      const img = await loadImage(imageBuffer);
+      drawImageCover(ctx, img, 1080, 1080);
+    } catch (e) {
+      console.log('[ BrandV3 ] Error cargando imageBuffer:', e.message);
+      ctx.fillStyle = CREAM;
+      ctx.fillRect(0, 0, 1080, 1080);
+    }
+  } else {
+    ctx.fillStyle = CREAM;
+    ctx.fillRect(0, 0, 1080, 1080);
+  }
+
+  // ── CAPA 2: DEGRADADO CREMA LOCALIZADO — NO panel solido ────────────────
+  // Ocupa ~39% del canvas con fade progresivo. Foto visible desde el primer tercio.
+  // DIFERENCIA CLAVE vs V2: V2 usaba fillRect solido hasta x=490. V3 es degradado suave.
+  const GRAD_END  = 420;
+  const softGrad  = ctx.createLinearGradient(0, 0, GRAD_END, 0);
+  softGrad.addColorStop(0,    'rgba(255,248,241,0.90)');
+  softGrad.addColorStop(0.50, 'rgba(255,248,241,0.65)');
+  softGrad.addColorStop(0.80, 'rgba(255,248,241,0.25)');
+  softGrad.addColorStop(1,    'rgba(255,248,241,0)');
+  ctx.fillStyle = softGrad;
+  ctx.fillRect(0, 0, GRAD_END, 1080);
+
+  // ── CAPA 3: LOGO OFICIAL o FALLBACK TIPOGRAFICO ──────────────────────────
+  const _logoPath = _path.join(__dirname, 'assets', 'fancy', 'brand', 'fancy-logo.png');
+  let logoRendered = false;
+  let logoBottomY  = MARGIN + 20;
+
+  if (_fs.existsSync(_logoPath)) {
+    try {
+      const logoBuf  = _fs.readFileSync(_logoPath);
+      const logoImg  = await loadImage(logoBuf);
+      const logoMaxW = 220;
+      const logoScale = Math.min(logoMaxW / logoImg.width, 1);
+      const logoW    = Math.round(logoImg.width  * logoScale);
+      const logoH    = Math.round(logoImg.height * logoScale);
+      ctx.drawImage(logoImg, MARGIN, MARGIN, logoW, logoH);
+      logoBottomY  = MARGIN + logoH + 14;
+      logoRendered = true;
+      console.log('[ BrandV3 ] Logo asset cargado OK (' + logoW + 'x' + logoH + ')');
+    } catch (e) {
+      console.log('[ BrandV3 ] Error cargando logo asset:', e.message);
+    }
+  }
+
+  if (!logoRendered) {
+    // FALLBACK TIPOGRAFICO — reemplazar cuando exista assets/fancy/brand/fancy-logo.png
+    ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(255,255,255,0.5)';
+    ctx.shadowBlur  = 4;
+    ctx.font        = 'bold 38px Roboto';
+    ctx.fillStyle   = BLACK;
+    ctx.fillText('FANCY♥', MARGIN, MARGIN + 44);
+    ctx.font        = '14px Roboto';
+    ctx.fillStyle   = '#666666';
+    ctx.fillText('by ROXETTE', MARGIN, MARGIN + 64);
+    ctx.shadowBlur  = 0;
+    logoBottomY     = MARGIN + 82;
+  }
+
+  // ── CAPA 4: VISUAL LABEL — bloque amarillo pequeno ───────────────────────
+  const label   = (visualLabel || 'STYLE IT').toUpperCase();
+  ctx.font      = 'bold 17px Roboto';
+  ctx.textAlign = 'left';
+  const labelW  = ctx.measureText(label).width + 22;
+  const labelH  = 34;
+  const labelY  = logoBottomY + 26;
+  ctx.fillStyle = YELLOW;
+  ctx.fillRect(MARGIN, labelY, labelW, labelH);
+  ctx.fillStyle = BLACK;
+  ctx.fillText(label, MARGIN + 11, labelY + 23);
+
+  // ── CAPA 5: HEADLINE ─────────────────────────────────────────────────────
+  const EDITORIAL_W = 340;
+  const headWords   = (headline || '').toUpperCase().split(' ');
+
+  function wrapHead(size) {
+    ctx.font = 'bold ' + size + 'px Roboto';
+    var lines = []; var curr = '';
+    for (var i = 0; i < headWords.length; i++) {
+      var test = curr ? curr + ' ' + headWords[i] : headWords[i];
+      if (ctx.measureText(test).width > EDITORIAL_W && curr) {
+        lines.push(curr); curr = headWords[i];
+      } else { curr = test; }
+    }
+    if (curr) lines.push(curr);
+    return lines;
+  }
+
+  var headSize  = 72;
+  var headLines = wrapHead(headSize);
+  while (headSize > 48 && headLines.some(function(l) { return ctx.measureText(l).width > EDITORIAL_W; })) {
+    headSize -= 2;
+    headLines = wrapHead(headSize);
+  }
+  ctx.font = 'bold ' + headSize + 'px Roboto';
+
+  // Primera palabra larga (> 3 chars) va en fuchsia
+  var accentWord = '';
+  for (var ai = 0; ai < headWords.length; ai++) {
+    if (headWords[ai].length > 3) { accentWord = headWords[ai]; break; }
+  }
+  if (!accentWord && headWords.length > 0) accentWord = headWords[0];
+
+  const HEAD_Y  = labelY + labelH + 34;
+  const HEAD_LH = Math.round(headSize * 1.15);
+
+  headLines.slice(0, 3).forEach(function(line, i) {
+    var lineWords = line.split(' ');
+    var hasAccent = lineWords.indexOf(accentWord) !== -1;
+    if (hasAccent) {
+      var x = MARGIN;
+      lineWords.forEach(function(w) {
+        ctx.fillStyle   = (w === accentWord) ? FUCHSIA : BLACK;
+        ctx.shadowColor = 'rgba(255,255,255,0.55)';
+        ctx.shadowBlur  = 5;
+        ctx.fillText(w, x, HEAD_Y + i * HEAD_LH);
+        ctx.shadowBlur  = 0;
+        x += ctx.measureText(w + ' ').width;
+      });
+    } else {
+      ctx.fillStyle   = BLACK;
+      ctx.shadowColor = 'rgba(255,255,255,0.55)';
+      ctx.shadowBlur  = 5;
+      ctx.fillText(line, MARGIN, HEAD_Y + i * HEAD_LH);
+      ctx.shadowBlur  = 0;
+    }
+  });
+
+  const headEndY = HEAD_Y + Math.min(headLines.length, 3) * HEAD_LH;
+
+  // ── CAPA 6: MICROTEXT ────────────────────────────────────────────────────
+  var microEndY = headEndY;
+  if (microtext) {
+    const MICRO_Y  = headEndY + 20;
+    ctx.font       = '22px Roboto';
+    ctx.fillStyle  = DARK;
+    ctx.textAlign  = 'left';
+    var mWords = microtext.split(' ');
+    var mLines = []; var mCurr = '';
+    for (var mi = 0; mi < mWords.length; mi++) {
+      if (mLines.length >= 2) break;
+      var mt = mCurr ? mCurr + ' ' + mWords[mi] : mWords[mi];
+      if (ctx.measureText(mt).width > EDITORIAL_W && mCurr) {
+        mLines.push(mCurr); mCurr = mWords[mi];
+      } else { mCurr = mt; }
+    }
+    if (mCurr && mLines.length < 2) mLines.push(mCurr);
+    mLines.forEach(function(line, i) {
+      ctx.fillText(line, MARGIN, MICRO_Y + i * 30);
+    });
+    microEndY = MICRO_Y + mLines.length * 30;
+  }
+
+  // ── CAPA 7: ACENTO FUCHSIA ───────────────────────────────────────────────
+  const accentY = microEndY + 18;
+  if (accentY < 1000) {
+    ctx.fillStyle = FUCHSIA;
+    ctx.fillRect(MARGIN, accentY, 52, 3);
+  }
+
+  return canvas.toBuffer('image/png');
+}
+
+
 async function generarEscenaFancyAI({ category, visualFamily, editorialType, intention, searchTerm, recentVisuals }) {
   try {
     const scenePrompt = `You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle and fashion brand on Facebook.
@@ -3580,6 +3778,44 @@ INSTRUCCIONES:
 
 
 
+
+
+  if (req.method === 'GET' && req.url === '/test-fancy-brand-v3') {
+    try {
+      // Foto simulada — degradado lifestyle calido (sin OpenAI, sin Pexels, sin Facebook)
+      const testCanvas  = createCanvas(1080, 1080);
+      const testCtx     = testCanvas.getContext('2d');
+      const warmGrad    = testCtx.createLinearGradient(300, 0, 1080, 1080);
+      warmGrad.addColorStop(0,   '#D8C4A8');
+      warmGrad.addColorStop(0.35,'#C8A882');
+      warmGrad.addColorStop(0.7, '#B08060');
+      warmGrad.addColorStop(1,   '#7A5840');
+      testCtx.fillStyle = warmGrad;
+      testCtx.fillRect(0, 0, 1080, 1080);
+      const testImageBuffer = testCanvas.toBuffer('image/png');
+
+      const coverBuffer = await generarCoverFancyV3({
+        imageBuffer: testImageBuffer,
+        visualLabel: 'STYLE IT',
+        headline:    'EL DETALLE QUE CAMBIA TODO',
+        microtext:   'Un hallazgo. Otro look.',
+        composition: 'SUBJECT_RIGHT_NEGATIVE_LEFT'
+      });
+
+      if (!coverBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarCoverFancyV3 devolvio null' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(coverBuffer);
+    } catch (err) {
+      console.log('[ test-fancy-brand-v3 ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
 
   if (req.method === 'GET' && req.url === '/test-fancy-visual-director') {
     try {
