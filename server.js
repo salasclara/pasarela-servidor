@@ -4051,17 +4051,25 @@ async function autoPublicarPasarela() {
     // 1. Tomar noticia del cache RSS (con imagen preferida)
     const pool_noticias = cacheNoticias.length > 0 ? cacheNoticias : [];
     if (pool_noticias.length === 0) { console.log('[AutoPublish-Pasarela] Cache RSS vacío — omitiendo'); return; }
-    // Filtro línea editorial Pasarela: solo moda, belleza, modelaje, tendencias
-    const _KW_MODA = ['moda','fashion','style','estilo','belleza','beauty','model','modelo','runway','pasarela','tendencia','trend','look','outfit','ropa','clothing','lujo','luxury','elegancia','elegance','vogue','couture','diseño','design','temporada','season','coleccion','collection','latina','latin','vestido','dress','zapato','shoe','accesorio','accessory','makeup','maquillaje'];
+    // CAMBIO 4 — Filtro temático Pasarela: bloquear primero temas no editoriales
+    const TEMAS_PROHIBIDOS_PASARELA = /\b(crimen|asesin|tiroteo|balacera|accidente|tr[aá]gedia|politic|congres|senado|elecci|guerra|terremoto|tornado|huraca|inundaci|flood|shooting|murder|crime|accident|politics|election|war|arrest|police|protest|violencia|ataque|atentado|muert[eo]s|matan|fatal|crash|disaster|evacua)\b/i;
+    // Filtro positivo: solo noticias con ángulo editorial de moda/belleza/estilo
+    const _KW_MODA = ['moda','fashion','style','estilo','belleza','beauty','model','modelo','runway','pasarela','tendencia','trend','look','outfit','ropa','clothing','lujo','luxury','elegancia','elegance','vogue','couture','diseño','design','temporada','season','coleccion','collection','latina','latin','vestido','dress','zapato','shoe','accesorio','accessory','makeup','maquillaje','alfombra roja','red carpet','celebridad','celebrity','imagen','icono','icónica'];
     const _noticiasFiltradas = pool_noticias.filter(n => {
       const txt = (n.titulo + ' ' + (n.descripcion || '')).toLowerCase();
+      // Primero: excluir temas prohibidos
+      if (TEMAS_PROHIBIDOS_PASARELA.test(txt)) return false;
+      // Luego: requerir al menos un keyword editorial
       return _KW_MODA.some(kw => txt.includes(kw));
     });
-    const _poolFinal = _noticiasFiltradas.length > 0 ? _noticiasFiltradas : pool_noticias;
-    const conImagen = _poolFinal.filter(n => n.imagen && n.imagen.startsWith('http'));
+    if (_noticiasFiltradas.length === 0) {
+      console.log('[AutoPublish-Pasarela] Sin noticias editoriales válidas hoy — omitiendo');
+      return { ok: false, error: 'NO_NOTICIA_EDITORIAL' };
+    }
+    const conImagen = _noticiasFiltradas.filter(n => n.imagen && n.imagen.startsWith('http'));
     const noticia = conImagen.length > 0
       ? conImagen[Math.floor(Math.random() * conImagen.length)]
-      : _poolFinal[Math.floor(Math.random() * _poolFinal.length)];
+      : _noticiasFiltradas[Math.floor(Math.random() * _noticiasFiltradas.length)];
 
     // 2. Generar artículo editorial con Claude — incluye TITULAR en español para el cover
     const promptEditorial = 'Escribe un artículo editorial sobre este tema de moda/estilo: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas.\n\nFormato EXACTO de respuesta:\nTITULAR: [título editorial en ESPAÑOL, máx 8 palabras, impactante]\n\n[artículo completo en español]';
@@ -4077,15 +4085,21 @@ async function autoPublicarPasarela() {
     });
     if (!contenido) throw new Error('Claude sin respuesta');
 
+    // CAMBIO 1 — Extraer tituloEditorial en español del response de Claude
+    const _titMatch = contenido.match(/^TITULAR:\s*(.+)/im);
+    const tituloEditorial = (_titMatch && _titMatch[1].trim()) || noticia.titulo;
+    console.log('[AutoPublish-Pasarela] tituloEditorial:', tituloEditorial);
+
     // 3. Guardar en DB — contenido limpio (sin markers de Claude)
     const _contenidoLimpio = contenido
       .split('\n')
       .map(p => p.replace(/^TITULAR:\s*/i, '').replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
       .filter(p => p.length > 0)
       .join('\n\n');
-    const slug = generarSlug(noticia.titulo);
+    // CAMBIO 2 — usar tituloEditorial en DB (título del blog = título del cover)
+    const slug = generarSlug(tituloEditorial);
     await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
-      [noticia.titulo, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '']);
+      [tituloEditorial, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '']);
 
     // 4. Generar cover con plantilla aprobada
     const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
@@ -4104,15 +4118,21 @@ async function autoPublicarPasarela() {
         _imgBuf = await fetchBuf(_imgUrl);
       } catch(e) { console.error('[AutoPublish-Pasarela] Pexels fallback error:', e.message); }
     }
-    // Extraer titular en español generado por Claude
-    // Cover usa el título del blog (mismo que el H1 del post)
-    coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: noticia.titulo, fecha: fechaStr });
+    // CAMBIO 3 — Validar imagen antes de llamar al Master
+    if (!_imgBuf || _imgBuf.length < 5000) {
+      console.log('[Pasarela Image] NO VALID IMAGE — SKIP publicación');
+      return { ok: false, titulo: tituloEditorial, facebook_id: null, error: 'NO_IMAGE — cover negro evitado' };
+    }
+    console.log('[Pasarela Image] OK —', _imgBuf.length, 'bytes');
+
+    // CAMBIO 2 — Cover recibe tituloEditorial en español (no el RSS crudo)
+    coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: tituloEditorial, fecha: fechaStr });
 
     // 5. Caption = mismo contenido limpio que va al blog
     const caption = _contenidoLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
     const fbRes = await publicarFotoBuffer(coverBuffer, caption);
-    console.log('[AutoPublish-Pasarela] ✅ Publicado:', noticia.titulo, '| FB ID:', fbRes?.id || fbRes);
-    return { ok: true, titulo: noticia.titulo, facebook_id: fbRes?.id || null, error: null };
+    console.log('[AutoPublish-Pasarela] ✅ Publicado:', tituloEditorial, '| FB ID:', fbRes?.id || fbRes);
+    return { ok: true, titulo: tituloEditorial, facebook_id: fbRes?.id || null, error: null };
   } catch(e) {
     console.error('[AutoPublish-Pasarela] Error:', e.message);
     return { ok: false, titulo: null, facebook_id: null, error: e.message };
