@@ -3706,7 +3706,7 @@ INSTRUCCIONES:
     try {
       console.log('[ test-fancy-ai-v3 ] Pipeline completo: Master A → V3 branding');
 
-      const imageBuffer = await generarEscenaRoxetteAI({
+            const rawBuffer = await generarEscenaRoxetteAI({
         category:      'fashion / handbags / accessories',
         visualFamily:  'STYLE_LIFESTYLE',
         editorialType: 'STYLE_IT',
@@ -3714,14 +3714,17 @@ INSTRUCCIONES:
         searchTerm:    'structured handbag for everyday outfits'
       });
 
-      if (!imageBuffer) {
+        if (!rawBuffer) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'generarEscenaRoxetteAI devolvio null. Revisar logs Railway.' }));
         return;
       }
+      console.log('[AI BUFFER MAGIC]', rawBuffer.subarray(0, 8).toString('hex'));
+      console.log('[AI BUFFER BYTES]', rawBuffer.length);
 
+      const imageSource = 'data:image/png;base64,' + rawBuffer.toString('base64');
       const coverBuffer = await generarCoverFancyV3({
-        imageBuffer,
+        imageBuffer: imageSource,
         visualLabel: 'STYLE IT',
         headline:    'EL DETALLE QUE CAMBIA TODO',
         microtext:   'Un hallazgo. Otro look.'
@@ -3861,7 +3864,14 @@ INSTRUCCIONES:
         res.end('Photo not found: ' + photoPath);
         return;
       }
-      const imageBuffer = _fs.readFileSync(photoPath);
+      if (!imageBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteAI devolvio null. Revisar logs Railway.' }));
+        return;
+      }
+
+      const coverBuffer = await generarCoverFancyV3({
+        imageBuffer,er = _fs.readFileSync(photoPath);
       const img         = await loadImage(imageBuffer);
       const canvas      = createCanvas(1080, 1080);
       const ctx         = canvas.getContext('2d');
