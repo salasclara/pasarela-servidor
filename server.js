@@ -1398,7 +1398,21 @@ async function generarCoverFancyV3({
       logoRendered = true;
       console.log('[ BrandV3 ] Logo asset cargado OK (' + logoW + 'x' + logoH + ')');
     } catch (e) {
-      console.log('[ BrandV3 ] Error cargando logo asset:', e.message);
+      console.log('if (!rawBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteAI devolvio null. Revisar logs Railway.' }));
+        return;
+      }
+
+      // Normalize OpenAI image buffer for Canvas compatibility
+      const normCanvas = createCanvas(1024, 1024);
+      const normCtx    = normCanvas.getContext('2d');
+      const normImg    = await loadImage('data:image/png;base64,' + rawBuffer.toString('base64'));
+      drawImageCover(normCtx, normImg, 1024, 1024);
+      const imageBuffer = normCanvas.toBuffer('image/png');
+
+      const coverBuffer = await generarCoverFancyV3({
+        imageBuffer, BrandV3 ] Error cargando logo asset:', e.message);
     }
   }
 
@@ -3706,7 +3720,7 @@ INSTRUCCIONES:
     try {
       console.log('[ test-fancy-ai-v3 ] Pipeline completo: Master A → V3 branding');
 
-      const imageBuffer = await generarEscenaRoxetteAI({
+      const rawBuffer = await generarEscenaRoxetteAI({
         category:      'fashion / handbags / accessories',
         visualFamily:  'STYLE_LIFESTYLE',
         editorialType: 'STYLE_IT',
@@ -3714,14 +3728,19 @@ INSTRUCCIONES:
         searchTerm:    'structured handbag for everyday outfits'
       });
 
-      if (!imageBuffer) {
+      if (!rawBuffer) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'generarEscenaRoxetteAI devolvio null. Revisar logs Railway.' }));
         return;
       }
 
+      console.log('[AI BUFFER MAGIC]', rawBuffer.subarray(0, 8).toString('hex'));
+      console.log('[AI BUFFER BYTES]', rawBuffer.length);
+
+      const imageSource = 'data:image/png;base64,' + rawBuffer.toString('base64');
+
       const coverBuffer = await generarCoverFancyV3({
-        imageBuffer,
+        imageBuffer: imageSource,
         visualLabel: 'STYLE IT',
         headline:    'EL DETALLE QUE CAMBIA TODO',
         microtext:   'Un hallazgo. Otro look.'
