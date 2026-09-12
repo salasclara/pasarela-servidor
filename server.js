@@ -3720,17 +3720,18 @@ INSTRUCCIONES:
         return;
       }
 
-      console.log('[AI BUFFER MAGIC]', rawBuffer.subarray(0, 8).toString('hex'));
-      console.log('[AI BUFFER BYTES]', rawBuffer.length);
-
-      const imageSource = 'data:image/png;base64,' + rawBuffer.toString('base64');
+      const tmpPath = '/tmp/fancy-ai-base-' + Date.now() + '.png';
+      _fs.writeFileSync(tmpPath, rawBuffer);
+      console.log('[ test-fancy-ai-v3 ] Imagen temporal guardada:', tmpPath);
 
       const coverBuffer = await generarCoverFancyV3({
-        imageBuffer: imageSource,
+        imageBuffer: tmpPath,
         visualLabel: 'STYLE IT',
         headline:    'EL DETALLE QUE CAMBIA TODO',
         microtext:   'Un hallazgo. Otro look.'
       });
+
+      try { _fs.unlinkSync(tmpPath); } catch(e) {}
 
       if (!coverBuffer) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
