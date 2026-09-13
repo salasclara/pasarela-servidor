@@ -1569,7 +1569,7 @@ async function generarCoverFancyV3({
 }
 
 
-async function generarEscenaFancyAI({ category, visualFamily, editorialType, intention, searchTerm, recentVisuals, humanStrategy }) {
+async function generarEscenaFancyAI({ category, visualFamily, editorialType, intention, searchTerm, recentVisuals, humanStrategy, primaryObject }) {
   try {
     const scenePrompt = `You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle and fashion brand on Facebook.
 
@@ -1591,8 +1591,9 @@ She is interacting authentically with her environment — not posing for a catal
 Contemporary outfit, accessible yet aspirational.
 
 PRODUCT:
-She carries or holds a structured handbag — attractive, generic, no logos or brand marks.
-The bag feels integrated into her life and look, not presented as an isolated product.
+The visual protagonist is: ${primaryObject || 'a fashion accessory or lifestyle item'}.
+Generic — no logos, no brand marks. Naturally integrated into her life and look.
+IMPORTANT: this product MUST be clearly visible and recognizable. It is the hero of this image.
 
 ENVIRONMENT — choose one real lifestyle setting:
 - A bright urban café with warm interior light and architectural depth
@@ -1650,7 +1651,7 @@ Create a PREMIUM EDITORIAL PRODUCT PHOTOGRAPH. Fashion magazine meets social com
 Style: flatlay, still life, or environmental product styling. Bright, luminous, warm natural daylight.
 
 SUBJECT:
-The product itself — a structured handbag, attractive, no logos or brand marks.
+The product itself: ${primaryObject || 'a fashion or lifestyle item'} — attractive, generic, no logos or brand marks.
 Presented in a curated editorial context: on a surface, a chair, a café table, a step, or hanging.
 The product is the absolute protagonist. No hand holding it. No person nearby.
 
@@ -2857,6 +2858,32 @@ Do not convert this into a close-up portrait.`;
 }
 
 
+function derivarProductoFancy(category) {
+  const c = (category || '').toLowerCase();
+  if (c.includes('tacón') || c.includes('tacon') || c.includes('zapato'))
+    return 'elegant fashion heels or trendy shoes — NOT a handbag';
+  if (c.includes('bolso') || c.includes('cartera'))
+    return 'structured designer-look handbag, prominently featured';
+  if (c.includes('joyería') || c.includes('joyeria') || c.includes('joya'))
+    return 'fine jewelry set or elegant accessories';
+  if (c.includes('maquillaje') || c.includes('beauty'))
+    return 'beauty products or makeup set, elegantly styled';
+  if (c.includes('skincare') || c.includes('piel'))
+    return 'skincare bottle or serum, styled editorially';
+  if (c.includes('organiza') || c.includes('hogar'))
+    return 'elegant home organizer or stylish storage solution';
+  if (c.includes('vestido') || c.includes('look'))
+    return 'elegant dress or complete stylish outfit';
+  if (c.includes('casual') || c.includes('ropa'))
+    return 'stylish casual chic everyday outfit';
+  if (c.includes('trabajo') || c.includes('oficina'))
+    return 'professional work tote bag or laptop bag';
+  if (c.includes('regalo'))
+    return 'curated gift set or fashion accessories for women';
+  return null;
+}
+
+// ── FANCY COVER ORCHESTRATOR — ejecutarCoverFancy —————————————————————————
 // ── FANCY COVER ORCHESTRATOR — ejecutarCoverFancy ─────────────────────────────────
 // Orquestador único del pipeline visual + copy.
 // INPUT:  { category, editorialType, intention, searchTerm, recentVisuals }
@@ -2890,7 +2917,8 @@ async function ejecutarCoverFancy({ category, editorialType, intention, searchTe
         return generarEscenaRoxetteAI(visualInput);
       }
       // GENERIC_MODEL o NO_MODEL → generarEscenaFancyAI
-      return generarEscenaFancyAI({ ...visualInput, humanStrategy });
+      const primaryObject = derivarProductoFancy(category) || decision.primaryObject;
+      return generarEscenaFancyAI({ ...visualInput, humanStrategy, primaryObject });
     };
 
     const [rawBuffer, rawCopy] = await Promise.all([
