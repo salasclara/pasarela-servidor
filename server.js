@@ -2805,6 +2805,86 @@ Do not convert this into a close-up portrait.`;
 }
 
 
+// ── FANCY COVER ORCHESTRATOR — ejecutarCoverFancy ─────────────────────────────────
+// Orquestador único del pipeline visual + copy.
+// INPUT:  { category, editorialType, intention, searchTerm, recentVisuals }
+// OUTPUT: { imageBuffer, copy: { headline, microtext, caption, cta, hashtags }, decision }
+// Imagen + copy corren en paralelo (Promise.all).
+// Routing: ROXETTE → Masters A/B/C/D | GENERIC_MODEL/NO_MODEL → generarEscenaFancyAI
+// NO conectar a producción ni a Facebook hasta autorización de Clara.
+async function ejecutarCoverFancy({ category, editorialType, intention, searchTerm, recentVisuals = [] }) {
+  const _fs = require('fs');
+  let tmpPath = null;
+
+  try {
+    // ── 1. Visual Director ────────────────────────────────────────────────────────────
+    const decision = dirigirVisualFancy({ editorialType, category, intention, searchTerm, recentVisuals });
+    console.log('[ CoverFancy ] Decision → label:', decision.visualLabel,
+      '| strategy:', decision.humanStrategy,
+      '| family:', decision.visualFamily);
+
+    // ── 2. Resolver input normalizado ───────────────────────────────────────────────
+    const visualInput = resolverInputVisualFancy({ decision, category, searchTerm, editorialType, intention });
+
+    // ── 3. Imagen + Copy en paralelo ─────────────────────────────────────────────────
+    const generarImagen = () => {
+      const { humanStrategy, visualFamily } = decision;
+      if (humanStrategy === FANCY_HUMAN_STRATEGY.ROXETTE) {
+        if (visualFamily === FANCY_VISUAL_FAMILY.STYLE_LIFESTYLE) return generarEscenaRoxetteAI(visualInput);
+        if (visualFamily === FANCY_VISUAL_FAMILY.BEAUTY_FIND)    return generarEscenaRoxetteBeautyAI(visualInput);
+        if (visualFamily === FANCY_VISUAL_FAMILY.HOME_FIND)      return generarEscenaRoxetteHomeAI(visualInput);
+        if (visualFamily === FANCY_VISUAL_FAMILY.TECH_LIFESTYLE)  return generarEscenaRoxetteTechAI(visualInput);
+        console.log('[ CoverFancy ] visualFamily desconocida:', visualFamily, '→ fallback Master A');
+        return generarEscenaRoxetteAI(visualInput);
+      }
+      // GENERIC_MODEL o NO_MODEL → generarEscenaFancyAI
+      return generarEscenaFancyAI({ ...visualInput, humanStrategy });
+    };
+
+    const [rawBuffer, rawCopy] = await Promise.all([
+      generarImagen(),
+      generarCopyFancy(editorialType, { tema: category, emoji: '' }, intention)
+    ]);
+
+    if (!rawBuffer) {
+      console.log('[ CoverFancy ] Generador de imagen devolvió null. Abortando.');
+      return null;
+    }
+
+    // ── 4. Parsear copy ─────────────────────────────────────────────────────────────
+    const copy = parsearCopyFancy(rawCopy);
+    console.log('[ CoverFancy ] Copy parseado → headline:', copy.headline);
+
+    // ── 5. Buffer a /tmp ───────────────────────────────────────────────────────────────
+    tmpPath = '/tmp/fancy-cover-' + Date.now() + '.png';
+    _fs.writeFileSync(tmpPath, rawBuffer);
+    console.log('[ CoverFancy ] Imagen base guardada en tmp:', tmpPath);
+
+    // ── 6. Brand Renderer V3 ──────────────────────────────────────────────────────────
+    const imageBuffer = await generarCoverFancyV3({
+      imageBuffer: tmpPath,
+      visualLabel: decision.visualLabel || editorialType,
+      headline:    copy.headline  || 'FANCY BY ROXETTE',
+      microtext:   copy.microtext || ''
+    });
+
+    if (!imageBuffer) {
+      console.log('[ CoverFancy ] generarCoverFancyV3 devolvió null.');
+      return null;
+    }
+
+    console.log('[ CoverFancy ] Pipeline completo. Buffer final:', imageBuffer.length, 'bytes');
+    return { imageBuffer, copy, decision };
+
+  } catch (err) {
+    console.log('[ CoverFancy ] Error:', err.message);
+    return null;
+  } finally {
+    if (tmpPath) { try { require('fs').unlinkSync(tmpPath); } catch(e) {} }
+  }
+}
+
+
 async function publicarCoverParaPagina(pageConfig, titulo) {
   if (!pageConfig.token || !pageConfig.id) {
     console.log('[MultiPage] Token o ID faltante para:', pageConfig.nombre);
@@ -3795,6 +3875,37 @@ INSTRUCCIONES:
 
     } catch (err) {
       console.log('[ test-fancy-ai-v3 ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && req.url === '/test-ejecutar-cover') {
+    try {
+      console.log('[ test-ejecutar-cover ] Orquestador completo: Director → Master → V3 + Copy');
+
+      const result = await ejecutarCoverFancy({
+        category:      'fashion / handbags / accessories',
+        editorialType: 'STYLE_IT',
+        intention:     'style transformation / discovery',
+        searchTerm:    'structured handbag for everyday outfits'
+      });
+
+      if (!result) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'ejecutarCoverFancy devolvió null. Revisar logs Railway.' }));
+        return;
+      }
+
+      console.log('[ test-ejecutar-cover ] Copy:', JSON.stringify(result.copy));
+      console.log('[ test-ejecutar-cover ] Decision label:', result.decision.visualLabel);
+
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(result.imageBuffer);
+
+    } catch (err) {
+      console.log('[ test-ejecutar-cover ] Error:', err.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
