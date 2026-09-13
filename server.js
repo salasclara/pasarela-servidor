@@ -3963,6 +3963,150 @@ INSTRUCCIONES:
     }
     return;
   }
+
+  // ── TEST STRATEGY: ROXETTE ──────────────────────────────────────────────────────
+  // Fuerza humanStrategy=ROXETTE + visualFamily=STYLE_LIFESTYLE → Master A
+  // Pipeline completo: resolverInputVisualFancy → generarEscenaRoxetteAI → /tmp → V3
+  if (req.method === 'GET' && req.url === '/test-strategy-roxette') {
+    try {
+      const _fs = require('fs');
+      let tmpPath = null;
+      console.log('[ test-strategy-roxette ] humanStrategy=ROXETTE | visualFamily=STYLE_LIFESTYLE → Master A');
+
+      const mockDecision = {
+        visualFamily:      FANCY_VISUAL_FAMILY.STYLE_LIFESTYLE,
+        humanStrategy:     FANCY_HUMAN_STRATEGY.ROXETTE,
+        editorialType:     'STYLE_IT',
+        visualLabel:       'STYLE IT',
+        sceneType:         'STREET_EDITORIAL',
+        action:            'walking_with_bag',
+        environment:       'vibrant urban street with boutique storefronts',
+        cameraDirection:   'three_quarter_right',
+        wardrobeDirection: 'blazer_jeans_accessories',
+        primaryObject:     'structured_handbag_neutral',
+        lightingMood:      'bright_warm_natural',
+        composition:       'asymmetric_right',
+        negativeSpace:     'left_35pct_blurred_architecture'
+      };
+
+      const visualInput = resolverInputVisualFancy({
+        decision:      mockDecision,
+        category:      'fashion / handbags / accessories',
+        searchTerm:    'structured handbag for everyday outfits',
+        editorialType: 'STYLE_IT',
+        intention:     'style transformation / discovery'
+      });
+
+      const rawBuffer = await generarEscenaRoxetteAI(visualInput);
+
+      if (!rawBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaRoxetteAI devolvió null. Revisar logs.' }));
+        return;
+      }
+
+      tmpPath = '/tmp/test-roxette-' + Date.now() + '.png';
+      _fs.writeFileSync(tmpPath, rawBuffer);
+
+      const coverBuffer = await generarCoverFancyV3({
+        imageBuffer: tmpPath,
+        visualLabel: mockDecision.visualLabel,
+        headline:    'EL DETALLE QUE CAMBIA TODO',
+        microtext:   'Un hallazgo. Otro look.'
+      });
+
+      try { _fs.unlinkSync(tmpPath); } catch(e) {}
+
+      if (!coverBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarCoverFancyV3 devolvió null.' }));
+        return;
+      }
+
+      console.log('[ test-strategy-roxette ] Pipeline completo. Buffer:', coverBuffer.length, 'bytes');
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(coverBuffer);
+
+    } catch (err) {
+      console.log('[ test-strategy-roxette ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // ── TEST STRATEGY: GENERIC_MODEL ────────────────────────────────────────────────
+  // Fuerza humanStrategy=GENERIC_MODEL + visualFamily=STYLE_LIFESTYLE → FancyAI
+  // Pipeline completo: resolverInputVisualFancy → generarEscenaFancyAI → /tmp → V3
+  // SIN referencias Roxette. Modelo genérica independiente.
+  if (req.method === 'GET' && req.url === '/test-strategy-generic') {
+    try {
+      const _fs = require('fs');
+      let tmpPath = null;
+      console.log('[ test-strategy-generic ] humanStrategy=GENERIC_MODEL | visualFamily=STYLE_LIFESTYLE → FancyAI');
+
+      const mockDecision = {
+        visualFamily:      FANCY_VISUAL_FAMILY.STYLE_LIFESTYLE,
+        humanStrategy:     FANCY_HUMAN_STRATEGY.GENERIC_MODEL,
+        editorialType:     'STYLE_IT',
+        visualLabel:       'STYLE IT',
+        sceneType:         'URBAN_LIFESTYLE',
+        action:            'walking_with_bag',
+        environment:       'urban_cafe_terrace',
+        cameraDirection:   'three_quarter_right',
+        wardrobeDirection: 'blazer_jeans_accessories',
+        primaryObject:     'structured_handbag_neutral',
+        lightingMood:      'bright_warm_natural',
+        composition:       'asymmetric_right',
+        negativeSpace:     'left_35pct_blurred_architecture'
+      };
+
+      const visualInput = resolverInputVisualFancy({
+        decision:      mockDecision,
+        category:      'fashion / handbags / accessories',
+        searchTerm:    'structured handbag for everyday outfits',
+        editorialType: 'STYLE_IT',
+        intention:     'style transformation / discovery'
+      });
+
+      const rawBuffer = await generarEscenaFancyAI({ ...visualInput, humanStrategy: FANCY_HUMAN_STRATEGY.GENERIC_MODEL });
+
+      if (!rawBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarEscenaFancyAI devolvió null. Revisar logs.' }));
+        return;
+      }
+
+      tmpPath = '/tmp/test-generic-' + Date.now() + '.png';
+      _fs.writeFileSync(tmpPath, rawBuffer);
+
+      const coverBuffer = await generarCoverFancyV3({
+        imageBuffer: tmpPath,
+        visualLabel: mockDecision.visualLabel,
+        headline:    'EL DETALLE QUE CAMBIA TODO',
+        microtext:   'Un hallazgo. Otro look.'
+      });
+
+      try { _fs.unlinkSync(tmpPath); } catch(e) {}
+
+      if (!coverBuffer) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'generarCoverFancyV3 devolvió null.' }));
+        return;
+      }
+
+      console.log('[ test-strategy-generic ] Pipeline completo. Buffer:', coverBuffer.length, 'bytes');
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(coverBuffer);
+
+    } catch (err) {
+      console.log('[ test-strategy-generic ] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
       if (req.method === 'GET' && req.url === '/test-fancy-roxette-beauty') {
     try {
       console.log('[ test-fancy-roxette-beauty ] Iniciando prueba MASTER B — Beauty Find');
