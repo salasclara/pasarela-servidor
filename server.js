@@ -1631,12 +1631,64 @@ NO split screen. NO canva-style template layout. NO ecommerce catalog look.
 NO beige studio. NO monochromaticbackground. NO disembodied hands only.
 Face MUST be visible and expressive.`;
 
-    const noModelInstruction = (humanStrategy === 'NO_MODEL')
-      ? '\n\nCRITICAL OVERRIDE — NO HUMAN SUBJECT:\nNo human subject. No person. No face. No hands. Editorial product styling only.'
-      : '';
+    // ── NO_MODEL: prompt separado, regla de prioridad al inicio ──────────────
+    const finalPrompt = (humanStrategy === 'NO_MODEL')
+      ? `ABSOLUTE RULE — NO HUMAN SUBJECT. This is mandatory and overrides everything else.
+No person. No woman. No face. No hands. No body parts. No silhouette. No shadow of a person.
+
+You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle and fashion brand on Facebook.
+
+VISUAL FAMILY: ${visualFamily}
+EDITORIAL TYPE: ${editorialType}
+CATEGORY: ${category}
+INTENTION: ${intention}
+SEARCH TERM: ${searchTerm}
+
+SCENE DIRECTION — EDITORIAL PRODUCT STYLING (NO HUMAN):
+
+Create a PREMIUM EDITORIAL PRODUCT PHOTOGRAPH. Fashion magazine meets social commerce.
+Style: flatlay, still life, or environmental product styling. Bright, luminous, warm natural daylight.
+
+SUBJECT:
+The product itself — a structured handbag, attractive, no logos or brand marks.
+Presented in a curated editorial context: on a surface, a chair, a café table, a step, or hanging.
+The product is the absolute protagonist. No hand holding it. No person nearby.
+
+ENVIRONMENT — choose one real editorial setting:
+- A bright café table with warm light, coffee cup, editorial props
+- An elegant marble or stone surface with architectural depth
+- A luminous outdoor terrace with natural greenery as background
+- A textured neutral surface (linen, wood) with lifestyle props
+- A fashion editorial flatlay with accessories arranged around the bag
+
+COLOR & ENERGY:
+Luminous, fresh, optimistic, scroll-stopping.
+Incorporate Fancy brand-compatible accent elements — fuchsia / hot pink, yellow, cream, white, or black — through:
+  - the bag color or accessories
+  - flowers, props, surface color, accent detail
+Do NOT tint the entire photograph.
+
+COMPOSITION:
+Full photographic canvas. Editorial asymmetric composition.
+Product integrated naturally in center or slightly off-center.
+Leave NATURAL negative space for brand headline — derived from the environment:
+  surface, blurred background, open sky, architectural depth.
+Three-dimensional depth: foreground props + product + background.
+Natural photographic depth of field — background softly bokeh.
+
+AESTHETIC KEYWORDS:
+premium product editorial, fashion editorial, social commerce, bright natural daylight,
+warm fresh luminous, optimistic, stylish, commercially attractive, scroll-stopping,
+editorial product styling, still life fashion, curated lifestyle
+
+ABSOLUTE RESTRICTIONS:
+NO text. NO logos. NO watermarks. NO brand names. NO monograms.
+NO split screen. NO canva-style template. NO ecommerce white background.
+NO PERSON. NO FACE. NO HANDS. NO HUMAN BODY PARTS OF ANY KIND.`
+      : scenePrompt;
     const body = JSON.stringify({
       model: 'gpt-image-1',
-      prompt: scenePrompt + noModelInstruction,
+      prompt: finalPrompt,
       n: 1,
       size: '1024x1024',
       quality: 'medium'
