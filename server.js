@@ -553,6 +553,53 @@ async function generarCopyFancy(tipoEditorial, categoria, intencionCompra) {
   });
 }
 
+
+// ── FANCY COPY PARSER — función pura y aislada ────────────────────────────────────
+// parsearCopyFancy: recibe raw string de generarCopyFancy, devuelve objeto estructurado.
+// SIN efectos secundarios. SIN llamadas externas. SIN modificar estado global.
+function parsearCopyFancy(rawCopy) {
+  if (!rawCopy) return { headline: null, microtext: null, caption: null, cta: null, hashtags: null };
+  function extract(label) {
+    const re = new RegExp(label + ':\\s*(.+)', 'i');
+    const m = rawCopy.match(re);
+    return m ? m[1].trim() : null;
+  }
+  return {
+    headline:  extract('TITULAR'),
+    microtext: extract('SUBTITULO'),
+    caption:   extract('CAPTION'),
+    cta:       extract('CTA'),
+    hashtags:  extract('HASHTAGS')
+  };
+}
+
+
+// ── FANCY VISUAL INPUT RESOLVER — función pura y aislada ─────────────────────────
+// resolverInputVisualFancy: normaliza la decisión del Visual Director
+// en el formato de input que aceptan los generadores (A/B/C/D y FancyAI).
+// SIN efectos secundarios. SIN llamadas externas. SIN modificar estado global.
+function resolverInputVisualFancy({ decision, category, searchTerm, editorialType, intention }) {
+  return {
+    category,
+    visualFamily:      decision.visualFamily,
+    editorialType:     editorialType || decision.editorialType,
+    intention,
+    searchTerm,
+    visualDecision: {
+      sceneType:         decision.sceneType,
+      action:            decision.action,
+      environment:       decision.environment,
+      cameraDirection:   decision.cameraDirection,
+      wardrobeDirection: decision.wardrobeDirection,
+      primaryObject:     decision.primaryObject,
+      lightingMood:      decision.lightingMood,
+      composition:       decision.composition,
+      negativeSpace:     decision.negativeSpace
+    }
+  };
+}
+
+
 async function getImagenCategoria(categoria, query) {
   const QUERIES = {
     'MODA': ['fashion editorial woman', 'elegant fashion latina', 'runway model', 'luxury fashion'],
@@ -1522,7 +1569,7 @@ async function generarCoverFancyV3({
 }
 
 
-async function generarEscenaFancyAI({ category, visualFamily, editorialType, intention, searchTerm, recentVisuals }) {
+async function generarEscenaFancyAI({ category, visualFamily, editorialType, intention, searchTerm, recentVisuals, humanStrategy }) {
   try {
     const scenePrompt = `You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle and fashion brand on Facebook.
 
@@ -1584,9 +1631,12 @@ NO split screen. NO canva-style template layout. NO ecommerce catalog look.
 NO beige studio. NO monochromaticbackground. NO disembodied hands only.
 Face MUST be visible and expressive.`;
 
+    const noModelInstruction = (humanStrategy === 'NO_MODEL')
+      ? '\n\nCRITICAL OVERRIDE — NO HUMAN SUBJECT:\nNo human subject. No person. No face. No hands. Editorial product styling only.'
+      : '';
     const body = JSON.stringify({
       model: 'gpt-image-1',
-      prompt: scenePrompt,
+      prompt: scenePrompt + noModelInstruction,
       n: 1,
       size: '1024x1024',
       quality: 'medium'
@@ -1844,7 +1894,7 @@ function getRoxetteReferences() {
 // generarEscenaRoxetteAI: genera escena lifestyle usando las fotos reales de Roxette
 // como referencias visuales de identidad vía OpenAI Image Editing.
 // COMPLETAMENTE AISLADA — no modifica getRoxetteReferences(), ni FANCY_STATE, ni producción.
-async function generarEscenaRoxetteAI({ category, visualFamily, editorialType, intention, searchTerm }) {
+async function generarEscenaRoxetteAI({ category, visualFamily, editorialType, intention, searchTerm, visualDecision }) {
   const _path = require('path');
   const _fs   = require('fs');
 
@@ -1964,7 +2014,7 @@ NO ecommerce catalog look.`;
 // ── ROXETTE_REFERENCE FASE 2 — MASTER B: BEAUTY FIND ─────────────────────────
 // generarEscenaRoxetteBeautyAI: genera escena beauty usando las fotos reales de Roxette.
 // COMPLETAMENTE AISLADA — no modifica generarEscenaRoxetteAI(), ni FANCY_STATE, ni producción.
-async function generarEscenaRoxetteBeautyAI() {
+async function generarEscenaRoxetteBeautyAI({ category, visualFamily, editorialType, intention, searchTerm, visualDecision } = {}) {
   const _path = require('path');
   const _fs   = require('fs');
 
@@ -2265,7 +2315,7 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
 // ── ROXETTE_REFERENCE FASE 2 — MASTER C: HOME FIND ────────────────────────────────────────────────────────────────
 // generarEscenaRoxetteHomeAI: genera escena home/lifestyle usando las fotos reales de Roxette.
 // COMPLETAMENTE AISLADA — no modifica Master A, Master B, FANCY_STATE, ni producción.
-async function generarEscenaRoxetteHomeAI() {
+async function generarEscenaRoxetteHomeAI({ category, visualFamily, editorialType, intention, searchTerm, visualDecision } = {}) {
   const _path = require('path');
   const _fs   = require('fs');
 
@@ -2627,7 +2677,7 @@ function publicarStoryFacebook(imageUrl) {
 // ── ROXETTE_REFERENCE FASE 2 — MASTER D: TECH LIFESTYLE ────────────────────────────────────────────────────────────
 // generarEscenaRoxetteTechAI: genera escena tech/lifestyle usando las fotos reales de Roxette.
 // COMPLETAMENTE AISLADA — no modifica Masters A, B, C, FANCY_STATE, ni producción.
-async function generarEscenaRoxetteTechAI() {
+async function generarEscenaRoxetteTechAI({ category, visualFamily, editorialType, intention, searchTerm, visualDecision } = {}) {
   const _path = require('path');
   const _fs   = require('fs');
 
