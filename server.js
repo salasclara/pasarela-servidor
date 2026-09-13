@@ -3704,6 +3704,7 @@ INSTRUCCIONES:
   }
     if (req.method === 'GET' && req.url === '/test-fancy-ai-v3') {
     try {
+      const _fs = require('fs');
       console.log('[ test-fancy-ai-v3 ] Pipeline completo: Master A → V3 branding');
 
       const rawBuffer = await generarEscenaRoxetteAI({
