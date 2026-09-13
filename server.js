@@ -3025,23 +3025,26 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const intencion      = elegirIntencionCompraFancy(tipoEditorial, categoria);
       const amazonLink     = obtenerEnlaceFancy(categoria, intencion);
       console.log('[Fancy] tipoEditorial:', tipoEditorial, '| cat:', categoria.tema, '| intencion:', intencion);
-      // Obtener imagen dinámica Pexels (anti-repetición)
-      const imagenBuffer   = await getImagenFancy(categoria, tipoEditorial, intencion);
-      // Generar copy type-specific
-      const copyRaw        = await generarCopyFancy(tipoEditorial, categoria, intencion);
-      const titularMatch   = copyRaw.match(/TITULAR:\s*(.+)/i);
-      const subMatch       = copyRaw.match(/SUBTITULO:\s*(.+)/i);
-      const capMatch       = copyRaw.match(/CAPTION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
-      const ctaMatch       = copyRaw.match(/CTA:\s*(.+)/i);
-      const hashMatch      = copyRaw.match(/HASHTAGS:\s*(.+)/i);
-      const titular        = titularMatch ? titularMatch[1].trim() : categoria.tema.toUpperCase();
-      const subtitulo      = subMatch     ? subMatch[1].trim()     : '';
-      const capTexto       = capMatch     ? capMatch[1].trim().replace(/#\S+/g, '').replace(/\n{3,}/g, '\n\n').trim()     : '';
-      const ctaTexto       = ctaMatch     ? ctaMatch[1].trim()     : '';
-      const hashArr        = [...new Set((hashMatch ? hashMatch[1].trim() : '#FancyByRoxette #Moda').split(/\s+/).filter(h => h.startsWith('#')))].slice(0, 4).join(' ');
+      // ── FANCY VISUAL ENGINE 2.0 ──────────────────────────────────────────────
+      const searchTerm   = construirSearchTermFancy(categoria, intencion);
+      const fancyResult  = await ejecutarCoverFancy({
+        category:      categoria.tema,
+        editorialType: tipoEditorial,
+        intention:     intencion,
+        searchTerm
+      });
+
+      coverBuffer  = fancyResult.imageBuffer;
+
+      const capTexto  = (fancyResult.copy.caption   || '').trim().replace(/#\S+/g, '').replace(/\n{3,}/g, '\n\n').trim();
+      const ctaTexto  = (fancyResult.copy.cta        || '').trim();
+      const hashArr   = [...new Set(
+        (fancyResult.copy.hashtags || '#FancyByRoxette #Moda').split(/\s+/).filter(h => h.startsWith('#'))
+      )].slice(0, 4).join(' ');
+
       captionTexto = capTexto + '\n\n' + ctaTexto + '\n🔗 ' + amazonLink + '\n*(enlace de afiliado)' + '\n\n— Fancy by Roxette ✨\n\n' + hashArr;
-      console.log('[Fancy] TITULAR:', titular, '| SUBTITULO:', subtitulo);
-      coverBuffer = await generarCoverFancy(pageConfig.branding, titular, subtitulo, imagenBuffer);
+      console.log('[Fancy] ejecutarCoverFancy OK | strategy:', fancyResult.decision?.humanStrategy, '| family:', fancyResult.decision?.visualFamily);
+      // ── FIN FANCY VISUAL ENGINE 2.0 ──────────────────────────────────────────
     } else if (esTrabajando) {
       const ganchoMatch = caption.match(/GANCHO:\s*(.+)/i);
       const revelMatch  = caption.match(/REVELACION:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
