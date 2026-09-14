@@ -1466,7 +1466,7 @@ async function generarCoverFancyV3({
 
   // ── CAPA 4: VISUAL LABEL — bloque amarillo pequeno ───────────────────────
   const label   = (visualLabel || 'STYLE IT').toUpperCase();
-  ctx.font      = 'bold 17px Roboto';
+  ctx.font      = 'bold 17px ' + (_montserratLoaded ? 'Montserrat' : 'Roboto');
   ctx.textAlign = 'left';
   const labelW  = ctx.measureText(label).width + 22;
   const labelH  = 34;
@@ -1481,7 +1481,7 @@ async function generarCoverFancyV3({
   const headWords   = (headline || '').toUpperCase().split(' ');
 
   function wrapHead(size) {
-    ctx.font = 'bold ' + size + 'px Roboto';
+    ctx.font = 'bold ' + size + 'px ' + (_montserratLoaded ? 'Montserrat' : 'Roboto');
     var lines = []; var curr = '';
     for (var i = 0; i < headWords.length; i++) {
       var test = curr ? curr + ' ' + headWords[i] : headWords[i];
@@ -1499,7 +1499,7 @@ async function generarCoverFancyV3({
     headSize -= 2;
     headLines = wrapHead(headSize);
   }
-  ctx.font = 'bold ' + headSize + 'px Roboto';
+  ctx.font = 'bold ' + headSize + 'px ' + (_montserratLoaded ? 'Montserrat' : 'Roboto');
 
   // Primera palabra larga (> 3 chars) va en fuchsia
   var accentWord = '';
