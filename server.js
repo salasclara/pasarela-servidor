@@ -1436,7 +1436,7 @@ async function generarCoverFancyV3({
     try {
       const logoBuf  = _fs.readFileSync(_logoPath);
       const logoImg  = await loadImage(logoBuf);
-      const logoMaxW = 220;
+      const logoMaxW = 440;
       const logoScale = Math.min(logoMaxW / logoImg.width, 1);
       const logoW    = Math.round(logoImg.width  * logoScale);
       const logoH    = Math.round(logoImg.height * logoScale);
