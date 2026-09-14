@@ -413,6 +413,7 @@ const FANCY_CATEGORIAS = [
   { tema: 'ropa casual chic diaria',         searchBase: 'women casual chic everyday outfit',  queryPexels: 'casual chic woman street fashion',    emoji: '🛍️', tiposModoA: ['FASHION_PICK','HOW_TO_STYLE','ESSENTIAL'],                     intenciones: ['comodidad','elevar_un_look','descubrir_algo_util'] },
   { tema: 'skincare y rutina de piel',       searchBase: 'skincare routine set women glow',    queryPexels: 'skincare beauty routine woman',       emoji: '🧴', tiposModoA: ['BEAUTY_FIND','DISCOVER_FANCY','HOW_TO_STYLE'],                intenciones: ['autocuidado','simplificar_rutina','resolver_un_problema'] },
   { tema: 'organización del hogar',          searchBase: 'home organization storage elegant',  queryPexels: 'home organization aesthetic storage', emoji: '🏠', tiposModoA: ['HOME_FIND','DISCOVER_FANCY','ESSENTIAL'],                      intenciones: ['organizar','resolver_un_problema','ahorrar_tiempo','simplificar_rutina'] },
+  { tema: 'tecnología útil y accesorios digitales', searchBase: 'useful tech accessories women productivity', queryPexels: 'woman modern technology home office', emoji: '💻', tiposModoA: ['DISCOVER_FANCY','ESSENTIAL'], intenciones: ['ahorrar_tiempo','organizar','resolver_un_problema','descubrir_algo_util'] },
   { tema: 'bolsos de trabajo y oficina',     searchBase: 'women work tote bag office laptop',  queryPexels: 'professional woman work bag office',  emoji: '💼', tiposModoA: ['ESSENTIAL','DISCOVER_FANCY','FASHION_PICK'],                   intenciones: ['organizar','comodidad','elevar_un_look','resolver_un_problema'] },
   { tema: 'regalo para ella',                searchBase: 'gift for women fashion accessories', queryPexels: 'gift box woman elegant fashion',      emoji: '🎁', tiposModoA: ['GIFT_IDEA','DISCOVER_FANCY','BEAUTY_FIND'],                    intenciones: ['regalo','descubrir_algo_util','autocuidado'] },
 ];
@@ -514,6 +515,27 @@ function resolverColeccionFancy(categoria) {
   }
 
   return { key: 'STYLE', url: FANCY_STOREFRONT_LINKS.STYLE };
+}
+
+// Funcion pura: ensambla el caption comercial con la coleccion correcta.
+// Se mantiene aislada hasta completar la prueba antes de conectarla a produccion.
+function construirCaptionFancyStorefront(copy, categoria) {
+  const coleccion = resolverColeccionFancy(categoria);
+  const capTexto = String(copy && copy.caption || '')
+    .trim().replace(/#\S+/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  const ctaTexto = String(copy && copy.cta || '').trim();
+  const hashArr = [...new Set(
+    String(copy && copy.hashtags || '#FancyByRoxette #AmazonFinds')
+      .split(/\s+/).filter(function(h) { return h.startsWith('#'); })
+  )].slice(0, 4).join(' ');
+
+  return {
+    collection: coleccion.key,
+    url: coleccion.url,
+    caption: capTexto + '\n\n' + ctaTexto + '\n🔗 ' + coleccion.url
+      + '\n\nAs an Amazon Associate, I earn from qualifying purchases.'
+      + '\n\n— Fancy by Roxette ✨\n\n' + hashArr
+  };
 }
 
 function obtenerEnlaceFancy(categoria, intencionCompra) {
@@ -2913,6 +2935,8 @@ function derivarProductoFancy(category) {
     return 'skincare bottle or serum, styled editorially';
   if (c.includes('organiza') || c.includes('hogar'))
     return 'elegant home organizer or stylish storage solution';
+  if (c.includes('tecnolog') || c.includes('tech') || c.includes('digital'))
+    return 'useful modern technology accessory for everyday productivity';
   if (c.includes('vestido') || c.includes('look'))
     return 'elegant dress or complete stylish outfit';
   if (c.includes('casual') || c.includes('ropa'))
@@ -3818,6 +3842,28 @@ INSTRUCCIONES:
     });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, productionChanged: false, samples: samples }, null, 2));
+    return;
+  }
+
+  // TEST AISLADO CAPTION — valida copy + coleccion sin publicar en Facebook.
+  if (req.method === 'GET' && req.url === '/test-fancy-storefront-caption') {
+    const sampleCopy = {
+      caption: 'Una selección pensada para hacer cada día más práctico y especial.',
+      cta: '✨ Descubre nuestras opciones aquí 👇',
+      hashtags: '#FancyByRoxette #AmazonFinds #ComprasConEstilo'
+    };
+    const sampleThemes = [
+      'joyería fina y accesorios',
+      'skincare y rutina de piel',
+      'organización del hogar',
+      'tecnología útil y accesorios digitales'
+    ];
+    const previews = sampleThemes.map(function(tema) {
+      const result = construirCaptionFancyStorefront(sampleCopy, tema);
+      return { tema: tema, coleccion: result.collection, url: result.url, caption: result.caption };
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, publishesToFacebook: false, previews: previews }, null, 2));
     return;
   }
 
