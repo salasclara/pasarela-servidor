@@ -1608,7 +1608,21 @@ COLOR & ENERGY:
 The image must feel luminous, fresh, optimistic, scroll-stopping.
 Warm but NOT beige. Natural but NOT flat.
 Organically incorporate small Fancy brand-compatible accent elements — fuchsia / hot pink, yellow, cream, white, or black — through:
-  - the bag color (fuchsia or structured neutral)
+SECONDARY PROPS RULE:
+Secondary props and environmental elements must naturally support
+the primaryObject and the selected category.
+Do NOT introduce unrelated products from other categories.
+The primaryObject must remain the clear visual hero.
+Environmental props may add lifestyle context, color and atmosphere,
+but must never compete with or confuse the product being featured.
+Examples:
+- Beauty/skincare: vanity tray, mirror, towel, flowers, candle,
+  generic complementary beauty containers.
+- Shoes/fashion: clothing, mirror, chair, wardrobe/environmental details.
+- Home: baskets, shelves, decor, household organization elements.
+- Tech: desk accessories and compatible technology.
+Never introduce a handbag into a beauty/skincare scene unless
+the selected primaryObject/category itself is handbags.
   - flowers, café props, architectural detail, outfit accent
 Do NOT tint the entire photograph fuchsia or yellow.
 
@@ -1665,7 +1679,12 @@ ENVIRONMENT — choose one real editorial setting:
 COLOR & ENERGY:
 Luminous, fresh, optimistic, scroll-stopping.
 Incorporate Fancy brand-compatible accent elements — fuchsia / hot pink, yellow, cream, white, or black — through:
-  - the bag color or accessories
+SECONDARY PROPS RULE:
+Secondary props must visually support the primaryObject and its category.
+Do NOT introduce unrelated products from other categories.
+Environmental objects may provide context but must never become
+a competing product.
+The primaryObject remains the unmistakable visual hero.
   - flowers, props, surface color, accent detail
 Do NOT tint the entire photograph.
 
