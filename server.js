@@ -3116,7 +3116,6 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const tipoEditorial  = elegirTipoEditorialFancy();
       const categoria      = elegirCategoriaFancy(tipoEditorial);
       const intencion      = elegirIntencionCompraFancy(tipoEditorial, categoria);
-      const amazonLink     = obtenerEnlaceFancy(categoria, intencion);
       console.log('[Fancy] tipoEditorial:', tipoEditorial, '| cat:', categoria.tema, '| intencion:', intencion);
       // ── FANCY VISUAL ENGINE 2.0 ──────────────────────────────────────────────
       const searchTerm   = construirSearchTermFancy(categoria, intencion);
@@ -3135,7 +3134,12 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
         (fancyResult.copy.hashtags || '#FancyByRoxette #Moda').split(/\s+/).filter(h => h.startsWith('#'))
       )].slice(0, 4).join(' ');
 
-      captionTexto = capTexto + '\n\n' + ctaTexto + '\n🔗 ' + amazonLink + '\n*(enlace de afiliado)' + '\n\n— Fancy by Roxette ✨\n\n' + hashArr;
+      const storefrontPost = construirCaptionFancyStorefront({
+        caption: capTexto,
+        cta: ctaTexto,
+        hashtags: hashArr
+      }, categoria);
+      captionTexto = storefrontPost.caption;
       console.log('[Fancy] ejecutarCoverFancy OK | strategy:', fancyResult.decision?.humanStrategy, '| family:', fancyResult.decision?.visualFamily);
       // ── FIN FANCY VISUAL ENGINE 2.0 ──────────────────────────────────────────
     } else if (esTrabajando) {
