@@ -26,7 +26,7 @@ try {
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const pool = new Pool({
-  connectionString: process.env.PASARELA_PG || 'postgresql://postgres:OdKnMEAUvdaRgvUCWeESUNbJrSIhEMeS@postgres.railway.internal:5432/railway',
+  connectionString: process.env.PASARELA_PG,
   ssl: false,
 });
 
@@ -191,13 +191,8 @@ setInterval(actualizarNoticias, 30 * 60 * 1000);
 
 
 const FB_PAGE_ID = process.env.FACEBOOK_PAGE_ID || '160291140702239';
-// Token fallback hardcodeado — mover a env var cuando Railway resuelva el bug de inyeccion
-const _t1 = 'EAAdtfhDFcGgBSWRMBSvgY2TtemBhHblRHEZBa74Q8v8r';
-const _t2 = 'zBwCwBpFZCz5DQ5YZAZBQXCbw3wSZBEn7pYa8HM1XHEUL';
-const _t3 = 'Uv9PowiaWJmc9bh91ws28OTOAZAnNQZARWN183ebKzgm5';
-const _t4 = 'w3Y3eckyKZBOkRQhlCoO0CyAsMFvDbKhUQe6pZAiZCt2F';
-const _t5 = 'x63OMQIFALkwybWoY5jdI4vrwgZD';
-const FB_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN || (_t1+_t2+_t3+_t4+_t5);
+// Credencial exclusiva de Railway — nunca usar tokens como fallback en el codigo.
+const FB_PAGE_TOKEN = process.env.FACEBOOK_PAGE_TOKEN || '';
 
 // ============================================================
 // CONFIG MULTI-PÁGINA — agregar pages aquí cuando tengas los tokens
@@ -438,6 +433,15 @@ const INTENCION_MODIFIER = {
   ahorrar_tiempo:        'quick easy',
 };
 
+// Colecciones oficiales de Fancy by Roxette en Amazon Storefront.
+// Los valores pueden reemplazarse desde Railway sin cambiar el codigo.
+const FANCY_STOREFRONT_LINKS = Object.freeze({
+  STYLE:  process.env.FANCY_STORE_STYLE_URL  || 'https://a.co/d/02D76mvq',
+  BEAUTY: process.env.FANCY_STORE_BEAUTY_URL || 'https://a.co/d/08eDmJ5X',
+  HOME:   process.env.FANCY_STORE_HOME_URL   || 'https://a.co/d/06NYM0SM',
+  TECH:   process.env.FANCY_STORE_TECH_URL   || 'https://a.co/d/004NNOGr',
+});
+
 // Estado anti-repetición en RAM — se reinicia en cada redeploy de Railway
 const FANCY_STATE = {
   lastTipos:         [],  // últimos 3 tipoEditorial usados
@@ -492,6 +496,24 @@ function construirSearchTermFancy(categoria, intencionCompra) {
   const result = (categoria.searchBase + (mod ? ' ' + mod : '')).trim();
   console.log('[Fancy] searchTerm:', result);
   return result;
+}
+
+// Funcion pura: resuelve una categoria editorial a su coleccion Storefront.
+// No publica, no modifica FANCY_STATE y no llama servicios externos.
+function resolverColeccionFancy(categoria) {
+  const tema = String(categoria && categoria.tema ? categoria.tema : categoria || '').toLowerCase();
+
+  if (/maquillaje|belleza|beauty|skincare|piel|cosmetic|perfume/.test(tema)) {
+    return { key: 'BEAUTY', url: FANCY_STOREFRONT_LINKS.BEAUTY };
+  }
+  if (/hogar|home|decor|organiza|cocina|living|s[aá]bana|toalla/.test(tema)) {
+    return { key: 'HOME', url: FANCY_STOREFRONT_LINKS.HOME };
+  }
+  if (/tecnolog|tech|laptop|gadget|productividad|aud[ií]fono|smart|digital/.test(tema)) {
+    return { key: 'TECH', url: FANCY_STOREFRONT_LINKS.TECH };
+  }
+
+  return { key: 'STYLE', url: FANCY_STOREFRONT_LINKS.STYLE };
 }
 
 function obtenerEnlaceFancy(categoria, intencionCompra) {
@@ -3781,6 +3803,23 @@ INSTRUCCIONES:
   }
 
   // TEST FANCY — dispara publicarCoverParaPagina SOLO para Fancy by Roxette
+
+  // TEST AISLADO STOREFRONT — solo JSON, no publica y no modifica estado.
+  if (req.method === 'GET' && req.url === '/test-fancy-storefront-links') {
+    const samples = FANCY_CATEGORIAS.map(function(categoria) {
+      const coleccion = resolverColeccionFancy(categoria);
+      return { tema: categoria.tema, coleccion: coleccion.key, url: coleccion.url };
+    });
+    const techSample = resolverColeccionFancy('tecnologia util y accesorios digitales');
+    samples.push({
+      tema: 'tecnologia util y accesorios digitales',
+      coleccion: techSample.key,
+      url: techSample.url
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, productionChanged: false, samples: samples }, null, 2));
+    return;
+  }
 
   if (req.method === 'GET' && req.url === '/test-fancy') {
     const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
