@@ -35,6 +35,47 @@ pool.query("ALTER TABLE noticias ADD COLUMN IF NOT EXISTS imagen TEXT DEFAULT ''
   .then(() => console.log('[DB] Columna imagen verificada OK'))
   .catch(e => console.error('[DB] Migracion imagen error:', e.message));
 
+// Catálogo Maestro de Fancy — almacenamiento independiente del scheduler.
+// Conserva referencias y fechas de actualización; nunca descarga ni almacena
+// binarios de imágenes de Amazon.
+const fancyCatalogReady = pool.query(`
+  CREATE TABLE IF NOT EXISTS fancy_product_catalog (
+    id BIGSERIAL PRIMARY KEY,
+    asin VARCHAR(10) NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    category VARCHAR(20) NOT NULL CHECK (category IN ('STYLE', 'BEAUTY', 'HOME', 'TECH')),
+    detail_url TEXT NOT NULL,
+    image_url TEXT,
+    price_display VARCHAR(80),
+    price_amount NUMERIC(12,2),
+    currency VARCHAR(3),
+    rating NUMERIC(3,2),
+    review_count INTEGER,
+    availability VARCHAR(80),
+    commission_rate NUMERIC(6,3),
+    commission_estimate NUMERIC(12,2),
+    source_keyword TEXT,
+    status VARCHAR(20) NOT NULL DEFAULT 'active'
+      CHECK (status IN ('active', 'out_of_stock', 'discarded', 'pending')),
+    price_fetched_at TIMESTAMPTZ,
+    last_verified_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_fancy_catalog_category_status
+    ON fancy_product_catalog (category, status);
+  CREATE INDEX IF NOT EXISTS idx_fancy_catalog_last_verified
+    ON fancy_product_catalog (last_verified_at DESC);
+`)
+  .then(() => {
+    console.log('[DB] Catálogo Maestro Fancy verificado OK');
+    return true;
+  })
+  .catch(e => {
+    console.error('[DB] Migración catálogo Fancy error:', e.message);
+    return false;
+  });
+
 const FUENTES = [
   // Moda Internacional
   { nombre: 'Vogue México', url: 'https://www.vogue.mx/feed/rss', scope: 'Moda' },
@@ -1219,6 +1260,121 @@ async function getAmazonProductFancy(searchTerm) {
     }
     return null;
   }
+}
+
+const FANCY_CATALOG_CATEGORIES = new Set(['STYLE', 'BEAUTY', 'HOME', 'TECH']);
+const FANCY_CATALOG_STATUSES = new Set(['active', 'out_of_stock', 'discarded', 'pending']);
+
+function validarProductoCatalogoFancy(producto, metadata = {}) {
+  const asin = String(producto && producto.asin || '').trim().toUpperCase();
+  const title = String(producto && producto.title || '').trim();
+  const detailUrl = String(producto && producto.detailPageURL || '').trim();
+  const category = String(metadata.category || '').trim().toUpperCase();
+  const status = String(metadata.status || 'active').trim().toLowerCase();
+
+  if (!/^[A-Z0-9]{10}$/.test(asin)) throw new Error('ASIN inválido para catálogo Fancy');
+  if (!title) throw new Error('Título faltante para catálogo Fancy');
+  if (!/^https:\/\/(www\.)?amazon\.com\//i.test(detailUrl)) {
+    throw new Error('URL de producto Amazon inválida');
+  }
+  if (!FANCY_CATALOG_CATEGORIES.has(category)) throw new Error('Categoría Fancy inválida');
+  if (!FANCY_CATALOG_STATUSES.has(status)) throw new Error('Estado Fancy inválido');
+
+  return { asin, title, detailUrl, category, status };
+}
+
+// Preparado para la fase de importación. No se llama desde el scheduler ni
+// desde ninguna ruta pública mientras Creators API no esté habilitada.
+async function guardarProductoCatalogoFancy(producto, metadata = {}) {
+  const validado = validarProductoCatalogoFancy(producto, metadata);
+  const priceAmount = metadata.priceAmount == null ? null : Number(metadata.priceAmount);
+  const rating = metadata.rating == null ? null : Number(metadata.rating);
+  const reviewCount = metadata.reviewCount == null ? null : Number(metadata.reviewCount);
+  const commissionRate = metadata.commissionRate == null ? null : Number(metadata.commissionRate);
+  const commissionEstimate = metadata.commissionEstimate == null ? null : Number(metadata.commissionEstimate);
+
+  const result = await pool.query(`
+    INSERT INTO fancy_product_catalog (
+      asin, title, category, detail_url, image_url,
+      price_display, price_amount, currency, rating, review_count,
+      availability, commission_rate, commission_estimate, source_keyword,
+      status, price_fetched_at, last_verified_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, $5,
+      $6, $7, $8, $9, $10,
+      $11, $12, $13, $14,
+      $15, $16, NOW(), NOW()
+    )
+    ON CONFLICT (asin) DO UPDATE SET
+      title = EXCLUDED.title,
+      category = EXCLUDED.category,
+      detail_url = EXCLUDED.detail_url,
+      image_url = EXCLUDED.image_url,
+      price_display = EXCLUDED.price_display,
+      price_amount = EXCLUDED.price_amount,
+      currency = EXCLUDED.currency,
+      rating = EXCLUDED.rating,
+      review_count = EXCLUDED.review_count,
+      availability = EXCLUDED.availability,
+      commission_rate = EXCLUDED.commission_rate,
+      commission_estimate = EXCLUDED.commission_estimate,
+      source_keyword = EXCLUDED.source_keyword,
+      status = EXCLUDED.status,
+      price_fetched_at = EXCLUDED.price_fetched_at,
+      last_verified_at = NOW(),
+      updated_at = NOW()
+    RETURNING id, asin, category, status, created_at, updated_at
+  `, [
+    validado.asin,
+    validado.title,
+    validado.category,
+    validado.detailUrl,
+    producto.image || null,
+    producto.price || null,
+    Number.isFinite(priceAmount) ? priceAmount : null,
+    metadata.currency || null,
+    Number.isFinite(rating) ? rating : null,
+    Number.isInteger(reviewCount) ? reviewCount : null,
+    metadata.availability || null,
+    Number.isFinite(commissionRate) ? commissionRate : null,
+    Number.isFinite(commissionEstimate) ? commissionEstimate : null,
+    metadata.sourceKeyword || null,
+    validado.status,
+    producto.price ? new Date() : null
+  ]);
+
+  return result.rows[0];
+}
+
+async function obtenerResumenCatalogoFancy() {
+  const [totales, categorias, estados] = await Promise.all([
+    pool.query(`
+      SELECT COUNT(*)::int AS total,
+             COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+             MAX(last_verified_at) AS last_verified_at
+      FROM fancy_product_catalog
+    `),
+    pool.query(`
+      SELECT category, COUNT(*)::int AS products
+      FROM fancy_product_catalog
+      GROUP BY category
+      ORDER BY category
+    `),
+    pool.query(`
+      SELECT status, COUNT(*)::int AS products
+      FROM fancy_product_catalog
+      GROUP BY status
+      ORDER BY status
+    `)
+  ]);
+
+  return {
+    total: totales.rows[0].total,
+    active: totales.rows[0].active,
+    lastVerifiedAt: totales.rows[0].last_verified_at,
+    byCategory: categorias.rows,
+    byStatus: estados.rows
+  };
 }
 
 async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
@@ -4542,6 +4698,30 @@ INSTRUCCIONES:
       console.log('[ test-fancy-visual-director ] Error:', err.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // Diagnóstico de solo lectura. No consulta Amazon, no escribe productos y
+  // no está conectado a la producción de contenido.
+  if (req.method === 'GET' && req.url === '/test-fancy-catalog') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    try {
+      const ready = await fancyCatalogReady;
+      if (!ready) {
+        res.end(JSON.stringify({ ok: false, error: 'catalog_schema_unavailable', publishesContent: false }));
+        return;
+      }
+      const summary = await obtenerResumenCatalogoFancy();
+      res.end(JSON.stringify({
+        ok: true,
+        catalog: 'fancy_product_catalog',
+        connectedToScheduler: false,
+        publishesContent: false,
+        summary
+      }));
+    } catch (error) {
+      res.end(JSON.stringify({ ok: false, error: error.message, publishesContent: false }));
     }
     return;
   }
