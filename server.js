@@ -1625,11 +1625,15 @@ SEARCH TERM: ${searchTerm}
 
 SCENE DIRECTION — STYLE_LIFESTYLE ITERATION 2:
 
-Create a PREMIUM LIFESTYLE EDITORIAL PHOTOGRAPH.
-Style reference: fashion magazine meets social commerce. Bright, luminous, warm natural daylight.
+Create a REALISTIC PREMIUM LIFESTYLE PHOTOGRAPH.
+Style reference: authentic social commerce photography with editorial polish. Bright, luminous, warm natural daylight.
+It must look captured with a real camera in a real location: believable skin texture,
+natural fabric folds, accurate materials, subtle imperfections and physically plausible light.
+NO CGI look. NO plastic skin. NO surreal details. NO over-retouching. NO obvious AI aesthetic.
 
 SUBJECT:
 A stylish adult woman, naturally beautiful, with her face CLEARLY VISIBLE.
+She is a generic lifestyle model and must NOT resemble Roxette or any known person.
 Three-quarter shot preferred. Relaxed, happy expression. Natural pose.
 She is interacting authentically with her environment — not posing for a catalog.
 Contemporary outfit, accessible yet aspirational.
@@ -1691,9 +1695,9 @@ NO beige studio. NO monochromaticbackground. NO disembodied hands only.
 Face MUST be visible and expressive.`;
 
     // ── NO_MODEL: prompt separado, regla de prioridad al inicio ──────────────
-    const finalPrompt = (humanStrategy === 'NO_MODEL')
-      ? `ABSOLUTE RULE — NO HUMAN SUBJECT. This is mandatory and overrides everything else.
-No person. No woman. No face. No hands. No body parts. No silhouette. No shadow of a person.
+    const finalPrompt = (humanStrategy === 'NO_MODEL' || humanStrategy === 'PRODUCT_HERO')
+      ? `ABSOLUTE RULE — PRODUCT-LED SCENE. This is mandatory and overrides everything else.
+No recognizable person, face, hands or human body parts. Use a real-life product setting.
 
 You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle and fashion brand on Facebook.
 
@@ -1705,13 +1709,15 @@ SEARCH TERM: ${searchTerm}
 
 SCENE DIRECTION — EDITORIAL PRODUCT STYLING (NO HUMAN):
 
-Create a PREMIUM EDITORIAL PRODUCT PHOTOGRAPH. Fashion magazine meets social commerce.
-Style: flatlay, still life, or environmental product styling. Bright, luminous, warm natural daylight.
+Create a REALISTIC PREMIUM PRODUCT PHOTOGRAPH. Authentic social commerce with editorial polish.
+Style: real-life still life or environmental product styling. Bright, luminous, warm natural daylight.
+It must look captured with a real camera: accurate materials, natural shadows, subtle imperfections,
+believable depth and physically plausible light. NO CGI look. NO surreal details. NO obvious AI aesthetic.
 
 SUBJECT:
 The product itself: ${primaryObject || 'a fashion or lifestyle item'} — attractive, generic, no logos or brand marks.
 Presented in a curated editorial context: on a surface, a chair, a café table, a step, or hanging.
-The product is the absolute protagonist. No hand holding it. No person nearby.
+The product is the absolute protagonist. No recognizable person nearby.
 
 ENVIRONMENT — choose one real editorial setting:
 - A bright café table with warm light, coffee cup, editorial props
@@ -1794,9 +1800,11 @@ NO PERSON. NO FACE. NO HANDS. NO HUMAN BODY PARTS OF ANY KIND.`
 
 // ── FANCY HUMAN STRATEGY — constantes de arquitectura (no conectado aún) ────
 const FANCY_HUMAN_STRATEGY = Object.freeze({
-  ROXETTE:       'ROXETTE',
-  GENERIC_MODEL: 'GENERIC_MODEL',
-  NO_MODEL:      'NO_MODEL'
+  ROXETTE:        'ROXETTE', // legado: reservado para pruebas aisladas, nunca producción
+  REAL_LIFESTYLE: 'REAL_LIFESTYLE',
+  PRODUCT_HERO:   'PRODUCT_HERO',
+  GENERIC_MODEL:  'GENERIC_MODEL', // compatibilidad con rutas antiguas de prueba
+  NO_MODEL:       'NO_MODEL'       // compatibilidad con rutas antiguas de prueba
 });
 
 
@@ -1858,7 +1866,6 @@ function dirigirVisualFancy({ editorialType, category, intention, searchTerm, re
   // ── 3. Anti-repetición: escenas recientes usadas ──────────────────────────
   const recentScenes    = recentVisuals.map(function(v) { return v.sceneType || ''; });
   const recentFamilies  = recentVisuals.map(function(v) { return v.visualFamily || ''; });
-  const recentStrategies = recentVisuals.slice(0, 3).map(function(v) { return v.humanStrategy || ''; });
 
   const pool = SCENE_POOLS[visualFamily] || SCENE_POOLS['STYLE_LIFESTYLE'];
   const available = pool.filter(function(s) { return recentScenes.indexOf(s) === -1; });
@@ -1868,34 +1875,21 @@ function dirigirVisualFancy({ editorialType, category, intention, searchTerm, re
   const stHash = (st + et).split('').reduce(function(acc, c) { return acc + c.charCodeAt(0); }, 0);
   const sceneType = scenePool[stHash % scenePool.length];
 
-  // ── 4. Determinar humanStrategy ───────────────────────────────────────────
-  // Regla 1: si las últimas 2 fueron ROXETTE → forzar variación
-  const lastTwoRoxette = recentStrategies.length >= 2 &&
-    recentStrategies[0] === 'ROXETTE' && recentStrategies[1] === 'ROXETTE';
-
-  // Regla 2: preferencias por familia
-  // HOME_FIND:    prefiere NO_MODEL o ROXETTE (no generic)
-  // TECH_LIFESTYLE: prefiere ROXETTE o NO_MODEL
-  // BEAUTY_FIND:  los 3 válidos, ligera preferencia ROXETTE
-  // STYLE_LIFESTYLE: los 3 válidos
-
-  // Distribución base por familia (índice: 0=ROXETTE, 1=GENERIC_MODEL, 2=NO_MODEL)
+  // ── 4. Determinar estrategia visual ──────────────────────────────────────
+  // Roxette queda excluida de producción. Fancy alterna fotografía lifestyle
+  // realista con escenas donde el producto es el protagonista.
   const STRATEGY_WEIGHTS = {
-    STYLE_LIFESTYLE: ['ROXETTE', 'NO_MODEL', 'GENERIC_MODEL', 'NO_MODEL', 'NO_MODEL', 'GENERIC_MODEL'],
-    BEAUTY_FIND:     ['ROXETTE', 'NO_MODEL', 'ROXETTE', 'GENERIC_MODEL', 'NO_MODEL', 'NO_MODEL'],
-    HOME_FIND:       ['NO_MODEL', 'ROXETTE', 'NO_MODEL', 'NO_MODEL', 'ROXETTE', 'NO_MODEL'],
-    TECH_LIFESTYLE:  ['ROXETTE', 'NO_MODEL', 'ROXETTE', 'NO_MODEL', 'NO_MODEL', 'GENERIC_MODEL']
+    STYLE_LIFESTYLE: ['REAL_LIFESTYLE', 'PRODUCT_HERO', 'REAL_LIFESTYLE', 'PRODUCT_HERO'],
+    BEAUTY_FIND:     ['PRODUCT_HERO', 'REAL_LIFESTYLE', 'PRODUCT_HERO', 'REAL_LIFESTYLE'],
+    HOME_FIND:       ['PRODUCT_HERO', 'PRODUCT_HERO', 'REAL_LIFESTYLE', 'PRODUCT_HERO'],
+    TECH_LIFESTYLE:  ['PRODUCT_HERO', 'REAL_LIFESTYLE', 'PRODUCT_HERO', 'PRODUCT_HERO']
   };
 
   const weights = STRATEGY_WEIGHTS[visualFamily] || STRATEGY_WEIGHTS['STYLE_LIFESTYLE'];
   let humanStrategy = weights[stHash % weights.length];
 
-  // Aplicar regla anti-repetición
-  if (lastTwoRoxette && humanStrategy === 'ROXETTE') {
-    humanStrategy = (visualFamily === 'TECH_LIFESTYLE' || visualFamily === 'HOME_FIND')
-      ? 'NO_MODEL'
-      : (stHash % 2 === 0 ? 'NO_MODEL' : 'GENERIC_MODEL');
-  }
+  // Guardia absoluta: ninguna entrada histórica puede reactivar a Roxette.
+  if (humanStrategy === 'ROXETTE') humanStrategy = 'PRODUCT_HERO';
 
   // ── 5. Detalles de escena por tipo ────────────────────────────────────────
   const SCENE_DETAILS = {
@@ -1941,7 +1935,7 @@ function dirigirVisualFancy({ editorialType, category, intention, searchTerm, re
     TECH_LIFESTYLE:  'light neutral blouse or fitted top, straight-leg jeans or casual trousers, subtle gold accessories'
   };
 
-  const wardrobeDirection = humanStrategy === 'NO_MODEL'
+  const wardrobeDirection = (humanStrategy === 'NO_MODEL' || humanStrategy === 'PRODUCT_HERO')
     ? 'no person in frame — editorial object styling'
     : (WARDROBE[visualFamily] || WARDROBE['STYLE_LIFESTYLE']);
 
@@ -1955,9 +1949,10 @@ function dirigirVisualFancy({ editorialType, category, intention, searchTerm, re
 
   // ── 8. Razón editorial ────────────────────────────────────────────────────
   const REASONS = {
-    ROXETTE:       'Recurring brand face reinforces Fancy editorial identity and personal discovery voice',
-    GENERIC_MODEL: 'Generic lifestyle model provides fresh visual variety while maintaining editorial quality',
-    NO_MODEL:      'Editorial object scene allows product/category to breathe — cleaner and more versatile for overlay'
+    REAL_LIFESTYLE: 'Authentic real-life setting builds trust without using Roxette likeness',
+    PRODUCT_HERO:   'Product-led realistic scene keeps the recommendation clear and commercially useful',
+    GENERIC_MODEL:  'Legacy generic lifestyle model route',
+    NO_MODEL:       'Legacy editorial object route'
   };
 
   // ── 9. Ensamble de la decisión visual ────────────────────────────────────
@@ -1965,7 +1960,7 @@ function dirigirVisualFancy({ editorialType, category, intention, searchTerm, re
     visualFamily:      visualFamily,
     humanStrategy:     humanStrategy,
     sceneType:         sceneType,
-    action:            humanStrategy === 'NO_MODEL' ? 'no person — editorial styling' : details.action,
+    action:            (humanStrategy === 'NO_MODEL' || humanStrategy === 'PRODUCT_HERO') ? 'product-led realistic styling' : details.action,
     environment:       details.environment,
     composition:       'SUBJECT_RIGHT_NEGATIVE_LEFT',
     cameraAngle:       sceneType.includes('FLATLAY') ? 'top-down editorial' : 'medium editorial lifestyle',
@@ -2954,7 +2949,8 @@ function derivarProductoFancy(category) {
 // INPUT:  { category, editorialType, intention, searchTerm, recentVisuals }
 // OUTPUT: { imageBuffer, copy: { headline, microtext, caption, cta, hashtags }, decision }
 // Imagen + copy corren en paralelo (Promise.all).
-// Routing: ROXETTE → Masters A/B/C/D | GENERIC_MODEL/NO_MODEL → generarEscenaFancyAI
+// Producción: REAL_LIFESTYLE / PRODUCT_HERO → generarEscenaFancyAI.
+// Las referencias de Roxette permanecen solo en rutas de prueba aisladas.
 // NO conectar a producción ni a Facebook hasta autorización de Clara.
 async function ejecutarCoverFancy({ category, editorialType, intention, searchTerm, recentVisuals = [] }) {
   const _fs = require('fs');
@@ -2973,17 +2969,12 @@ async function ejecutarCoverFancy({ category, editorialType, intention, searchTe
     // ── 3. Imagen + Copy en paralelo ─────────────────────────────────────────────────
     const generarImagen = () => {
       const { humanStrategy, visualFamily } = decision;
-      if (humanStrategy === FANCY_HUMAN_STRATEGY.ROXETTE) {
-        if (visualFamily === FANCY_VISUAL_FAMILY.STYLE_LIFESTYLE) return generarEscenaRoxetteAI(visualInput);
-        if (visualFamily === FANCY_VISUAL_FAMILY.BEAUTY_FIND)    return generarEscenaRoxetteBeautyAI(visualInput);
-        if (visualFamily === FANCY_VISUAL_FAMILY.HOME_FIND)      return generarEscenaRoxetteHomeAI(visualInput);
-        if (visualFamily === FANCY_VISUAL_FAMILY.TECH_LIFESTYLE)  return generarEscenaRoxetteTechAI(visualInput);
-        console.log('[ CoverFancy ] visualFamily desconocida:', visualFamily, '→ fallback Master A');
-        return generarEscenaRoxetteAI(visualInput);
-      }
-      // GENERIC_MODEL o NO_MODEL → generarEscenaFancyAI
+      // Guardia de producción: incluso una decisión heredada nunca usa referencias de Roxette.
+      const productionStrategy = humanStrategy === FANCY_HUMAN_STRATEGY.ROXETTE
+        ? FANCY_HUMAN_STRATEGY.PRODUCT_HERO
+        : humanStrategy;
       const primaryObject = derivarProductoFancy(category) || decision.primaryObject;
-      return generarEscenaFancyAI({ ...visualInput, humanStrategy, primaryObject });
+      return generarEscenaFancyAI({ ...visualInput, humanStrategy: productionStrategy, primaryObject });
     };
 
     const [rawBuffer, rawCopy] = await Promise.all([
