@@ -3021,6 +3021,89 @@ async function ejecutarCoverFancy({ category, editorialType, intention, searchTe
 }
 
 
+function adaptarCaptionFancyInstagram(caption) {
+  return String(caption || '')
+    .replace(/🔗\s*https?:\/\/\S+/g, '🔗 Encuentra la selección en el enlace de nuestro perfil.')
+    .trim();
+}
+
+async function obtenerInstagramVinculado(pageConfig, pageToken) {
+  const url = `https://graph.facebook.com/v19.0/${pageConfig.id}`
+    + `?fields=instagram_business_account{id,username}&access_token=${encodeURIComponent(pageToken)}`;
+  const response = await fetch(url);
+  const data = await response.json();
+  if (data.error) throw new Error('Instagram connection: ' + data.error.message);
+  return data.instagram_business_account || null;
+}
+
+async function obtenerUrlFotoFacebook(photoId, pageToken) {
+  const url = `https://graph.facebook.com/v19.0/${photoId}`
+    + `?fields=images&access_token=${encodeURIComponent(pageToken)}`;
+  const response = await fetch(url);
+  const data = await response.json();
+  if (data.error) throw new Error('Facebook photo URL: ' + data.error.message);
+  const images = Array.isArray(data.images) ? data.images : [];
+  const image = images.find(item => item && item.source);
+  if (!image) throw new Error('Facebook no devolvió una URL pública para la imagen');
+  return image.source;
+}
+
+async function esperarContenedorInstagram(creationId, pageToken) {
+  for (let intento = 1; intento <= 5; intento++) {
+    const url = `https://graph.facebook.com/v19.0/${creationId}`
+      + `?fields=status_code,status&access_token=${encodeURIComponent(pageToken)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.error) throw new Error('Instagram container status: ' + data.error.message);
+    if (data.status_code === 'FINISHED') return;
+    if (data.status_code === 'ERROR' || data.status_code === 'EXPIRED') {
+      throw new Error('Instagram container: ' + (data.status || data.status_code));
+    }
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+  throw new Error('Instagram container no estuvo listo a tiempo');
+}
+
+async function publicarFancyInstagram({ pageConfig, pageToken, photoId, caption }) {
+  const instagram = await obtenerInstagramVinculado(pageConfig, pageToken);
+  if (!instagram || !instagram.id) {
+    console.log('[Fancy Instagram] Cuenta profesional no vinculada o no visible para el token');
+    return { ok: false, reason: 'instagram_not_linked' };
+  }
+
+  const imageUrl = await obtenerUrlFotoFacebook(photoId, pageToken);
+  const mediaParams = new URLSearchParams({
+    image_url: imageUrl,
+    caption: adaptarCaptionFancyInstagram(caption),
+    access_token: pageToken
+  });
+  const mediaResponse = await fetch(`https://graph.facebook.com/v19.0/${instagram.id}/media`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: mediaParams.toString()
+  });
+  const mediaData = await mediaResponse.json();
+  if (mediaData.error) throw new Error('Instagram media: ' + mediaData.error.message);
+  if (!mediaData.id) throw new Error('Instagram no devolvió creation_id');
+
+  await esperarContenedorInstagram(mediaData.id, pageToken);
+
+  const publishParams = new URLSearchParams({
+    creation_id: mediaData.id,
+    access_token: pageToken
+  });
+  const publishResponse = await fetch(`https://graph.facebook.com/v19.0/${instagram.id}/media_publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: publishParams.toString()
+  });
+  const publishData = await publishResponse.json();
+  if (publishData.error) throw new Error('Instagram publish: ' + publishData.error.message);
+
+  console.log('[Fancy Instagram] ✅ Publicado | media id:', publishData.id, '| usuario:', instagram.username || instagram.id);
+  return { ok: true, id: publishData.id, username: instagram.username || null };
+}
+
 async function publicarCoverParaPagina(pageConfig, titulo, opciones = {}) {
   if (!pageConfig.token || !pageConfig.id) {
     console.log('[MultiPage] Token o ID faltante para:', pageConfig.nombre);
@@ -3201,7 +3284,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
     form.append('caption', (esTrabajando || esFancy) ? captionTexto : captionTexto + '\n\n' + pageConfig.hashtags);
     form.append('access_token', pageToken);
     form.append('source', coverBuffer, { filename: 'cover.jpg', contentType: 'image/jpeg' });
-    await new Promise((resolve, reject) => {
+    const facebookResult = await new Promise((resolve, reject) => {
       form.submit(`https://graph.facebook.com/v19.0/${pageConfig.id}/photos`, (err, res) => {
         if (err) return reject(err);
         let body = '';
@@ -3220,6 +3303,21 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
         });
       });
     });
+
+    // Instagram es un segundo destino independiente. Un error aquí nunca
+    // revierte ni bloquea la publicación que ya se completó en Facebook.
+    if (esFancy && facebookResult && facebookResult.id) {
+      try {
+        await publicarFancyInstagram({
+          pageConfig,
+          pageToken,
+          photoId: facebookResult.id,
+          caption: captionTexto
+        });
+      } catch (instagramError) {
+        console.error('[Fancy Instagram] Error aislado:', instagramError.message);
+      }
+    }
   } catch(e) { console.error('[MultiPage] Error en', pageConfig.nombre, ':', e.message); }
 }
 
@@ -3840,6 +3938,33 @@ INSTRUCCIONES:
     });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, productionChanged: false, samples: samples }, null, 2));
+    return;
+  }
+
+  // Diagnóstico seguro: comprueba la vinculación con Instagram sin publicar.
+  if (req.method === 'GET' && req.url === '/test-fancy-instagram-config') {
+    const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    if (!fancyPage || !fancyPage.token) {
+      res.end(JSON.stringify({ ok: false, connected: false, error: 'FANCY_BY_TOKEN no configurado' }));
+      return;
+    }
+    try {
+      let pageToken = fancyPage.token;
+      const tokenResponse = await fetch(`https://graph.facebook.com/v19.0/${fancyPage.id}?fields=access_token&access_token=${encodeURIComponent(fancyPage.token)}`);
+      const tokenData = await tokenResponse.json();
+      if (tokenData.access_token) pageToken = tokenData.access_token;
+      const instagram = await obtenerInstagramVinculado(fancyPage, pageToken);
+      res.end(JSON.stringify({
+        ok: !!instagram,
+        connected: !!instagram,
+        instagramUserId: instagram ? instagram.id : null,
+        username: instagram ? instagram.username || null : null,
+        publishesContent: false
+      }));
+    } catch (error) {
+      res.end(JSON.stringify({ ok: false, connected: false, error: error.message, publishesContent: false }));
+    }
     return;
   }
 
