@@ -3030,7 +3030,7 @@ async function ejecutarCoverFancy({ category, editorialType, intention, searchTe
 }
 
 
-async function publicarCoverParaPagina(pageConfig, titulo) {
+async function publicarCoverParaPagina(pageConfig, titulo, opciones = {}) {
   if (!pageConfig.token || !pageConfig.id) {
     console.log('[MultiPage] Token o ID faltante para:', pageConfig.nombre);
     return;
@@ -3113,8 +3113,11 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       coverBuffer = await generarCoverAmarEs(pageConfig.branding, gancho, reflexion, dallePrompt);
     } else if (esFancy) {
       // ── Fancy Commerce Engine Fase 2 ─────────────────────────────────────
-      const tipoEditorial  = elegirTipoEditorialFancy();
-      const categoria      = elegirCategoriaFancy(tipoEditorial);
+      const categoriaForzada = opciones.fancyCollection === 'TECH'
+        ? FANCY_CATEGORIAS.find(c => resolverColeccionFancy(c).key === 'TECH')
+        : null;
+      const tipoEditorial  = categoriaForzada ? 'ESSENTIAL' : elegirTipoEditorialFancy();
+      const categoria      = categoriaForzada || elegirCategoriaFancy(tipoEditorial);
       const intencion      = elegirIntencionCompraFancy(tipoEditorial, categoria);
       console.log('[Fancy] tipoEditorial:', tipoEditorial, '| cat:', categoria.tema, '| intencion:', intencion);
       // ── FANCY VISUAL ENGINE 2.0 ──────────────────────────────────────────────
@@ -3893,6 +3896,29 @@ INSTRUCCIONES:
       } catch(e) {
         console.error('[TEST FANCY] ERROR:', e.message);
         console.log('[TEST FANCY] ── FIN CON ERROR ──────────────────────');
+      }
+    })();
+    return;
+  }
+
+  // Prueba de publicación dirigida: fuerza la colección TECH y conserva
+  // intacta la rotación normal del scheduler.
+  if (req.method === 'GET' && req.url === '/test-fancy-tech-publish') {
+    const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
+    if (!fancyPage || !fancyPage.token) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Fancy page config o FANCY_BY_TOKEN no disponible' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ mensaje: 'Publicando prueba TECH FAVORITES — ver logs Railway', pagina: fancyPage.nombre }));
+    (async () => {
+      console.log('[TEST FANCY TECH] ── INICIO ─────────────────────────');
+      try {
+        await publicarCoverParaPagina(fancyPage, 'Tech Favorites', { fancyCollection: 'TECH' });
+        console.log('[TEST FANCY TECH] ── FIN OK ────────────────────────');
+      } catch (e) {
+        console.error('[TEST FANCY TECH] ERROR:', e.message);
       }
     })();
     return;
