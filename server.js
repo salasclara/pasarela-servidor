@@ -580,7 +580,7 @@ function construirCaptionFancyStorefront(copy, categoria) {
 }
 
 function obtenerEnlaceFancy(categoria, intencionCompra) {
-  const AMAZON_TAG = process.env.AMAZON_TAG || 'fancybyroxette-20';
+  const AMAZON_TAG = process.env.AMAZON_TAG || 'clarasala0a-20';
   const searchTerm = construirSearchTermFancy(categoria, intencionCompra);
   const link = 'https://www.amazon.com/s?k=' + encodeURIComponent(searchTerm) + '&tag=' + AMAZON_TAG;
   console.log('[Fancy] amazonLink:', link);
@@ -1173,82 +1173,83 @@ async function generarCoverFe(branding, afirmacion, hero, versiculo, referencia)
 //                    AMAZON_CREATORS_CREDENTIAL_VERSION, AMAZON_TAG
 // NO publicar — solo obtener producto real y loggear
 
-async function getAmazonProductFancy(searchTerm) {
+function crearClienteAmazonFancy() {
   const credentialId      = process.env.AMAZON_CREATORS_CREDENTIAL_ID;
   const credentialSecret  = process.env.AMAZON_CREATORS_CREDENTIAL_SECRET;
   const credentialVersion = process.env.AMAZON_CREATORS_CREDENTIAL_VERSION;
-  const partnerTag        = process.env.AMAZON_TAG || 'fancybyroxette-20';
 
   if (!credentialId || !credentialSecret || !credentialVersion) {
-    console.error('[AmazonFancy] ⚠️ Faltan variables Railway: AMAZON_CREATORS_CREDENTIAL_ID / SECRET / VERSION');
-    return null;
+    throw new Error('Faltan variables Railway: AMAZON_CREATORS_CREDENTIAL_ID / SECRET / VERSION');
   }
 
+  const { ApiClient, DefaultApi } = require('@amzn/creatorsapi-nodejs-sdk');
+  const apiClient = new ApiClient();
+  apiClient.credentialId = credentialId;
+  apiClient.credentialSecret = credentialSecret;
+  apiClient.version = credentialVersion;
+  return new DefaultApi(apiClient);
+}
+
+function normalizarProductoAmazonFancy(item) {
+  if (!item) return null;
+  const title = item.itemInfo && item.itemInfo.title && item.itemInfo.title.displayValue;
+  const image = item.images && item.images.primary &&
+    (item.images.primary.large || item.images.primary.medium);
+  if (!item.asin || !title || !item.detailPageURL || !image || !image.url) return null;
+
+  const listing = item.offersV2 && item.offersV2.listings && item.offersV2.listings[0];
+  const money = listing && listing.price && listing.price.money;
+  const availability = listing && listing.availability;
+  const reviews = item.customerReviews;
+
+  return {
+    asin: String(item.asin).toUpperCase(),
+    title,
+    image: image.url,
+    price: money && money.displayAmount || null,
+    priceAmount: money && Number.isFinite(Number(money.amount)) ? Number(money.amount) : null,
+    currency: money && money.currency || null,
+    availability: availability && (availability.message || availability.type) || null,
+    rating: reviews && reviews.starRating && Number.isFinite(Number(reviews.starRating.value))
+      ? Number(reviews.starRating.value) : null,
+    reviewCount: reviews && Number.isInteger(Number(reviews.count)) ? Number(reviews.count) : null,
+    detailPageURL: item.detailPageURL
+  };
+}
+
+async function buscarProductosAmazonFancy(searchTerm, itemCount = 5) {
+  const partnerTag = process.env.AMAZON_TAG || 'clarasala0a-20';
+  const { SearchItemsRequestContent } = require('@amzn/creatorsapi-nodejs-sdk');
+  const api = crearClienteAmazonFancy();
+  const req = new SearchItemsRequestContent(partnerTag);
+  req.keywords = searchTerm;
+  req.searchIndex = 'All';
+  req.itemCount = Math.max(1, Math.min(Number(itemCount) || 5, 10));
+  req.resources = [
+    'images.primary.large',
+    'images.primary.medium',
+    'itemInfo.title',
+    'offersV2.listings.price',
+    'offersV2.listings.availability',
+    'customerReviews.count',
+    'customerReviews.starRating'
+  ];
+
+  const response = await api.searchItems('www.amazon.com', req);
+  const items = response && response.searchResult && response.searchResult.items;
+  return (Array.isArray(items) ? items : [])
+    .map(normalizarProductoAmazonFancy)
+    .filter(Boolean);
+}
+
+async function getAmazonProductFancy(searchTerm) {
   try {
-    const { ApiClient, DefaultApi, SearchItemsRequestContent } = require('@amzn/creatorsapi-nodejs-sdk');
-
-    // Configurar cliente OAuth 2.0 (el SDK gestiona token, caché y renovación)
-    const apiClient = new ApiClient();
-    apiClient.credentialId      = credentialId;
-    apiClient.credentialSecret  = credentialSecret;
-    apiClient.version           = credentialVersion;
-
-    const api = new DefaultApi(apiClient);
-
-    // Construir SearchItemsRequest
-    const req         = new SearchItemsRequestContent(partnerTag);
-    req.keywords      = searchTerm;
-    req.searchIndex   = 'All';
-    req.itemCount     = 5;
-    req.resources     = [
-      'images.primary.large',
-      'images.primary.medium',
-      'itemInfo.title',
-      'offersV2.listings.price',
-    ];
-
-    // Llamada al API — marketplace US
-    const response = await api.searchItems('www.amazon.com', req);
-
-    // Validar respuesta
-    const items = response && response.searchResult && response.searchResult.items;
-    if (!items || items.length === 0) {
+    const productos = await buscarProductosAmazonFancy(searchTerm, 5);
+    if (!productos.length) {
       console.error('[AmazonFancy] NoProductsFound para:', searchTerm);
       return null;
     }
-
-    // Filtrar candidatos válidos: deben tener ASIN + title + URL + imagen
-    const candidatos = items.filter(item => {
-      const tieneAsin  = !!item.asin;
-      const tieneTitle = item.itemInfo && item.itemInfo.title && item.itemInfo.title.displayValue;
-      const tieneURL   = !!item.detailPageURL;
-      const tieneImg   = item.images && item.images.primary &&
-                         (item.images.primary.large || item.images.primary.medium);
-      return tieneAsin && tieneTitle && tieneURL && tieneImg;
-    });
-
-    if (candidatos.length === 0) {
-      console.error('[AmazonFancy] Sin candidatos válidos (sin imagen o sin URL) para:', searchTerm);
-      return null;
-    }
-
-    // Seleccionar primer candidato válido
-    const item   = candidatos[0];
-    const imgObj = item.images.primary.large || item.images.primary.medium;
-    const price  = item.offersV2 && item.offersV2.listings && item.offersV2.listings[0] &&
-                   item.offersV2.listings[0].price && item.offersV2.listings[0].price.money
-                     ? item.offersV2.listings[0].price.money.displayAmount
-                     : null; // precio es OPCIONAL — no es error si es null
-
-    // Producto normalizado — estructura interna Fancy
-    return {
-      asin:          item.asin,
-      title:         item.itemInfo.title.displayValue,
-      image:         imgObj.url || null,
-      price:         price,           // string displayable o null
-      detailPageURL: item.detailPageURL, // URL devuelta por Amazon — NO reconstruir
-    };
-
+    return productos[0];
   } catch (e) {
     // Loggear error de API sin exponer credenciales
     const errType   = (e.status ? 'HTTP ' + e.status : '') || '';
@@ -1375,6 +1376,83 @@ async function obtenerResumenCatalogoFancy() {
     byCategory: categorias.rows,
     byStatus: estados.rows
   };
+}
+
+const FANCY_CATALOG_SEARCH_PLAN = Object.freeze([
+  { category: 'STYLE',  keyword: 'women fashion accessories elegant everyday' },
+  { category: 'BEAUTY', keyword: 'women skincare makeup beauty essentials' },
+  { category: 'HOME',   keyword: 'home organization decor practical essentials' },
+  { category: 'TECH',   keyword: 'tech accessories productivity lifestyle gadgets' }
+]);
+
+function clasificarErrorAmazonFancy(error) {
+  if (error && error.status === 403) return 'AssociateNotEligible';
+  if (error && error.status === 401) return 'InvalidCredentials';
+  return 'AmazonApiUnavailable';
+}
+
+async function prepararVistaPreviaCatalogoFancy() {
+  const seenAsins = new Set();
+  const categories = [];
+
+  for (const plan of FANCY_CATALOG_SEARCH_PLAN) {
+    try {
+      const candidatos = await buscarProductosAmazonFancy(plan.keyword, 10);
+      const products = [];
+      for (const producto of candidatos) {
+        if (seenAsins.has(producto.asin)) continue;
+        seenAsins.add(producto.asin);
+        products.push(producto);
+        if (products.length === 5) break;
+      }
+      categories.push({
+        category: plan.category,
+        keyword: plan.keyword,
+        requested: 5,
+        found: products.length,
+        products
+      });
+    } catch (error) {
+      return {
+        ok: false,
+        eligible: false,
+        error: clasificarErrorAmazonFancy(error),
+        categories,
+        total: categories.reduce((sum, item) => sum + item.found, 0)
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    eligible: true,
+    categories,
+    total: categories.reduce((sum, item) => sum + item.found, 0)
+  };
+}
+
+// Importador interno preparado para la fase autorizada. No tiene ruta HTTP y
+// no se ejecuta desde el scheduler: requiere una vista previa aprobada.
+async function importarVistaPreviaCatalogoFancy(preview) {
+  if (!preview || preview.ok !== true || preview.total < 1) {
+    throw new Error('Vista previa válida requerida para importar catálogo Fancy');
+  }
+  const imported = [];
+  for (const group of preview.categories) {
+    for (const product of group.products) {
+      imported.push(await guardarProductoCatalogoFancy(product, {
+        category: group.category,
+        priceAmount: product.priceAmount,
+        currency: product.currency,
+        rating: product.rating,
+        reviewCount: product.reviewCount,
+        availability: product.availability,
+        sourceKeyword: group.keyword,
+        status: 'pending'
+      }));
+    }
+  }
+  return imported;
 }
 
 async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
@@ -4722,6 +4800,29 @@ INSTRUCCIONES:
       }));
     } catch (error) {
       res.end(JSON.stringify({ ok: false, error: error.message, publishesContent: false }));
+    }
+    return;
+  }
+
+  // Vista previa de solo lectura: consulta Amazon y devuelve candidatos, pero
+  // nunca guarda productos ni publica contenido.
+  if (req.method === 'GET' && req.url === '/test-fancy-catalog-preview') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    try {
+      const preview = await prepararVistaPreviaCatalogoFancy();
+      res.end(JSON.stringify({
+        ...preview,
+        writesCatalog: false,
+        connectedToScheduler: false,
+        publishesContent: false
+      }));
+    } catch (error) {
+      res.end(JSON.stringify({
+        ok: false,
+        error: clasificarErrorAmazonFancy(error),
+        writesCatalog: false,
+        publishesContent: false
+      }));
     }
     return;
   }
