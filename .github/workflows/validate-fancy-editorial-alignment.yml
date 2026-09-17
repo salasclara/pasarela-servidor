@@ -7,6 +7,8 @@ on:
       - 'scripts/validate-fancy-editorial-alignment.js'
       - 'src/services/FancyInstagramPublisher.js'
       - 'scripts/validate-fancy-instagram-publisher.js'
+      - 'src/services/FancyInstagramTestEndpoint.js'
+      - 'scripts/validate-fancy-instagram-test-endpoint.js'
       - '.github/workflows/validate-fancy-editorial-alignment.yml'
   workflow_dispatch:
 
@@ -22,3 +24,5 @@ jobs:
         run: node scripts/validate-fancy-editorial-alignment.js
       - name: Validate Instagram publisher
         run: node scripts/validate-fancy-instagram-publisher.js
+      - name: Validate Instagram controlled endpoint
+        run: node scripts/validate-fancy-instagram-test-endpoint.js
