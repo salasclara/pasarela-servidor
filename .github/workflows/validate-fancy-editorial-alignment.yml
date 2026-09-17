@@ -5,6 +5,8 @@ on:
     paths:
       - 'src/services/FancyEditorialAlignment.js'
       - 'scripts/validate-fancy-editorial-alignment.js'
+      - 'src/services/FancyInstagramPublisher.js'
+      - 'scripts/validate-fancy-instagram-publisher.js'
       - '.github/workflows/validate-fancy-editorial-alignment.yml'
   workflow_dispatch:
 
@@ -18,3 +20,5 @@ jobs:
           node-version: '20'
       - name: Validate semantic alignment
         run: node scripts/validate-fancy-editorial-alignment.js
+      - name: Validate Instagram publisher
+        run: node scripts/validate-fancy-instagram-publisher.js
