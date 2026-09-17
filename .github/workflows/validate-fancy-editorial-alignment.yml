@@ -3,6 +3,7 @@ name: Validate Fancy Editorial Alignment
 on:
   pull_request:
     paths:
+      - 'server.js'
       - 'src/services/FancyEditorialAlignment.js'
       - 'scripts/validate-fancy-editorial-alignment.js'
       - 'src/services/FancyInstagramPublisher.js'
@@ -20,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Validate server syntax
+        run: node --check server.js
       - name: Validate semantic alignment
         run: node scripts/validate-fancy-editorial-alignment.js
       - name: Validate Instagram publisher
