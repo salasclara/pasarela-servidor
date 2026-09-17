@@ -4,7 +4,9 @@ on:
   pull_request:
     paths:
       - 'src/services/FancyEditorialAlignment.js'
+      - 'src/services/FancyAlignmentObserver.js'
       - 'scripts/validate-fancy-editorial-alignment.js'
+      - 'scripts/validate-fancy-alignment-observer.js'
       - '.github/workflows/validate-fancy-editorial-alignment.yml'
   workflow_dispatch:
 
@@ -18,3 +20,5 @@ jobs:
           node-version: '20'
       - name: Validate semantic alignment
         run: node scripts/validate-fancy-editorial-alignment.js
+      - name: Validate observation mode
+        run: node scripts/validate-fancy-alignment-observer.js
