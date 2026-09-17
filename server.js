@@ -4910,6 +4910,13 @@ INSTRUCCIONES:
   }
 
 
+  // Fancy Instagram controlled test endpoint — manual only, never scheduler-driven.
+  if (req.url.startsWith('/test-fancy-instagram-publish')) {
+    const { handleFancyInstagramTestEndpoint } = require('./src/services/FancyInstagramTestEndpoint');
+    const handled = await handleFancyInstagramTestEndpoint(req, res);
+    if (handled) return;
+  }
+
   res.writeHead(404);
   res.end();
 });
