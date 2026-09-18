@@ -4283,6 +4283,55 @@ INSTRUCCIONES:
     return;
   }
 
+  // ── FANCY FONT DIAGNOSTICS — TEST AISLADO ────────────────────────────────
+  // Renderiza las familias realmente registradas por @napi-rs/canvas.
+  // NO publica · NO scheduler · NO Amazon · NO modifica estado.
+  if (req.method === 'GET' && req.url === '/test-fancy-fonts') {
+    try {
+      const canvas = createCanvas(1080, 1080);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#FFF8F1';
+      ctx.fillRect(0, 0, 1080, 1080);
+      ctx.textAlign = 'left';
+
+      const samples = [
+        { name: 'Playfair', loaded: _playfairLoaded, font: '64px Playfair' },
+        { name: 'Cormorant', loaded: _cormorantLoaded, font: '64px Cormorant' },
+        { name: 'Montserrat', loaded: _montserratLoaded, font: '64px Montserrat' },
+        { name: 'Roboto', loaded: true, font: '64px Roboto' }
+      ];
+
+      ctx.font = 'bold 30px Roboto';
+      ctx.fillStyle = '#D50067';
+      ctx.fillText('FANCY FONT DIAGNOSTICS', 70, 90);
+
+      samples.forEach(function(sample, i) {
+        const y = 220 + i * 190;
+        ctx.font = 'bold 22px Roboto';
+        ctx.fillStyle = sample.loaded ? '#147A3A' : '#A00000';
+        ctx.fillText(sample.name + ' — ' + (sample.loaded ? 'REGISTERED' : 'FALLBACK'), 70, y - 55);
+        ctx.font = sample.font;
+        ctx.fillStyle = '#111111';
+        ctx.fillText('Fancy Editorial Glamour', 70, y + 25);
+        ctx.font = '30px ' + sample.name;
+        ctx.fillStyle = '#555555';
+        ctx.fillText('El detalle que cambia todo', 70, y + 75);
+      });
+
+      console.log('[FancyFonts] Playfair:', _playfairLoaded ? 'OK' : 'FALLBACK',
+        '| Cormorant:', _cormorantLoaded ? 'OK' : 'FALLBACK',
+        '| Montserrat:', _montserratLoaded ? 'OK' : 'FALLBACK');
+
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(canvas.toBuffer('image/png'));
+    } catch (err) {
+      console.log('[FancyFonts] Error:', err.message);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   // ── FANCY VISUAL ENGINE V2 — TEST AISLADO ──────────────────────────────────
   // Devuelve image/png directamente al navegador.
   // NO publica · NO llama Commerce Engine · NO modifica FANCY_STATE · NO scheduler.
