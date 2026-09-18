@@ -1767,7 +1767,7 @@ async function generarCoverFancyV3({
   const headWords   = (headline || '').toUpperCase().split(' ');
 
   function wrapHead(size) {
-    ctx.font = 'bold ' + size + 'px ' + (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto'));
+    ctx.font = 'bold ' + size + 'px ' + (_playfairLoaded ? 'Playfair' : (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto')));
     var lines = []; var curr = '';
     for (var i = 0; i < headWords.length; i++) {
       var test = curr ? curr + ' ' + headWords[i] : headWords[i];
@@ -1786,7 +1786,7 @@ async function generarCoverFancyV3({
     headSize -= 2;
     headLines = wrapHead(headSize);
   }
-  ctx.font = 'bold ' + headSize + 'px ' + (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto'));
+  ctx.font = 'bold ' + headSize + 'px ' + (_playfairLoaded ? 'Playfair' : (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto')));
 
   // Primera palabra larga (> 3 chars) va en fuchsia
   var accentWord = '';
@@ -1795,7 +1795,7 @@ async function generarCoverFancyV3({
   }
   if (!accentWord && headWords.length > 0) accentWord = headWords[0];
 
-  const HEAD_Y  = labelY + labelH + 34;
+  const HEAD_Y  = labelY + labelH + 64;
   const HEAD_LH = Math.round(headSize * 1.15);
 
   headLines.slice(0, 4).forEach(function(line, i) {
@@ -1826,10 +1826,10 @@ async function generarCoverFancyV3({
   var microEndY = headEndY;
   if (microtext) {
     const MICRO_Y  = headEndY + 20;
-    // Subtitulo legible en feed movil: nunca microtipografia.\n    ctx.font       = (_cormorantLoaded ? 'italic 30px Cormorant' : '26px Roboto');
+    // Subtitulo legible en feed movil: jerarquia premium y fallback seguro.\n    ctx.font       = (_playfairLoaded ? '30px Playfair' : (_cormorantLoaded ? '30px Cormorant' : '28px Roboto'));
     ctx.fillStyle  = DARK;
     ctx.textAlign  = 'left';
-    var mWords = microtext.split(' ');
+    var mWords = microtext.trim().split(/\\s+/);
     var mLines = []; var mCurr = '';
     for (var mi = 0; mi < mWords.length; mi++) {
       if (mLines.length >= 2) break;
