@@ -1767,7 +1767,7 @@ async function generarCoverFancyV3({
   const headWords   = (headline || '').toUpperCase().split(' ');
 
   function wrapHead(size) {
-    ctx.font = 'bold ' + size + 'px ' + (_montserratLoaded ? 'Montserrat' : 'Roboto');
+    ctx.font = 'bold ' + size + 'px ' + (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto'));
     var lines = []; var curr = '';
     for (var i = 0; i < headWords.length; i++) {
       var test = curr ? curr + ' ' + headWords[i] : headWords[i];
@@ -1779,13 +1779,13 @@ async function generarCoverFancyV3({
     return lines;
   }
 
-  var headSize  = 72;
+  // Premium Typography v1 — headline editorial de moda, con mayor presencia.\n  var headSize  = 78;
   var headLines = wrapHead(headSize);
-  while (headSize > 36 && (headLines.length > 4 || headLines.some(function(l) { return ctx.measureText(l).width > EDITORIAL_W; }))) {
+  while (headSize > 48 && (headLines.length > 4 || headLines.some(function(l) { return ctx.measureText(l).width > EDITORIAL_W; }))) {
     headSize -= 2;
     headLines = wrapHead(headSize);
   }
-  ctx.font = 'bold ' + headSize + 'px ' + (_montserratLoaded ? 'Montserrat' : 'Roboto');
+  ctx.font = 'bold ' + headSize + 'px ' + (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto'));
 
   // Primera palabra larga (> 3 chars) va en fuchsia
   var accentWord = '';
@@ -1825,7 +1825,7 @@ async function generarCoverFancyV3({
   var microEndY = headEndY;
   if (microtext) {
     const MICRO_Y  = headEndY + 20;
-    ctx.font       = '22px Roboto';
+    // Subtitulo legible en feed movil: nunca microtipografia.\n    ctx.font       = (_cormorantLoaded ? 'italic 30px Cormorant' : '26px Roboto');
     ctx.fillStyle  = DARK;
     ctx.textAlign  = 'left';
     var mWords = microtext.split(' ');
@@ -1839,9 +1839,9 @@ async function generarCoverFancyV3({
     }
     if (mCurr && mLines.length < 2) mLines.push(mCurr);
     mLines.forEach(function(line, i) {
-      ctx.fillText(line, MARGIN, MICRO_Y + i * 30);
+      ctx.fillText(line, MARGIN, MICRO_Y + i * 38);
     });
-    microEndY = MICRO_Y + mLines.length * 30;
+    microEndY = MICRO_Y + mLines.length * 38;
   }
 
   // ── CAPA 7: ACENTO FUCHSIA ───────────────────────────────────────────────
