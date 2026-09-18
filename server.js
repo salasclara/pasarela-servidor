@@ -1779,7 +1779,8 @@ async function generarCoverFancyV3({
     return lines;
   }
 
-  // Premium Typography v1 — headline editorial de moda, con mayor presencia.\n  var headSize  = 78;
+  // Premium Typography v1 — headline editorial de moda, con mayor presencia.
+  var headSize  = 78;
   var headLines = wrapHead(headSize);
   while (headSize > 48 && (headLines.length > 4 || headLines.some(function(l) { return ctx.measureText(l).width > EDITORIAL_W; }))) {
     headSize -= 2;
