@@ -1,0 +1,23 @@
+name: Fancy Analytics Observation Validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/services/FancyAnalyticsObservation.js'
+      - 'scripts/validate-fancy-analytics-observation.js'
+      - '.github/workflows/fancy-analytics-observation.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: |
+          node --check src/services/FancyAnalyticsObservation.js
+          node --check scripts/validate-fancy-analytics-observation.js
+      - name: Validate Observation Mode
+        run: node scripts/validate-fancy-analytics-observation.js
