@@ -357,75 +357,91 @@ const PAGES_EXTRA = [
 // ============================================================
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const _fontPath = require('path').join(__dirname, 'Roboto-Bold.ttf');
-// Registrar fuente al arrancar — @napi-rs/canvas en Linux no usa fuentes del sistema
-(async () => {
-  try {
-    if (!require('fs').existsSync(_fontPath)) {
-      console.log('[Fonts] Descargando Roboto-Bold...');
-      const _buf = await new Promise(res => {
-        require('https').get('https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc9.ttf', r => {
-          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
-        }).on('error', () => res(null));
-      });
-      if (_buf && _buf.length > 10000) { require('fs').writeFileSync(_fontPath, _buf); console.log('[Fonts] Roboto-Bold descargado OK'); }
-    }
-    if (require('fs').existsSync(_fontPath)) {
-      GlobalFonts.registerFromPath(_fontPath, 'Roboto');
-      console.log('[Fonts] Roboto registrado para canvas');
-    }
-    // Cormorant Garamond Bold — hero editorial
-    const _fontPathCG = require('path').join(__dirname, 'CormorantGaramond-Bold.ttf');
-    if (!require('fs').existsSync(_fontPathCG)) {
-      console.log('[Fonts] Descargando CormorantGaramond-Bold...');
-      const _bufCG = await new Promise(res => {
-        require('https').get('https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/CormorantGaramond-Bold.ttf', r => {
-          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
-        }).on('error', () => res(null));
-      });
-      if (_bufCG && _bufCG.length > 10000) { require('fs').writeFileSync(_fontPathCG, _bufCG); console.log('[Fonts] CormorantGaramond-Bold descargado OK'); }
-    }
-    if (require('fs').existsSync(_fontPathCG)) {
-      GlobalFonts.registerFromPath(_fontPathCG, 'Cormorant');
-      _cormorantLoaded = true;
-      console.log('[Fonts] Cormorant registrado para canvas');
-    }
-    // Playfair Display Bold — titular editorial Pasarela
-    const _fontPathPF = require('path').join(__dirname, 'PlayfairDisplay-Bold.ttf');
-    if (!require('fs').existsSync(_fontPathPF)) {
-      console.log('[Fonts] Descargando PlayfairDisplay-Bold...');
-      const _bufPF = await new Promise(res => {
-        require('https').get('https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay-Bold.ttf', r => {
-          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
-        }).on('error', () => res(null));
-      });
-      if (_bufPF && _bufPF.length > 10000) { require('fs').writeFileSync(_fontPathPF, _bufPF); console.log('[Fonts] PlayfairDisplay-Bold descargado OK'); }
-    }
-    if (require('fs').existsSync(_fontPathPF)) {
-      GlobalFonts.registerFromPath(_fontPathPF, 'Playfair');
-      _playfairLoaded = true;
-      console.log('[Fonts] Playfair registrado para canvas');
-    }
-    // Montserrat Bold — header/footer/badge Pasarela
-    const _fontPathMT = require('path').join(__dirname, 'Montserrat-Bold.ttf');
-    if (!require('fs').existsSync(_fontPathMT)) {
-      console.log('[Fonts] Descargando Montserrat-Bold...');
-      const _bufMT = await new Promise(res => {
-        require('https').get('https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/static/Montserrat-Bold.ttf', r => {
-          const c = []; r.on('data', d => c.push(d)); r.on('end', () => res(Buffer.concat(c)));
-        }).on('error', () => res(null));
-      });
-      if (_bufMT && _bufMT.length > 10000) { require('fs').writeFileSync(_fontPathMT, _bufMT); console.log('[Fonts] Montserrat-Bold descargado OK'); }
-    }
-    if (require('fs').existsSync(_fontPathMT)) {
-      GlobalFonts.registerFromPath(_fontPathMT, 'Montserrat');
-      _montserratLoaded = true;
-      console.log('[Fonts] Montserrat registrado para canvas');
-    }
-  } catch(e) { console.error('[Fonts] Error:', e.message); }
-})();
+// Registrar fuentes al arrancar — @napi-rs/canvas en Linux no usa fuentes del sistema
+// Fancy usa archivos variables actuales de Google Fonts y aliases propios para evitar fallback silencioso.
 let _cormorantLoaded = false;
 let _playfairLoaded  = false;
 let _montserratLoaded = false;
+
+function _downloadFont(url, dest) {
+  return new Promise(resolve => {
+    const get = (target, hops) => {
+      require('https').get(target, { headers: { 'User-Agent': 'FancyFontLoader/1.0' } }, r => {
+        if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location && hops < 5) {
+          r.resume();
+          return get(new URL(r.headers.location, target).toString(), hops + 1);
+        }
+        if (r.statusCode !== 200) {
+          r.resume();
+          console.log('[Fonts] HTTP', r.statusCode, target);
+          return resolve(false);
+        }
+        const chunks = [];
+        r.on('data', d => chunks.push(d));
+        r.on('end', () => {
+          const buf = Buffer.concat(chunks);
+          if (buf.length < 10000) return resolve(false);
+          require('fs').writeFileSync(dest, buf);
+          resolve(true);
+        });
+      }).on('error', () => resolve(false));
+    };
+    get(url, 0);
+  });
+}
+
+async function _ensureFancyFont(fileName, url, family) {
+  const p = require('path').join(__dirname, fileName);
+  if (!require('fs').existsSync(p)) {
+    console.log('[Fonts] Descargando', fileName + '...');
+    const ok = await _downloadFont(url, p);
+    if (!ok) {
+      console.log('[Fonts] No se pudo descargar', fileName);
+      return false;
+    }
+  }
+  try {
+    const registered = GlobalFonts.registerFromPath(p, family);
+    const ok = registered !== false;
+    console.log('[Fonts]', family, ok ? 'REGISTERED' : 'FALLBACK');
+    return ok;
+  } catch (e) {
+    console.log('[Fonts]', family, 'ERROR:', e.message);
+    return false;
+  }
+}
+
+(async () => {
+  try {
+    // Roboto se conserva para compatibilidad con el resto del proyecto.
+    if (!require('fs').existsSync(_fontPath)) {
+      console.log('[Fonts] Descargando Roboto-Bold...');
+      await _downloadFont('https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc9.ttf', _fontPath);
+    }
+    if (require('fs').existsSync(_fontPath)) {
+      GlobalFonts.registerFromPath(_fontPath, 'Roboto');
+      console.log('[Fonts] Roboto REGISTERED');
+    }
+
+    _playfairLoaded = await _ensureFancyFont(
+      'PlayfairDisplay-Variable.ttf',
+      'https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf',
+      'FancyPlayfair'
+    );
+    _cormorantLoaded = await _ensureFancyFont(
+      'CormorantGaramond-Variable.ttf',
+      'https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/CormorantGaramond%5Bwght%5D.ttf',
+      'FancyCormorant'
+    );
+    _montserratLoaded = await _ensureFancyFont(
+      'Montserrat-Variable.ttf',
+      'https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/Montserrat%5Bwght%5D.ttf',
+      'FancyMontserrat'
+    );
+  } catch(e) {
+    console.error('[Fonts] Error:', e.message);
+  }
+})();
 
 async function descargarImagen(url) {
   if (!url) return null;
@@ -4295,9 +4311,9 @@ INSTRUCCIONES:
       ctx.textAlign = 'left';
 
       const samples = [
-        { name: 'Playfair', loaded: _playfairLoaded, font: '64px Playfair' },
-        { name: 'Cormorant', loaded: _cormorantLoaded, font: '64px Cormorant' },
-        { name: 'Montserrat', loaded: _montserratLoaded, font: '64px Montserrat' },
+        { name: 'FancyPlayfair', loaded: _playfairLoaded, font: '64px FancyPlayfair' },
+        { name: 'FancyCormorant', loaded: _cormorantLoaded, font: '64px FancyCormorant' },
+        { name: 'FancyMontserrat', loaded: _montserratLoaded, font: '64px FancyMontserrat' },
         { name: 'Roboto', loaded: true, font: '64px Roboto' }
       ];
 
