@@ -507,13 +507,21 @@ function elegirTipoEditorialFancy() {
 }
 
 function elegirCategoriaFancy(tipoEditorial) {
+  // Mantener siempre la compatibilidad editorial. La anti-repeticion puede
+  // relajarse cuando se agota el pool, pero nunca debe cruzar familias.
   const compatibles = FANCY_CATEGORIAS.filter(c =>
-    c.tiposModoA.includes(tipoEditorial) && !FANCY_STATE.lastCategorias.includes(c.tema)
+    c.tiposModoA.includes(tipoEditorial)
   );
-  const pool = compatibles.length > 0 ? compatibles
-    : FANCY_CATEGORIAS.filter(c => !FANCY_STATE.lastCategorias.includes(c.tema));
-  const pool2 = pool.length > 0 ? pool : FANCY_CATEGORIAS;
-  const cat = pool2[Math.floor(Math.random() * pool2.length)];
+  const compatiblesNoRecientes = compatibles.filter(c =>
+    !FANCY_STATE.lastCategorias.includes(c.tema)
+  );
+  const pool = compatiblesNoRecientes.length > 0 ? compatiblesNoRecientes : compatibles;
+
+  if (pool.length === 0) {
+    throw new Error(`[Fancy] No hay categorias compatibles para tipoEditorial: ${tipoEditorial}`);
+  }
+
+  const cat = pool[Math.floor(Math.random() * pool.length)];
   fancyMemPush(FANCY_STATE.lastCategorias, cat.tema, 3);
   return cat;
 }
