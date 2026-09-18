@@ -1632,73 +1632,50 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
 
   const titEndY = TIT_START_Y + Math.min(titLines.length, 3) * TIT_LINE_H;
 
-  // ── CAPA 6: MICROTEXT — Fancy Premium v1.3 ───────────────────────────────
+  // ── CAPA 6: MICROTEXT ────────────────────────────────────────────────────
   var microEndY = headEndY;
   if (microtext) {
-    const MICRO_Y = headEndY + 28;
-    const MICRO_W = 330;
+    const MICRO_Y = headEndY + 22;
+    const MICRO_W = EDITORIAL_W;
     const MICRO_MAX_LINES = 3;
-    const MICRO_LH = 31;
-    const MICRO_SIZE = 25;
+    const MICRO_LH = 34;
     const microFamily = _cormorantLoaded ? 'FancyCormorant' : (_playfairLoaded ? 'FancyPlayfair' : 'Roboto');
-    const microFont = MICRO_SIZE + 'px ' + microFamily;
+    ctx.font = '28px ' + microFamily;
     ctx.fillStyle = DARK;
     ctx.textAlign = 'left';
-
-    function measureMicro(text) {
-      // Reaplicar la fuente en cada medicion evita que otro draw cambie el estado de Canvas.
-      ctx.font = microFont;
-      return ctx.measureText(text).width;
-    }
 
     function wrapMicroToWidth(text, maxWidth, maxLines) {
       var words = String(text || '').trim().split(/\s+/).filter(Boolean);
       var lines = [];
       var current = '';
-      var index = 0;
-
-      while (index < words.length && lines.length < maxLines) {
-        var word = words[index];
-        var candidate = current ? current + ' ' + word : word;
-
-        if (measureMicro(candidate) <= maxWidth) {
+      for (var i = 0; i < words.length; i++) {
+        var candidate = current ? current + ' ' + words[i] : words[i];
+        if (ctx.measureText(candidate).width <= maxWidth) {
           current = candidate;
-          index++;
           continue;
         }
-
-        if (current) {
-          lines.push(current);
-          current = '';
-          continue;
-        }
-
-        // Proteccion para una palabra excepcionalmente larga.
-        var clipped = word;
-        while (clipped.length > 1 && measureMicro(clipped + '…') > maxWidth) {
-          clipped = clipped.slice(0, -1);
-        }
-        lines.push(clipped + (clipped !== word ? '…' : ''));
-        index++;
+        if (current) lines.push(current);
+        current = words[i];
+        if (lines.length === maxLines) break;
       }
-
       if (current && lines.length < maxLines) lines.push(current);
 
-      // Texto restante: elipsis contenida en la ultima linea.
-      if (index < words.length && lines.length) {
+      // Si quedó texto fuera, cerrar la última línea con elipsis sin exceder el ancho.
+      var consumed = lines.join(' ').split(/\s+/).filter(Boolean).length;
+      if (consumed < words.length && lines.length) {
         var last = lines.length - 1;
-        var base = lines[last].replace(/…$/, '');
-        while (base.length > 1 && measureMicro(base + '…') > maxWidth) {
-          base = base.slice(0, -1).trimEnd();
+        var ellipsis = lines[last] + '…';
+        while (ctx.measureText(ellipsis).width > maxWidth && lines[last].length > 1) {
+          lines[last] = lines[last].slice(0, -1).trimEnd();
+          ellipsis = lines[last] + '…';
         }
-        lines[last] = base + '…';
+        lines[last] = ellipsis;
       }
       return lines;
     }
 
     var mLines = wrapMicroToWidth(microtext, MICRO_W, MICRO_MAX_LINES);
     mLines.forEach(function(line, i) {
-      ctx.font = microFont;
       ctx.fillText(line, MARGIN, MICRO_Y + i * MICRO_LH);
     });
     microEndY = MICRO_Y + mLines.length * MICRO_LH;
@@ -1886,27 +1863,63 @@ async function generarCoverFancyV3({
 
   const headEndY = HEAD_Y + Math.min(headLines.length, 4) * HEAD_LH;
 
-  // ── CAPA 6: MICROTEXT ────────────────────────────────────────────────────
+  // ── CAPA 6: MICROTEXT — Fancy Premium v1.3 ───────────────────────────────
   var microEndY = headEndY;
   if (microtext) {
-    const MICRO_Y  = headEndY + 20;
-    // Subtitulo legible en feed movil: jerarquia premium y fallback seguro.\n    ctx.font       = (_playfairLoaded ? '30px Playfair' : (_cormorantLoaded ? '30px Cormorant' : '28px Roboto'));
-    ctx.fillStyle  = DARK;
-    ctx.textAlign  = 'left';
-    var mWords = microtext.trim().split(/\\s+/);
-    var mLines = []; var mCurr = '';
-    for (var mi = 0; mi < mWords.length; mi++) {
-      if (mLines.length >= 2) break;
-      var mt = mCurr ? mCurr + ' ' + mWords[mi] : mWords[mi];
-      if (ctx.measureText(mt).width > EDITORIAL_W && mCurr) {
-        mLines.push(mCurr); mCurr = mWords[mi];
-      } else { mCurr = mt; }
+    const MICRO_Y = headEndY + 28;
+    const MICRO_W = 330;
+    const MICRO_MAX_LINES = 3;
+    const MICRO_LH = 31;
+    const MICRO_SIZE = 25;
+    const microFamily = _cormorantLoaded ? 'FancyCormorant' : (_playfairLoaded ? 'FancyPlayfair' : 'Roboto');
+    const microFont = MICRO_SIZE + 'px ' + microFamily;
+    ctx.fillStyle = DARK;
+    ctx.textAlign = 'left';
+
+    function measureMicro(text) {
+      ctx.font = microFont;
+      return ctx.measureText(text).width;
     }
-    if (mCurr && mLines.length < 2) mLines.push(mCurr);
+
+    function wrapMicroToWidth(text, maxWidth, maxLines) {
+      var words = String(text || '').trim().split(/\s+/).filter(Boolean);
+      var lines = [];
+      var current = '';
+      var index = 0;
+      while (index < words.length && lines.length < maxLines) {
+        var word = words[index];
+        var candidate = current ? current + ' ' + word : word;
+        if (measureMicro(candidate) <= maxWidth) {
+          current = candidate;
+          index++;
+          continue;
+        }
+        if (current) {
+          lines.push(current);
+          current = '';
+          continue;
+        }
+        var clipped = word;
+        while (clipped.length > 1 && measureMicro(clipped + '…') > maxWidth) clipped = clipped.slice(0, -1);
+        lines.push(clipped + (clipped !== word ? '…' : ''));
+        index++;
+      }
+      if (current && lines.length < maxLines) lines.push(current);
+      if (index < words.length && lines.length) {
+        var last = lines.length - 1;
+        var base = lines[last].replace(/…$/, '');
+        while (base.length > 1 && measureMicro(base + '…') > maxWidth) base = base.slice(0, -1).trimEnd();
+        lines[last] = base + '…';
+      }
+      return lines;
+    }
+
+    var mLines = wrapMicroToWidth(microtext, MICRO_W, MICRO_MAX_LINES);
     mLines.forEach(function(line, i) {
-      ctx.fillText(line, MARGIN, MICRO_Y + i * 38);
+      ctx.font = microFont;
+      ctx.fillText(line, MARGIN, MICRO_Y + i * MICRO_LH);
     });
-    microEndY = MICRO_Y + mLines.length * 38;
+    microEndY = MICRO_Y + mLines.length * MICRO_LH;
   }
 
   // ── CAPA 7: ACENTO FUCHSIA ───────────────────────────────────────────────
