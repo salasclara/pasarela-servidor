@@ -1632,28 +1632,53 @@ async function generarCoverFancyV2({ branding, visualLabel, titular, microtexto,
 
   const titEndY = TIT_START_Y + Math.min(titLines.length, 3) * TIT_LINE_H;
 
-  // ── CAPA 6: MICROTEXTO — posición dinámica desde titEndY ────────────────
-  const MICRO_GAP    = 28;
-  const MICRO_LINE_H = 36;
-  const MICRO_SAFE   = 920;
-  let renderedMicroLines = 0;
-  if (microtexto) {
-    ctx.font      = '26px Roboto';
-    ctx.fillStyle = GRAY;
-    const mWords = microtexto.split(' ');
-    const mLines = []; let mCurr = '';
-    for (const w of mWords) {
-      if (mLines.length >= 1) { mCurr = mCurr ? `${mCurr} ${w}` : w; continue; }
-      const t = mCurr ? `${mCurr} ${w}` : w;
-      if (ctx.measureText(t).width > EDITORIAL_W && mCurr) { mLines.push(mCurr); mCurr = w; }
-      else { mCurr = t; }
+  // ── CAPA 6: MICROTEXT ────────────────────────────────────────────────────
+  var microEndY = headEndY;
+  if (microtext) {
+    const MICRO_Y = headEndY + 22;
+    const MICRO_W = EDITORIAL_W;
+    const MICRO_MAX_LINES = 3;
+    const MICRO_LH = 34;
+    const microFamily = _cormorantLoaded ? 'FancyCormorant' : (_playfairLoaded ? 'FancyPlayfair' : 'Roboto');
+    ctx.font = '28px ' + microFamily;
+    ctx.fillStyle = DARK;
+    ctx.textAlign = 'left';
+
+    function wrapMicroToWidth(text, maxWidth, maxLines) {
+      var words = String(text || '').trim().split(/\s+/).filter(Boolean);
+      var lines = [];
+      var current = '';
+      for (var i = 0; i < words.length; i++) {
+        var candidate = current ? current + ' ' + words[i] : words[i];
+        if (ctx.measureText(candidate).width <= maxWidth) {
+          current = candidate;
+          continue;
+        }
+        if (current) lines.push(current);
+        current = words[i];
+        if (lines.length === maxLines) break;
+      }
+      if (current && lines.length < maxLines) lines.push(current);
+
+      // Si quedó texto fuera, cerrar la última línea con elipsis sin exceder el ancho.
+      var consumed = lines.join(' ').split(/\s+/).filter(Boolean).length;
+      if (consumed < words.length && lines.length) {
+        var last = lines.length - 1;
+        var ellipsis = lines[last] + '…';
+        while (ctx.measureText(ellipsis).width > maxWidth && lines[last].length > 1) {
+          lines[last] = lines[last].slice(0, -1).trimEnd();
+          ellipsis = lines[last] + '…';
+        }
+        lines[last] = ellipsis;
+      }
+      return lines;
     }
-    if (mCurr) mLines.push(mCurr);
-    const microStartY = titEndY + MICRO_GAP;
-    mLines.slice(0, 2).forEach((line, i) => {
-      const lineY = microStartY + i * MICRO_LINE_H;
-      if (lineY <= MICRO_SAFE) { ctx.fillText(line, MARGIN_L, lineY); renderedMicroLines++; }
+
+    var mLines = wrapMicroToWidth(microtext, MICRO_W, MICRO_MAX_LINES);
+    mLines.forEach(function(line, i) {
+      ctx.fillText(line, MARGIN, MICRO_Y + i * MICRO_LH);
     });
+    microEndY = MICRO_Y + mLines.length * MICRO_LH;
   }
 
   // ── CAPA 7: ACENTO FUCHSIA ───────────────────────────────────────────────
@@ -1768,7 +1793,7 @@ async function generarCoverFancyV3({
 
   // ── CAPA 4: VISUAL LABEL — bloque amarillo pequeno ───────────────────────
   const label   = (visualLabel || 'STYLE IT').toUpperCase();
-  ctx.font      = 'bold 17px ' + (_montserratLoaded ? 'Montserrat' : 'Roboto');
+  ctx.font      = '17px ' + (_montserratLoaded ? 'FancyMontserrat' : 'Roboto');
   ctx.textAlign = 'left';
   const labelW  = ctx.measureText(label).width + 22;
   const labelH  = 34;
@@ -1783,7 +1808,7 @@ async function generarCoverFancyV3({
   const headWords   = (headline || '').toUpperCase().split(' ');
 
   function wrapHead(size) {
-    ctx.font = 'bold ' + size + 'px ' + (_playfairLoaded ? 'Playfair' : (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto')));
+    ctx.font = size + 'px ' + (_playfairLoaded ? 'FancyPlayfair' : (_cormorantLoaded ? 'FancyCormorant' : (_montserratLoaded ? 'FancyMontserrat' : 'Roboto')));
     var lines = []; var curr = '';
     for (var i = 0; i < headWords.length; i++) {
       var test = curr ? curr + ' ' + headWords[i] : headWords[i];
@@ -1802,7 +1827,7 @@ async function generarCoverFancyV3({
     headSize -= 2;
     headLines = wrapHead(headSize);
   }
-  ctx.font = 'bold ' + headSize + 'px ' + (_playfairLoaded ? 'Playfair' : (_cormorantLoaded ? 'Cormorant' : (_montserratLoaded ? 'Montserrat' : 'Roboto')));
+  ctx.font = headSize + 'px ' + (_playfairLoaded ? 'FancyPlayfair' : (_cormorantLoaded ? 'FancyCormorant' : (_montserratLoaded ? 'FancyMontserrat' : 'Roboto')));
 
   // Primera palabra larga (> 3 chars) va en fuchsia
   var accentWord = '';
