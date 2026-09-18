@@ -1863,14 +1863,14 @@ async function generarCoverFancyV3({
 
   const headEndY = HEAD_Y + Math.min(headLines.length, 4) * HEAD_LH;
 
-  // ── CAPA 6: MICROTEXT — Fancy Premium v1.3 ───────────────────────────────
+  // ── CAPA 6: MICROTEXT — Fancy Premium v1.4 ───────────────────────────────
   var microEndY = headEndY;
   if (microtext) {
     const MICRO_Y = headEndY + 28;
     const MICRO_W = 330;
     const MICRO_MAX_LINES = 3;
-    const MICRO_LH = 31;
-    const MICRO_SIZE = 25;
+    const MICRO_LH = 34;
+    const MICRO_SIZE = 28;
     const microFamily = _cormorantLoaded ? 'FancyCormorant' : (_playfairLoaded ? 'FancyPlayfair' : 'Roboto');
     const microFont = MICRO_SIZE + 'px ' + microFamily;
     ctx.fillStyle = DARK;
