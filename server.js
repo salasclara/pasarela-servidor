@@ -1863,7 +1863,7 @@ async function generarCoverFancyV3({
 
   const headEndY = HEAD_Y + Math.min(headLines.length, 4) * HEAD_LH;
 
-  // ── CAPA 6: MICROTEXT — Fancy Premium v1.4 ───────────────────────────────
+  // ── CAPA 6: MICROTEXT — Fancy Premium v1.5 ───────────────────────────────
   var microEndY = headEndY;
   if (microtext) {
     const MICRO_Y = headEndY + 28;
@@ -1873,8 +1873,12 @@ async function generarCoverFancyV3({
     const MICRO_SIZE = 28;
     const microFamily = _cormorantLoaded ? 'FancyCormorant' : (_playfairLoaded ? 'FancyPlayfair' : 'Roboto');
     const microFont = MICRO_SIZE + 'px ' + microFamily;
-    ctx.fillStyle = DARK;
+    ctx.fillStyle = '#333333';
     ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(255,248,241,0.72)';
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1;
 
     function measureMicro(text) {
       ctx.font = microFont;
@@ -1919,6 +1923,9 @@ async function generarCoverFancyV3({
       ctx.font = microFont;
       ctx.fillText(line, MARGIN, MICRO_Y + i * MICRO_LH);
     });
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     microEndY = MICRO_Y + mLines.length * MICRO_LH;
   }
 
