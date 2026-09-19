@@ -34,6 +34,8 @@ const pool = new Pool({
 // El GET del endpoint controlado solo verifica la tabla; no inserta observaciones.
 const { createFancyAnalyticsTestHandler } = require('./src/services/FancyAnalyticsTestEndpoint');
 const handleFancyAnalyticsTest = createFancyAnalyticsTestHandler(pool);
+const { createFancyAnalyticsSummaryHandler } = require('./src/services/FancyAnalyticsSummaryEndpoint');
+const handleFancyAnalyticsSummary = createFancyAnalyticsSummaryHandler(pool);
 const { createFancyPublicationObserver } = require('./src/services/FancyPublicationObserver');
 const fancyPublicationObserver = createFancyPublicationObserver(pool);
 
@@ -5063,6 +5065,11 @@ INSTRUCCIONES:
   // Fancy Analytics controlled persistence endpoint — manual only, never scheduler-driven.
   if (req.url === '/test-fancy-analytics-persistence') {
     const handled = await handleFancyAnalyticsTest(req, res);
+    if (handled) return;
+  }
+
+  if (req.url === '/test-fancy-analytics-summary') {
+    const handled = await handleFancyAnalyticsSummary(req, res);
     if (handled) return;
   }
 
