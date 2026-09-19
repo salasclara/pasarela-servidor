@@ -1,0 +1,21 @@
+name: Fancy Analytics Facebook Hook Validation
+on:
+  pull_request:
+    paths:
+      - 'server.js'
+      - 'src/services/FancyPublicationObserver.js'
+      - '.github/workflows/fancy-analytics-facebook-hook.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate server syntax
+        run: node --check server.js
+      - name: Validate observer syntax
+        run: node --check src/services/FancyPublicationObserver.js
+      - name: Validate publication observer
+        run: node scripts/validate-fancy-publication-observer.js
