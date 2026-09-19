@@ -7,6 +7,7 @@ const { createFancyAnalyticsProduction } = require('./FancyAnalyticsProduction')
  *
  * GET  /test-fancy-analytics-persistence -> readiness only, NO write.
  * POST /test-fancy-analytics-persistence -> inserts ONE controlled test row.
+ * GET  /test-fancy-analytics-persistence/write-once -> browser-friendly controlled insert.
  *
  * This handler is not connected to scheduler, Facebook, Instagram or Amazon.
  */
@@ -14,11 +15,20 @@ function createFancyAnalyticsTestHandler(pool) {
   const analytics = createFancyAnalyticsProduction(pool);
 
   return async function handleFancyAnalyticsTest(req, res) {
-    if (req.url !== '/test-fancy-analytics-persistence') return false;
+    const readinessPath = '/test-fancy-analytics-persistence';
+    const writeOncePath = '/test-fancy-analytics-persistence/write-once';
+    if (req.url !== readinessPath && req.url !== writeOncePath) return false;
 
     res.setHeader('Content-Type', 'application/json');
 
     try {
+      if (req.method === 'GET' && req.url === writeOncePath) {
+        const result = await analytics.saveControlledTest();
+        res.writeHead(200);
+        res.end(JSON.stringify({ ...result, browserControlledWrite: true }));
+        return true;
+      }
+
       if (req.method === 'GET') {
         await analytics.ensureReady();
         res.writeHead(200);
