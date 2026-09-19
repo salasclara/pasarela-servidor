@@ -34,6 +34,8 @@ const pool = new Pool({
 // El GET del endpoint controlado solo verifica la tabla; no inserta observaciones.
 const { createFancyAnalyticsTestHandler } = require('./src/services/FancyAnalyticsTestEndpoint');
 const handleFancyAnalyticsTest = createFancyAnalyticsTestHandler(pool);
+const { createFancyPublicationObserver } = require('./src/services/FancyPublicationObserver');
+const fancyPublicationObserver = createFancyPublicationObserver(pool);
 
 // Migracion automatica — agrega columna imagen si no existe
 pool.query("ALTER TABLE noticias ADD COLUMN IF NOT EXISTS imagen TEXT DEFAULT ''")
@@ -497,8 +499,7 @@ const INTENCION_MODIFIER = {
 };
 
 // Colecciones oficiales de Fancy by Roxette en Amazon Storefront.
-// Los valores pueden reemplazarse desde Railway sin cambiar el codigo.
-const FANCY_STOREFRONT_LINKS = Object.freeze({
+// Los valores pueden reemplazarse desde Railway sin cambiar el codigo.const FANCY_STOREFRONT_LINKS = Object.freeze({
   STYLE:  process.env.FANCY_STORE_STYLE_URL  || 'https://a.co/d/02D76mvq',
   BEAUTY: process.env.FANCY_STORE_BEAUTY_URL || 'https://a.co/d/08eDmJ5X',
   HOME:   process.env.FANCY_STORE_HOME_URL   || 'https://a.co/d/06NYM0SM',
@@ -997,8 +998,7 @@ function getQueryTrabajandoByContent(pilar, gancho) {
   const txt = ((pilar || '') + ' ' + (gancho || '')).toLowerCase();
   const map = [
     { keys: ['digital','redes','online','internet','celular','teléfono','apps','contenido'],  cat: 'DIGITAL_BUSINESS' },
-    { keys: ['producto','empacar','vender','cliente','paquete','tienda','artesanal','manualidad'], cat: 'SMALL_BUSINESS' },
-    { keys: ['logro','éxito','celebra','consegui','alcanz','triunf','ganar','primera venta'],  cat: 'SUCCESS'         },
+    { keys: ['producto','empacar','vender','cliente','paquete','tienda','artesanal','manualidad'], cat: 'SMALL_BUSINESS' },    { keys: ['logro','éxito','celebra','consegui','alcanz','triunf','ganar','primera venta'],  cat: 'SUCCESS'         },
     { keys: ['café','mañana','balance','bienestar','calma','rutina mañana','lifestyle'],       cat: 'LIFESTYLE'       },
     { keys: ['tiempo','organiza','plan','agenda','productiv','prioridad','hábito','enfoque'],  cat: 'PRODUCTIVITY'    },
     { keys: ['hogar','casa','oficina','escritorio','desde casa','espacio','remoto'],           cat: 'HOME_OFFICE'     },    { keys: ['confianza','miedo','dudas','impostor','creencia','creer en','síndrome'],        cat: 'EMPOWERMENT'     },
@@ -1497,8 +1497,7 @@ async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
   ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 5);
   ctx.font = 'bold 19px Roboto'; ctx.textAlign = 'center';
   ctx.fillText(branding.subtituloMarca || 'BOUTIQUE \u00b7 DALLAS TX', 540, 52);
-  ctx.font = 'bold 40px Roboto'; ctx.fillText(branding.nombreMarca || 'FANCY BY ROXETTE', 540, 100);
-  ctx.fillStyle = 'rgba(232,197,176,0.35)'; ctx.fillRect(80, 115, 920, 1);
+  ctx.font = 'bold 40px Roboto'; ctx.fillText(branding.nombreMarca || 'FANCY BY ROXETTE', 540, 100);  ctx.fillStyle = 'rgba(232,197,176,0.35)'; ctx.fillRect(80, 115, 920, 1);
   ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 86px Roboto';
   const tw = titular.toUpperCase().split(' '); let tl = ''; let ty = 550;  for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(tl, 540, ty); tl = w; ty += 98; } else tl = t; }
   if (tl) ctx.fillText(tl, 540, ty);
@@ -1997,8 +1996,7 @@ Examples:
   generic complementary beauty containers.
 - Shoes/fashion: clothing, mirror, chair, wardrobe/environmental details.
 - Home: baskets, shelves, decor, household organization elements.
-- Tech: desk accessories and compatible technology.
-Never introduce a handbag into a beauty/skincare scene unless
+- Tech: desk accessories and compatible technology.Never introduce a handbag into a beauty/skincare scene unless
 the selected primaryObject/category itself is handbags.  - flowers, café props, architectural detail, outfit accent
 Do NOT tint the entire photograph fuchsia or yellow.
 
@@ -2497,8 +2495,7 @@ Choose ONE natural action — applying blush with a makeup brush,
 OR holding a generic compact while glancing naturally,
 OR finishing her makeup with a relaxed, confident expression.
 Do not create an exaggerated influencer pose.
-Expression: natural, confident, warm, authentic.
-BEAUTY PRODUCTS:
+Expression: natural, confident, warm, authentic.BEAUTY PRODUCTS:
 All beauty products visible must be completely generic — no brand logos, no product names,
 no recognizable cosmetics brand, no text on packaging.
 Visual and category representations only.
@@ -2997,8 +2994,7 @@ async function generarCoverPasarelaMaster({ imageBuf, titulo, fecha }) {
   // Fuentes con fallback
   const fHeader  = _montserratLoaded ? 'Montserrat' : 'Roboto';
   const fTitular = _playfairLoaded   ? 'Playfair'   : (_cormorantLoaded ? 'Cormorant' : 'Roboto');
-  // ── 1. Fondo negro base ──────────────────────────────────────────────────
-  ctx.fillStyle = NEGRO; ctx.fillRect(0, 0, 1080, 1080);
+  // ── 1. Fondo negro base ──────────────────────────────────────────────────  ctx.fillStyle = NEGRO; ctx.fillRect(0, 0, 1080, 1080);
 
   // ── 2. Foto protagonista — object-fit cover, canvas completo ────────────
   if (imageBuf) {
@@ -3478,6 +3474,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
     // Extraer campos según tipo
     let coverBuffer;
     let captionTexto = '';
+    let fancyAnalyticsContext = null;
     if (esFe) {
       const afirmMatch    = caption.match(/AFIRMACION:\s*(.+)/i);
       const heroMatch     = caption.match(/HERO:\s*(.+)/i);
@@ -3497,8 +3494,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const reflexMatch  = caption.match(/REFLEXION:\s*(.+)/i);
       const mhMatch      = caption.match(/MICROHISTORIA:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
       const ctaMatch     = caption.match(/CTA:\s*(.+)/i);      const hashMatch    = caption.match(/HASHTAGS:\s*(.+)/i);
-      const dallePrompt  = sceneMatch  ? sceneMatch[1].trim()  : 'cute chibi couple sharing a tender moment, park, warm afternoon';
-      const gancho       = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 40);
+      const dallePrompt  = sceneMatch  ? sceneMatch[1].trim()  : 'cute chibi couple sharing a tender moment, park, warm afternoon';      const gancho       = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 40);
       const reflexion    = reflexMatch ? reflexMatch[1].trim() : '';
       const microhistoria = mhMatch   ? mhMatch[1].trim()     : '';
       const ctaTexto     = ctaMatch   ? ctaMatch[1].trim()    : '';
@@ -3543,6 +3539,15 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       }, categoria);
       captionTexto = storefrontPost.caption;
       console.log('[Fancy] ejecutarCoverFancy OK | strategy:', fancyResult.decision?.humanStrategy, '| family:', fancyResult.decision?.visualFamily);
+      fancyAnalyticsContext = {
+        tipoEditorial,
+        category: categoria.tema,
+        intention: intencion,
+        visualStrategy: fancyResult.decision?.humanStrategy || fancyResult.decision?.visualFamily || null,
+        headline: fancyResult.copy?.headline || null,
+        microtext: fancyResult.copy?.microtext || null,
+        affiliateUrlPresent: Boolean(storefrontPost.url)
+      };
       // ── FIN FANCY VISUAL ENGINE 2.0 ──────────────────────────────────────────
     } else if (esTrabajando) {
       const ganchoMatch = caption.match(/GANCHO:\s*(.+)/i);
@@ -3628,6 +3633,20 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
         });
       });
     });
+
+    // Fancy Analytics observa pasivamente solo publicaciones Facebook ya confirmadas.
+    // Un error de Analytics nunca revierte ni bloquea la publicación.
+    if (esFancy && facebookResult && facebookResult.id && fancyAnalyticsContext) {
+      try {
+        const savedObservation = await fancyPublicationObserver.observeFacebookPublication({
+          ...fancyAnalyticsContext,
+          externalPostId: facebookResult.id
+        });
+        console.log('[Fancy Analytics] Observación Facebook guardada | id:', savedObservation?.id, '| post:', facebookResult.id);
+      } catch (analyticsError) {
+        console.error('[Fancy Analytics] Error aislado:', analyticsError.message);
+      }
+    }
 
     // Instagram es un segundo destino independiente. Un error aquí nunca
     // revierte ni bloquea la publicación que ya se completó en Facebook.
@@ -3997,8 +4016,7 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
         res.end(JSON.stringify({ success: false, error: 'IDEA_REQUIRED', message: 'El campo idea es obligatorio' }));
         return;      }
 
-      console.log('[materialize] iniciando request');
-      const { ThinkingEngine } = require('./src/services/ThinkingEngine');
+      console.log('[materialize] iniciando request');      const { ThinkingEngine } = require('./src/services/ThinkingEngine');
       console.log('[materialize] ThinkingEngine cargado');
       const engine = new ThinkingEngine();
       const brief = engine.analyze(idea);
@@ -4497,8 +4515,7 @@ INSTRUCCIONES:
       const status = refs.ok ? 200 : 503;      res.writeHead(status, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         ok:      refs.ok,
-        count:   refs.count,
-        files:   refs.files,
+        count:   refs.count,        files:   refs.files,
         missing: refs.missing.length > 0 ? refs.missing : undefined
       }));
     } catch (err) {
@@ -4998,248 +5015,3 @@ INSTRUCCIONES:
           await publicarCoverParaPagina(page, titulo);
           resultados.push({ pagina: page.nombre, status: 'OK' });
           await new Promise(r => setTimeout(r, 5000));
-        } catch(e) {
-          resultados.push({ pagina: page.nombre, status: 'ERROR', error: e.message });
-        }
-      }
-      console.log('[test-multipagina] Resultados:', JSON.stringify(resultados));
-    })();
-    res.end(JSON.stringify({ mensaje: 'Publicando en páginas extra...', paginas: PAGES_EXTRA.map(p => p.nombre), nota: 'Ver logs Railway para resultados' }));
-    return;
-  }
-  // TEST MULTI-PÁGINA
-  if (req.method === 'GET' && req.url === '/test-multipagina') {
-    // ... (ya existe)
-  }
-
-  // 👇 AGREGA AQUÍ el bloque setup-tokens
-  if (req.method === 'GET' && req.url.startsWith('/setup-tokens')) {
-    const urlObj = new URL(req.url, 'http://localhost');
-    const shortToken = urlObj.searchParams.get('token');
-    if (!shortToken) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Falta ?token=TU_TOKEN_CORTO' }));
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    (async () => {
-      try {
-        const appId     = process.env.FB_APP_ID;
-        const appSecret = process.env.FB_APP_SECRET;
-        const exUrl = `https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${shortToken}`;
-        const exRes  = await fetch(exUrl);
-        const exData = await exRes.json();
-        if (exData.error) throw new Error('Exchange: ' + exData.error.message);
-        const longToken = exData.access_token;
-        console.log('[setup-tokens] Token largo. Días:', Math.floor(exData.expires_in / 86400));
-        const accRes  = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${longToken}&limit=20`);
-        const accData = await accRes.json();
-        if (accData.error) throw new Error('Accounts: ' + accData.error.message);
-        const paginas = accData.data.map(p => ({ nombre: p.name, id: p.id, token: p.access_token }));
-        console.log('[setup-tokens] Páginas:', paginas.map(p => p.nombre));
-        res.end(JSON.stringify({ ok: true, instruccion: 'Copia cada token a Railway', paginas }));
-      } catch(e) {
-        console.error('[setup-tokens] Error:', e.message);
-        res.end(JSON.stringify({ error: e.message }));
-      }
-    })();
-    return;
-  }
-
-
-  // Fancy Analytics controlled persistence endpoint — manual only, never scheduler-driven.
-  if (req.url === '/test-fancy-analytics-persistence') {
-    const handled = await handleFancyAnalyticsTest(req, res);
-    if (handled) return;
-  }
-
-  // Fancy Instagram controlled test endpoint — manual only, never scheduler-driven.
-  if (req.url.startsWith('/test-fancy-instagram-publish')) {
-    const { handleFancyInstagramTestEndpoint } = require('./src/services/FancyInstagramTestEndpoint');
-    const handled = await handleFancyInstagramTestEndpoint(req, res);
-    if (handled) return;
-  }
-
-  res.writeHead(404);
-  res.end();
-});
-// ── AUTO-PUBLICADOR PÁGINAS EXTRA — cada 6 horas ──────────────────────────
-async function autoPublicarPaginasExtra() {
-  const _titulo = 'Reflexión del día — ' + new Date().toLocaleDateString('es-MX', {weekday:'long', month:'long', day:'numeric'});
-  console.log('[AutoPublish] Iniciando ciclo multi-página:', _titulo);
-  for (const _pg of PAGES_EXTRA) {
-    if (!_pg.token) { console.log('[AutoPublish] Sin token:', _pg.nombre); continue; }
-    try {
-      await publicarCoverParaPagina(_pg, _titulo);
-      console.log('[AutoPublish] ✅', _pg.nombre);
-      await new Promise(r => setTimeout(r, 8000));
-    } catch(e) { console.error('[AutoPublish] Error en', _pg.nombre, ':', e.message); }
-  }
-  console.log('[AutoPublish] Ciclo completado');
-}
-// ── AUTO-PUBLICADOR PASARELA STUDIO — misma hora que páginas extra ──────────
-async function fetchBuf(url) {
-  return descargarImagen(url);
-}
-
-async function publicarFotoBuffer(buffer, caption) {
-  if (!FB_PAGE_TOKEN || !buffer) { console.log('[FB Buffer] Token o buffer faltante'); return null; }
-  const FormData = require('form-data');
-  const form = new FormData();
-  form.append('caption', caption || '');
-  form.append('access_token', FB_PAGE_TOKEN);
-  form.append('source', buffer, { filename: 'cover.png', contentType: 'image/png' });
-  return new Promise((resolve, reject) => {
-    const req = require('https').request({
-      hostname: 'graph.facebook.com',
-      path: '/v19.0/' + FB_PAGE_ID + '/photos',
-      method: 'POST',
-      headers: form.getHeaders(),
-    }, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(d);
-          if (res.statusCode !== 200 || json.error) {
-            console.error('[Pasarela FB] ERROR HTTP', res.statusCode, ':', JSON.stringify(json.error || json));
-            reject(new Error(json.error ? json.error.message : 'HTTP ' + res.statusCode));
-          } else {
-            console.log('[Pasarela FB] ✅ PUBLICADO:', json.id);
-            resolve(json);
-          }
-        } catch(e) { reject(e); }
-      });
-    });
-    req.on('error', reject);
-    form.pipe(req);
-  });
-}
-
-async function autoPublicarPasarela() {
-  if (!FB_PAGE_TOKEN) { console.log('[AutoPublish-Pasarela] Sin FB_PAGE_TOKEN — omitiendo'); return; }
-  console.log('[AutoPublish-Pasarela] Iniciando publicación editorial...');
-  try {
-    // 1. Tomar noticia del cache RSS (con imagen preferida)
-    const pool_noticias = cacheNoticias.length > 0 ? cacheNoticias : [];
-    if (pool_noticias.length === 0) { console.log('[AutoPublish-Pasarela] Cache RSS vacío — omitiendo'); return; }
-    // CAMBIO 4 — Filtro temático Pasarela: bloquear primero temas no editoriales
-    const TEMAS_PROHIBIDOS_PASARELA = /\b(crimen|asesin|tiroteo|balacera|accidente|tr[aá]gedia|politic|congres|senado|elecci|guerra|terremoto|tornado|huraca|inundaci|flood|shooting|murder|crime|accident|politics|election|war|arrest|police|protest|violencia|ataque|atentado|muert[eo]s|matan|fatal|crash|disaster|evacua)\b/i;
-    // Filtro positivo: solo noticias con ángulo editorial de moda/belleza/estilo
-    const _KW_MODA = ['moda','fashion','style','estilo','belleza','beauty','model','modelo','runway','pasarela','tendencia','trend','look','outfit','ropa','clothing','lujo','luxury','elegancia','elegance','vogue','couture','diseño','design','temporada','season','coleccion','collection','latina','latin','vestido','dress','zapato','shoe','accesorio','accessory','makeup','maquillaje','alfombra roja','red carpet','celebridad','celebrity','imagen','icono','icónica'];
-    const _noticiasFiltradas = pool_noticias.filter(n => {
-      const txt = (n.titulo + ' ' + (n.descripcion || '')).toLowerCase();
-      // Primero: excluir temas prohibidos
-      if (TEMAS_PROHIBIDOS_PASARELA.test(txt)) return false;
-      // Luego: requerir al menos un keyword editorial
-      return _KW_MODA.some(kw => txt.includes(kw));
-    });
-    if (_noticiasFiltradas.length === 0) {
-      console.log('[AutoPublish-Pasarela] Sin noticias editoriales válidas hoy — omitiendo');
-      return { ok: false, error: 'NO_NOTICIA_EDITORIAL' };
-    }
-    const conImagen = _noticiasFiltradas.filter(n => n.imagen && n.imagen.startsWith('http'));
-    const noticia = conImagen.length > 0
-      ? conImagen[Math.floor(Math.random() * conImagen.length)]
-      : _noticiasFiltradas[Math.floor(Math.random() * _noticiasFiltradas.length)];
-
-    // 2. Generar artículo editorial con Claude — incluye TITULAR en español para el cover
-    const promptEditorial = 'Escribe un artículo editorial sobre este tema de moda/estilo: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas.\n\nFormato EXACTO de respuesta:\nTITULAR: [título editorial en ESPAÑOL, máx 8 palabras, impactante]\n\n[artículo completo en español]';
-    const payload = JSON.stringify({
-      model: 'claude-sonnet-4-6', max_tokens: 900,
-      system: 'Eres la editora de PASARELA STUDIO INTERNACIONAL™, escuela de modelaje y elegancia latina de Dallas, TX. Voz sofisticada, empoderada, latina. NUNCA cites fuentes. Primera persona editorial.',
-      messages: [{ role: 'user', content: promptEditorial }]
-    });
-    const contenido = await new Promise((resolve, reject) => {
-      const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(payload) } };
-      const r = https.request(opts, res => { let d = ''; res.on('data', c => { d += c; }); res.on('end', () => { try { resolve(JSON.parse(d).content?.[0]?.text || ''); } catch(e) { reject(e); } }); });
-      r.on('error', reject); r.write(payload); r.end();
-    });
-    if (!contenido) throw new Error('Claude sin respuesta');
-
-    // CAMBIO 1 — Extraer tituloEditorial en español del response de Claude
-    const _titMatch = contenido.match(/^TITULAR:\s*(.+)/im);
-    const tituloEditorial = (_titMatch && _titMatch[1].trim()) || noticia.titulo;
-    console.log('[AutoPublish-Pasarela] tituloEditorial:', tituloEditorial);
-
-    // 3. Guardar en DB — contenido limpio (sin markers de Claude)
-    const _contenidoLimpio = contenido
-      .split('\n')
-      .map(p => p.replace(/^TITULAR:\s*/i, '').replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
-      .filter(p => p.length > 0)
-      .join('\n\n');
-    // CAMBIO 2 — usar tituloEditorial en DB (título del blog = título del cover)
-    const slug = generarSlug(tituloEditorial);
-    await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
-      [tituloEditorial, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '']);
-
-    // 4. Generar cover con plantilla aprobada
-    const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
-    const fechaStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
-    let coverBuffer = null;
-    // Diseño magazine editorial — descarga buffer y usa generarCoverBlogArticulo
-    let _imgBuf = null;
-    if (noticia.imagen) {
-      try { _imgBuf = await fetchBuf(noticia.imagen); } catch(e) {
-        console.log('[AutoPublish-Pasarela] Imagen RSS no descargable, usando Pexels:', e.message);
-      }
-    }
-    if (!_imgBuf) {
-      try {
-        const _imgUrl = await getImagenCategoria('MODA', noticia.titulo.split(' ').slice(0,5).join(' '));
-        _imgBuf = await fetchBuf(_imgUrl);
-      } catch(e) { console.error('[AutoPublish-Pasarela] Pexels fallback error:', e.message); }
-    }
-    // CAMBIO 3 — Validar imagen antes de llamar al Master
-    if (!_imgBuf || _imgBuf.length < 5000) {
-      console.log('[Pasarela Image] NO VALID IMAGE — SKIP publicación');
-      return { ok: false, titulo: tituloEditorial, facebook_id: null, error: 'NO_IMAGE — cover negro evitado' };
-    }
-    console.log('[Pasarela Image] OK —', _imgBuf.length, 'bytes');
-
-    // CAMBIO 2 — Cover recibe tituloEditorial en español (no el RSS crudo)
-    coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: tituloEditorial, fecha: fechaStr });
-
-    // 5. Caption = mismo contenido limpio que va al blog
-    const caption = _contenidoLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
-    const fbRes = await publicarFotoBuffer(coverBuffer, caption);
-    console.log('[AutoPublish-Pasarela] ✅ Publicado:', tituloEditorial, '| FB ID:', fbRes?.id || fbRes);
-    return { ok: true, titulo: tituloEditorial, facebook_id: fbRes?.id || null, error: null };
-  } catch(e) {
-    console.error('[AutoPublish-Pasarela] Error:', e.message);
-    return { ok: false, titulo: null, facebook_id: null, error: e.message };
-  }
-}
-
-// ── SCHEDULER HORARIO FIJO: 9am, 3pm, 9pm (Dallas Central Time) ──────────────
-const HORAS_PUBLICACION = [9, 15, 21]; // hora en Central Time
-let _ultimaHoraPublicada = -1;
-
-function horaActualCentral() {
-  // UTC-5 (CDT verano) / UTC-6 (CST invierno) — Railway corre en UTC
-  const ahora = new Date();
-  const utcH = ahora.getUTCHours();
-  const mes = ahora.getUTCMonth(); // 0=ene, 11=dic
-  // CDT (UTC-5): mar 2do dom → nov 1er dom; resto CST (UTC-6)
-  const esCDT = mes >= 2 && mes <= 10;
-  const offset = esCDT ? -5 : -6;
-  return ((utcH + offset) + 24) % 24;
-}
-
-setInterval(async () => {
-  const hora = horaActualCentral();
-  const min  = new Date().getUTCMinutes();
-  if (HORAS_PUBLICACION.includes(hora) && min < 10 && hora !== _ultimaHoraPublicada) {
-    _ultimaHoraPublicada = hora;
-    console.log(`[AutoPublish] ⏰ Hora programada: ${hora}:00 Central — iniciando ciclo`);
-    await autoPublicarPasarela();
-    await new Promise(r => setTimeout(r, 15000)); // 15s entre Pasarela y páginas extra
-    await autoPublicarPaginasExtra();
-  }
-}, 60 * 1000); // revisa cada minuto
-
-console.log('[AutoPublish] Scheduler activado — publica a las 9am, 3pm y 9pm (Dallas Central Time)');
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`[Servidor] Corriendo en puerto ${PORT}`);
-});
