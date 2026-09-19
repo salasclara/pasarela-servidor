@@ -36,6 +36,8 @@ const { createFancyAnalyticsTestHandler } = require('./src/services/FancyAnalyti
 const handleFancyAnalyticsTest = createFancyAnalyticsTestHandler(pool);
 const { createFancyAnalyticsSummaryHandler } = require('./src/services/FancyAnalyticsSummaryEndpoint');
 const handleFancyAnalyticsSummary = createFancyAnalyticsSummaryHandler(pool);
+const { createFancyAnalyticsDashboardHandler } = require('./src/services/FancyAnalyticsDashboard');
+const handleFancyAnalyticsDashboard = createFancyAnalyticsDashboardHandler();
 const { createFancyPublicationObserver } = require('./src/services/FancyPublicationObserver');
 const fancyPublicationObserver = createFancyPublicationObserver(pool);
 
@@ -5070,6 +5072,11 @@ INSTRUCCIONES:
 
   if (req.url === '/test-fancy-analytics-summary') {
     const handled = await handleFancyAnalyticsSummary(req, res);
+    if (handled) return;
+  }
+
+  if (req.url === '/fancy-analytics') {
+    const handled = await handleFancyAnalyticsDashboard(req, res);
     if (handled) return;
   }
 
