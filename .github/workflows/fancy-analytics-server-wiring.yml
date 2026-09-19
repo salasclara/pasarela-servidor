@@ -1,0 +1,27 @@
+name: Fancy Analytics Server Wiring Validation
+
+on:
+  pull_request:
+    paths:
+      - 'server.js'
+      - 'src/services/FancyAnalyticsTestEndpoint.js'
+      - 'src/services/FancyAnalyticsProduction.js'
+      - 'src/services/FancyAnalyticsPersistence.js'
+      - '.github/workflows/fancy-analytics-server-wiring.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: |
+          node --check server.js
+          node --check src/services/FancyAnalyticsTestEndpoint.js
+          node --check src/services/FancyAnalyticsProduction.js
+          node --check src/services/FancyAnalyticsPersistence.js
+      - name: Validate controlled endpoint
+        run: node scripts/validate-fancy-analytics-test-endpoint.js
