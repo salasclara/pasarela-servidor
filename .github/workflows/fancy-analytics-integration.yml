@@ -1,0 +1,25 @@
+name: Fancy Analytics Integration Validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/services/FancyAnalyticsObservation.js'
+      - 'src/services/FancyAnalyticsIntegration.js'
+      - 'scripts/validate-fancy-analytics-integration.js'
+      - '.github/workflows/fancy-analytics-integration.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: |
+          node --check src/services/FancyAnalyticsObservation.js
+          node --check src/services/FancyAnalyticsIntegration.js
+          node --check scripts/validate-fancy-analytics-integration.js
+      - name: Validate passive integration
+        run: node scripts/validate-fancy-analytics-integration.js
