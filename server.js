@@ -497,8 +497,7 @@ const INTENCION_MODIFIER = {
 };
 
 // Colecciones oficiales de Fancy by Roxette en Amazon Storefront.
-// Los valores pueden reemplazarse desde Railway sin cambiar el codigo.
-const FANCY_STOREFRONT_LINKS = Object.freeze({
+// Los valores pueden reemplazarse desde Railway sin cambiar el codigo.const FANCY_STOREFRONT_LINKS = Object.freeze({
   STYLE:  process.env.FANCY_STORE_STYLE_URL  || 'https://a.co/d/02D76mvq',
   BEAUTY: process.env.FANCY_STORE_BEAUTY_URL || 'https://a.co/d/08eDmJ5X',
   HOME:   process.env.FANCY_STORE_HOME_URL   || 'https://a.co/d/06NYM0SM',
@@ -997,8 +996,7 @@ function getQueryTrabajandoByContent(pilar, gancho) {
   const txt = ((pilar || '') + ' ' + (gancho || '')).toLowerCase();
   const map = [
     { keys: ['digital','redes','online','internet','celular','teléfono','apps','contenido'],  cat: 'DIGITAL_BUSINESS' },
-    { keys: ['producto','empacar','vender','cliente','paquete','tienda','artesanal','manualidad'], cat: 'SMALL_BUSINESS' },
-    { keys: ['logro','éxito','celebra','consegui','alcanz','triunf','ganar','primera venta'],  cat: 'SUCCESS'         },
+    { keys: ['producto','empacar','vender','cliente','paquete','tienda','artesanal','manualidad'], cat: 'SMALL_BUSINESS' },    { keys: ['logro','éxito','celebra','consegui','alcanz','triunf','ganar','primera venta'],  cat: 'SUCCESS'         },
     { keys: ['café','mañana','balance','bienestar','calma','rutina mañana','lifestyle'],       cat: 'LIFESTYLE'       },
     { keys: ['tiempo','organiza','plan','agenda','productiv','prioridad','hábito','enfoque'],  cat: 'PRODUCTIVITY'    },
     { keys: ['hogar','casa','oficina','escritorio','desde casa','espacio','remoto'],           cat: 'HOME_OFFICE'     },    { keys: ['confianza','miedo','dudas','impostor','creencia','creer en','síndrome'],        cat: 'EMPOWERMENT'     },
@@ -1497,8 +1495,7 @@ async function generarCoverFancy(branding, titular, subtitulo, imagenBuffer) {
   ctx.fillStyle = branding.colorAccento || '#E8C5B0'; ctx.fillRect(0, 0, 1080, 5);
   ctx.font = 'bold 19px Roboto'; ctx.textAlign = 'center';
   ctx.fillText(branding.subtituloMarca || 'BOUTIQUE \u00b7 DALLAS TX', 540, 52);
-  ctx.font = 'bold 40px Roboto'; ctx.fillText(branding.nombreMarca || 'FANCY BY ROXETTE', 540, 100);
-  ctx.fillStyle = 'rgba(232,197,176,0.35)'; ctx.fillRect(80, 115, 920, 1);
+  ctx.font = 'bold 40px Roboto'; ctx.fillText(branding.nombreMarca || 'FANCY BY ROXETTE', 540, 100);  ctx.fillStyle = 'rgba(232,197,176,0.35)'; ctx.fillRect(80, 115, 920, 1);
   ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 86px Roboto';
   const tw = titular.toUpperCase().split(' '); let tl = ''; let ty = 550;  for (const w of tw) { const t = tl ? tl+' '+w : w; if (ctx.measureText(t).width > 900) { ctx.fillText(tl, 540, ty); tl = w; ty += 98; } else tl = t; }
   if (tl) ctx.fillText(tl, 540, ty);
@@ -1997,8 +1994,7 @@ Examples:
   generic complementary beauty containers.
 - Shoes/fashion: clothing, mirror, chair, wardrobe/environmental details.
 - Home: baskets, shelves, decor, household organization elements.
-- Tech: desk accessories and compatible technology.
-Never introduce a handbag into a beauty/skincare scene unless
+- Tech: desk accessories and compatible technology.Never introduce a handbag into a beauty/skincare scene unless
 the selected primaryObject/category itself is handbags.  - flowers, café props, architectural detail, outfit accent
 Do NOT tint the entire photograph fuchsia or yellow.
 
@@ -2497,8 +2493,7 @@ Choose ONE natural action — applying blush with a makeup brush,
 OR holding a generic compact while glancing naturally,
 OR finishing her makeup with a relaxed, confident expression.
 Do not create an exaggerated influencer pose.
-Expression: natural, confident, warm, authentic.
-BEAUTY PRODUCTS:
+Expression: natural, confident, warm, authentic.BEAUTY PRODUCTS:
 All beauty products visible must be completely generic — no brand logos, no product names,
 no recognizable cosmetics brand, no text on packaging.
 Visual and category representations only.
@@ -2997,8 +2992,7 @@ async function generarCoverPasarelaMaster({ imageBuf, titulo, fecha }) {
   // Fuentes con fallback
   const fHeader  = _montserratLoaded ? 'Montserrat' : 'Roboto';
   const fTitular = _playfairLoaded   ? 'Playfair'   : (_cormorantLoaded ? 'Cormorant' : 'Roboto');
-  // ── 1. Fondo negro base ──────────────────────────────────────────────────
-  ctx.fillStyle = NEGRO; ctx.fillRect(0, 0, 1080, 1080);
+  // ── 1. Fondo negro base ──────────────────────────────────────────────────  ctx.fillStyle = NEGRO; ctx.fillRect(0, 0, 1080, 1080);
 
   // ── 2. Foto protagonista — object-fit cover, canvas completo ────────────
   if (imageBuf) {
@@ -3497,8 +3491,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       const reflexMatch  = caption.match(/REFLEXION:\s*(.+)/i);
       const mhMatch      = caption.match(/MICROHISTORIA:\s*([\s\S]+?)(?=CTA:|HASHTAGS:|$)/i);
       const ctaMatch     = caption.match(/CTA:\s*(.+)/i);      const hashMatch    = caption.match(/HASHTAGS:\s*(.+)/i);
-      const dallePrompt  = sceneMatch  ? sceneMatch[1].trim()  : 'cute chibi couple sharing a tender moment, park, warm afternoon';
-      const gancho       = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 40);
+      const dallePrompt  = sceneMatch  ? sceneMatch[1].trim()  : 'cute chibi couple sharing a tender moment, park, warm afternoon';      const gancho       = ganchoMatch ? ganchoMatch[1].trim() : titulo.substring(0, 40);
       const reflexion    = reflexMatch ? reflexMatch[1].trim() : '';
       const microhistoria = mhMatch   ? mhMatch[1].trim()     : '';
       const ctaTexto     = ctaMatch   ? ctaMatch[1].trim()    : '';
@@ -3997,8 +3990,7 @@ Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown:
         res.end(JSON.stringify({ success: false, error: 'IDEA_REQUIRED', message: 'El campo idea es obligatorio' }));
         return;      }
 
-      console.log('[materialize] iniciando request');
-      const { ThinkingEngine } = require('./src/services/ThinkingEngine');
+      console.log('[materialize] iniciando request');      const { ThinkingEngine } = require('./src/services/ThinkingEngine');
       console.log('[materialize] ThinkingEngine cargado');
       const engine = new ThinkingEngine();
       const brief = engine.analyze(idea);
@@ -4497,8 +4489,7 @@ INSTRUCCIONES:
       const status = refs.ok ? 200 : 503;      res.writeHead(status, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         ok:      refs.ok,
-        count:   refs.count,
-        files:   refs.files,
+        count:   refs.count,        files:   refs.files,
         missing: refs.missing.length > 0 ? refs.missing : undefined
       }));
     } catch (err) {
@@ -4997,8 +4988,7 @@ INSTRUCCIONES:
         try {
           await publicarCoverParaPagina(page, titulo);
           resultados.push({ pagina: page.nombre, status: 'OK' });
-          await new Promise(r => setTimeout(r, 5000));
-        } catch(e) {
+          await new Promise(r => setTimeout(r, 5000));        } catch(e) {
           resultados.push({ pagina: page.nombre, status: 'ERROR', error: e.message });
         }
       }
@@ -5048,7 +5038,7 @@ INSTRUCCIONES:
 
 
   // Fancy Analytics controlled persistence endpoint — manual only, never scheduler-driven.
-  if (req.url === '/test-fancy-analytics-persistence') {
+  if (req.url === '/test-fancy-analytics-persistence' || req.url === '/test-fancy-analytics-persistence/write-once') {
     const handled = await handleFancyAnalyticsTest(req, res);
     if (handled) return;
   }
