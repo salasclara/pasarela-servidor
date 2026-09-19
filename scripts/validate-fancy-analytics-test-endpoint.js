@@ -32,9 +32,15 @@ function makeRes() {
   assert.strictEqual(JSON.parse(res.body).writesObservation, false);
 
   res = makeRes();
-  assert.strictEqual(await handler({ method: 'POST', url: '/test-fancy-analytics-persistence' }, res), true);
+  assert.strictEqual(await handler({ method: 'GET', url: '/test-fancy-analytics-persistence/write-once' }, res), true);
   assert.strictEqual(res.status, 200);
   assert.strictEqual(inserts, 1);
+  assert.strictEqual(JSON.parse(res.body).browserControlledWrite, true);
+
+  res = makeRes();
+  assert.strictEqual(await handler({ method: 'POST', url: '/test-fancy-analytics-persistence' }, res), true);
+  assert.strictEqual(res.status, 200);
+  assert.strictEqual(inserts, 2);
   assert.strictEqual(JSON.parse(res.body).id, 99);
 
   res = makeRes();
