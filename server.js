@@ -34,6 +34,8 @@ const pool = new Pool({
 // El GET del endpoint controlado solo verifica la tabla; no inserta observaciones.
 const { createFancyAnalyticsTestHandler } = require('./src/services/FancyAnalyticsTestEndpoint');
 const handleFancyAnalyticsTest = createFancyAnalyticsTestHandler(pool);
+const { createFancyPublicationObserver } = require('./src/services/FancyPublicationObserver');
+const fancyPublicationObserver = createFancyPublicationObserver(pool);
 
 // Migracion automatica — agrega columna imagen si no existe
 pool.query("ALTER TABLE noticias ADD COLUMN IF NOT EXISTS imagen TEXT DEFAULT ''")
@@ -3478,6 +3480,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
     // Extraer campos según tipo
     let coverBuffer;
     let captionTexto = '';
+    let fancyAnalyticsContext = null;
     if (esFe) {
       const afirmMatch    = caption.match(/AFIRMACION:\s*(.+)/i);
       const heroMatch     = caption.match(/HERO:\s*(.+)/i);
@@ -3543,6 +3546,7 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
       }, categoria);
       captionTexto = storefrontPost.caption;
       console.log('[Fancy] ejecutarCoverFancy OK | strategy:', fancyResult.decision?.humanStrategy, '| family:', fancyResult.decision?.visualFamily);
+      fancyAnalyticsContext = { tipoEditorial, category: categoria.tema, intention: intencion, visualStrategy: fancyResult.decision?.humanStrategy || fancyResult.decision?.visualFamily || null, headline: fancyResult.copy?.headline || null, microtext: fancyResult.copy?.microtext || null, affiliateUrlPresent: Boolean(storefrontPost.url) };
       // ── FIN FANCY VISUAL ENGINE 2.0 ──────────────────────────────────────────
     } else if (esTrabajando) {
       const ganchoMatch = caption.match(/GANCHO:\s*(.+)/i);
@@ -3628,6 +3632,15 @@ HASHTAGS: [exactamente 3-5 hashtags relevantes al pilar ${pilarTrabajando} — d
         });
       });
     });
+
+    if (esFancy && facebookResult && facebookResult.id && fancyAnalyticsContext) {
+      try {
+        const savedObservation = await fancyPublicationObserver.observeFacebookPublication({ ...fancyAnalyticsContext, externalPostId: facebookResult.id });
+        console.log('[Fancy Analytics] Observación Facebook guardada | id:', savedObservation?.id, '| post:', facebookResult.id);
+      } catch (analyticsError) {
+        console.error('[Fancy Analytics] Error aislado:', analyticsError.message);
+      }
+    }
 
     // Instagram es un segundo destino independiente. Un error aquí nunca
     // revierte ni bloquea la publicación que ya se completó en Facebook.
