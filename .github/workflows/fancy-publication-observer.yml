@@ -1,0 +1,17 @@
+name: Fancy Publication Observer Validation
+on:
+  pull_request:
+    paths:
+      - 'src/services/FancyPublicationObserver.js'
+      - 'scripts/validate-fancy-publication-observer.js'
+      - '.github/workflows/fancy-publication-observer.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --check src/services/FancyPublicationObserver.js
+      - run: node scripts/validate-fancy-publication-observer.js
