@@ -24,9 +24,10 @@ const { createFancyPublicationObserver } = require('../src/services/FancyPublica
   });
   assert.strictEqual(saved.id, 2);
   assert(inserted);
-  const json = inserted.values.find(v => typeof v === 'string' && v.includes('fancy.analytics.observation.v1'));
-  assert(json);
+  const json = inserted.values[23];
+  assert.strictEqual(typeof json, 'string');
   const observation = JSON.parse(json);
+  assert.strictEqual(observation.schemaVersion, 'fancy.analytics.observation.v1');
   assert.strictEqual(observation.mode, 'OBSERVATION');
   assert.strictEqual(observation.publication.channel, 'facebook');
   assert.strictEqual(observation.publication.status, 'published');
