@@ -1,0 +1,24 @@
+name: Fancy Analytics Controlled Endpoint Validation
+
+on:
+  pull_request:
+    paths:
+      - 'src/services/FancyAnalyticsTestEndpoint.js'
+      - 'src/services/FancyAnalyticsProduction.js'
+      - 'scripts/validate-fancy-analytics-test-endpoint.js'
+      - '.github/workflows/fancy-analytics-test-endpoint.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax check
+        run: |
+          node --check src/services/FancyAnalyticsTestEndpoint.js
+          node --check scripts/validate-fancy-analytics-test-endpoint.js
+      - name: Validate controlled endpoint
+        run: node scripts/validate-fancy-analytics-test-endpoint.js
