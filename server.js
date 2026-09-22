@@ -5054,6 +5054,30 @@ INSTRUCCIONES:
   }
 
 
+  // TEST AISLADO — Amar Es
+  if (req.method === 'GET' && req.url === '/test-amar-es') {
+    const page = PAGES_EXTRA.find(p => /^amar es$/i.test(p.nombre));
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    if (!page) {
+      res.end(JSON.stringify({ status: 'ERROR', error: 'Amar Es no encontrada en PAGES_EXTRA' }));
+      return;
+    }
+    if (!page.token) {
+      res.end(JSON.stringify({ status: 'ERROR', error: 'AMAR_ES_TOKEN no configurado' }));
+      return;
+    }
+    (async () => {
+      try {
+        await publicarCoverParaPagina(page, 'Prueba de recuperación — Amar Es');
+        console.log('[test-amar-es] ✅ Prueba completada para:', page.nombre);
+      } catch (e) {
+        console.error('[test-amar-es] ❌ Error:', e.message);
+      }
+    })();
+    res.end(JSON.stringify({ status: 'INICIADA', pagina: page.nombre, nota: 'Ver logs Railway para resultado final' }));
+    return;
+  }
+
   // 👇 AGREGA AQUÍ el bloque setup-tokens
   if (req.method === 'GET' && req.url.startsWith('/setup-tokens')) {
     const urlObj = new URL(req.url, 'http://localhost');
