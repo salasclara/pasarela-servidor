@@ -21,6 +21,10 @@ const CLARA_IDENTITY_RULES = Object.freeze([
   'Hair may be lightly styled while preserving its real cut, color and volume.',
   'Makeup must remain light, natural and camera-realistic.',
   'If scene complexity conflicts with identity fidelity, simplify the scene.',
+  'IDENTITY LOCK: do not substitute a lookalike or reinterpret Clara as a generic mature Latina woman.',
+  'Preserve the characteristic natural smile and real-looking tooth spacing/shape; never cosmetically perfect the teeth.',
+  'Preserve facial width, cheek volume, under-eye structure, nasolabial lines and natural asymmetry.',
+  'Do not make Clara younger, thinner-faced, more glamorous or more conventionally retouched than the references.',
 ]);
 
 const SCENE_RULES = Object.freeze({
@@ -59,6 +63,9 @@ function buildClaraUGCSpec({ scene, product = {}, notes = '' } = {}) {
     scene: normalizedScene,
     identity: {
       referenceRequired: true,
+      masterReference: 'CLARA_REFERENCE_MASTER',
+      approvedUgcReference: normalizedScene === SCENES.BEAUTY_UGC ? 'CLARA_BEAUTY_UGC_APPROVED_V1' : null,
+      rejectOnIdentityDrift: true,
       rules: CLARA_IDENTITY_RULES,
     },
     product: {
@@ -91,6 +98,7 @@ function buildClaraUGCPrompt(input = {}) {
     ...spec.sceneRules.map(x => '- ' + x),
     spec.product.title ? 'Product: ' + spec.product.title : '',
     spec.notes ? 'Additional direction: ' + spec.notes : '',
+    'IDENTITY GATE: reject the result if Clara looks like a similar person rather than the reference person.',
     'Final result must feel like real creator content, not a polished catalog advertisement.',
   ].filter(Boolean).join('\n');
 }
