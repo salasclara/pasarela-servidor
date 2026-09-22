@@ -2,7 +2,9 @@
 
 /**
  * CLARA UGC v1 — Fancy by Roxette
- * Pure prompt/spec builder. No scheduler, publishing, DB writes or Commerce wiring.
+ * Real-content processor spec/prompt builder.
+ * Clara is photographed with the real product; AI enhances presentation without recreating her.
+ * No scheduler, publishing, DB writes or Commerce wiring.
  */
 
 const SCENES = Object.freeze({
@@ -11,47 +13,52 @@ const SCENES = Object.freeze({
   HOME_LIFESTYLE_UGC: 'HOME_LIFESTYLE_UGC',
 });
 
-const PRIORITY = Object.freeze(['IDENTITY', 'PRODUCT', 'SCENE', 'DECORATION']);
+const PRIORITY = Object.freeze(['IDENTITY', 'REAL_PRODUCT', 'AUTHENTICITY', 'PRESENTATION']);
 
 const GENERATION_STRATEGY = Object.freeze({
-  BEAUTY_UGC: 'REFERENCE_GUIDED_GENERATION',
-  STYLE_UGC: 'REAL_PHOTO_EDIT_IDENTITY_PRESERVATION',
-  HOME_LIFESTYLE_UGC: 'REFERENCE_GUIDED_GENERATION',
+  BEAUTY_UGC: 'REAL_CLARA_PHOTO_PROCESSING',
+  STYLE_UGC: 'REAL_CLARA_PHOTO_PROCESSING',
+  HOME_LIFESTYLE_UGC: 'REAL_CLARA_PHOTO_PROCESSING',
 });
 
 const CLARA_IDENTITY_RULES = Object.freeze([
-  'Use Clara Reference as the mandatory identity anchor.',
-  'Preserve mature facial anatomy, eyes, nose, jawline, smile and natural teeth.',
-  'Preserve natural skin texture and apparent age; do not rejuvenate.',
-  'No beauty-filter skin, facial reshaping, artificial slimming or studio-glam retouching.',
-  'Hair may be lightly styled while preserving its real cut, color and volume.',
-  'Makeup must remain light, natural and camera-realistic.',
-  'If scene complexity conflicts with identity fidelity, simplify the scene.',
-  'IDENTITY LOCK: do not substitute a lookalike or reinterpret Clara as a generic mature Latina woman.',
-  'Preserve the characteristic natural smile and real-looking tooth spacing/shape; never cosmetically perfect the teeth.',
-  'Preserve facial width, cheek volume, under-eye structure, nasolabial lines and natural asymmetry.',
-  'Do not make Clara younger, thinner-faced, more glamorous or more conventionally retouched than the references.',
+  'A real Clara photo is mandatory. Do not generate, reconstruct or replace Clara.',
+  'Preserve Clara face, smile, teeth, eyes, nose, jawline, hair, skin texture, age and body proportions from the source photo.',
+  'Do not beautify, rejuvenate, reshape, slim, face-swap or substitute a lookalike.',
+  'Do not cosmetically perfect teeth, skin or facial asymmetry.',
+  'Edits to Clara are limited to natural photographic corrections such as exposure, white balance and restrained color correction.',
+  'If an enhancement risks changing Clara identity, keep the original pixels instead.',
+]);
+
+const PROCESSING_RULES = Object.freeze([
+  'Start from a real photo of Clara with the real product.',
+  'Keep Clara and the real product as the source of truth.',
+  'Allowed: crop, straighten, exposure, white balance, restrained color correction, subtle sharpening, background cleanup and platform-safe resizing.',
+  'Allowed when requested: non-destructive cover text/graphics placed away from Clara and the product.',
+  'Do not replace the product with an AI recreation when the real product is already visible.',
+  'Do not fabricate product features, labels, claims or results.',
+  'Keep the finished content believable as smartphone UGC, not a catalog or studio advertisement.',
 ]);
 
 const SCENE_RULES = Object.freeze({
   BEAUTY_UGC: [
-    'Candid beauty UGC in a believable vanity/bathroom or home setting.',
-    'Show Clara naturally using, opening, organizing or demonstrating the product.',
-    'Prefer phone-camera realism, ordinary daylight and minimal staging.',
+    'Use a real Clara beauty/product photo in a bathroom, vanity or believable home setting.',
+    'Prefer a clear product demonstration, opening, organization or use moment.',
   ],
   STYLE_UGC: [
-    'Candid personal-style UGC in a believable home/dressing setting.',
-    'STYLE must start from a real Clara photo as the base image; do not generate a new person from scratch.',
-    'Preserve Clara head/face, body proportions, pose and recognizable anatomy from the base photo whenever possible.',
-    'Edit primarily the garment/product and only the minimum surrounding pixels required for a natural fit.',
-    'Show Clara naturally wearing, holding or styling the product.',
-    'Avoid fashion-editorial posing unless explicitly requested.',
+    'Use a real Clara photo wearing or holding the real fashion product.',
+    'Preserve her real body, pose and garment appearance; improve presentation rather than generating a new outfit/person.',
   ],
   HOME_LIFESTYLE_UGC: [
-    'Candid home/lifestyle UGC in a believable everyday setting.',
-    'Show Clara naturally using the product in context.',
-    'Keep props secondary and the environment lived-in but tidy.',
+    'Use a real Clara photo naturally using the real product at home or in an everyday setting.',
+    'Keep environmental cleanup subtle and believable.',
   ],
+});
+
+const OUTPUTS = Object.freeze({
+  feed: '4:5',
+  reelStory: '9:16',
+  square: '1:1',
 });
 
 function normalizeScene(scene) {
@@ -65,17 +72,18 @@ function buildClaraUGCSpec({ scene, product = {}, notes = '' } = {}) {
   return {
     engine: 'CLARA_UGC',
     version: '1.0',
+    role: 'REAL_CONTENT_PROCESSOR',
     mode: 'MANUAL_TEST_ONLY',
     generationStrategy: GENERATION_STRATEGY[normalizedScene],
-    requiresRealBasePhoto: normalizedScene === SCENES.STYLE_UGC,
+    requiresRealClaraPhoto: true,
+    requiresRealProduct: true,
+    generateClaraFromScratch: false,
     publish: false,
     scheduler: false,
     priority: PRIORITY,
     scene: normalizedScene,
     identity: {
-      referenceRequired: true,
-      masterReference: 'CLARA_REFERENCE_MASTER',
-      approvedUgcReference: normalizedScene === SCENES.BEAUTY_UGC ? 'CLARA_BEAUTY_UGC_APPROVED_V1' : null,
+      sourceOfTruth: 'REAL_CLARA_PHOTO',
       rejectOnIdentityDrift: true,
       rules: CLARA_IDENTITY_RULES,
     },
@@ -84,14 +92,16 @@ function buildClaraUGCSpec({ scene, product = {}, notes = '' } = {}) {
       category: product.category || '',
       imageUrl: product.imageUrl || '',
       asin: product.asin || '',
-      fidelity: 'HIGH',
+      sourceOfTruth: 'REAL_PRODUCT_IN_SOURCE_PHOTO',
       rules: [
-        'Preserve the real product shape, color, proportions and recognizable details.',
-        'Do not invent accessories, labels, compartments or product claims.',
-        'Product fidelity is secondary only to Clara identity fidelity.',
+        'Preserve the visible real product faithfully.',
+        'Do not invent or replace product details.',
+        'Do not make unsupported product claims.',
       ],
     },
+    processingRules: PROCESSING_RULES,
     sceneRules: SCENE_RULES[normalizedScene],
+    outputs: OUTPUTS,
     notes: String(notes || '').trim(),
   };
 }
@@ -99,20 +109,22 @@ function buildClaraUGCSpec({ scene, product = {}, notes = '' } = {}) {
 function buildClaraUGCPrompt(input = {}) {
   const spec = buildClaraUGCSpec(input);
   return [
-    'Create authentic UGC for Fancy by Roxette.',
+    'Process authentic Clara UGC for Fancy by Roxette.',
+    'This is PHOTO PROCESSING, not character generation.',
     'PRIORITY ORDER: ' + spec.priority.join(' > ') + '.',
-    'CLARA IDENTITY RULES:',
+    'SOURCE OF TRUTH: the uploaded real Clara photo and the real product visible in it.',
+    'CLARA IDENTITY LOCK:',
     ...spec.identity.rules.map(x => '- ' + x),
+    'PROCESSING RULES:',
+    ...spec.processingRules.map(x => '- ' + x),
     'PRODUCT RULES:',
     ...spec.product.rules.map(x => '- ' + x),
-    'GENERATION STRATEGY: ' + spec.generationStrategy + '.',
-    spec.requiresRealBasePhoto ? 'REAL BASE PHOTO REQUIRED: preserve Clara identity/body and edit primarily the product or garment.' : '',
     'SCENE:',
     ...spec.sceneRules.map(x => '- ' + x),
     spec.product.title ? 'Product: ' + spec.product.title : '',
     spec.notes ? 'Additional direction: ' + spec.notes : '',
-    'IDENTITY GATE: reject the result if Clara looks like a similar person rather than the reference person.',
-    'Final result must feel like real creator content, not a polished catalog advertisement.',
+    'IDENTITY GATE: if an edit changes Clara identity, discard that edit and preserve the original Clara pixels.',
+    'Final result must remain believable real smartphone UGC.',
   ].filter(Boolean).join('\n');
 }
 
@@ -120,7 +132,9 @@ module.exports = {
   SCENES,
   PRIORITY,
   CLARA_IDENTITY_RULES,
+  PROCESSING_RULES,
   SCENE_RULES,
+  OUTPUTS,
   GENERATION_STRATEGY,
   normalizeScene,
   buildClaraUGCSpec,
