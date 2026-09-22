@@ -13,6 +13,12 @@ const SCENES = Object.freeze({
 
 const PRIORITY = Object.freeze(['IDENTITY', 'PRODUCT', 'SCENE', 'DECORATION']);
 
+const GENERATION_STRATEGY = Object.freeze({
+  BEAUTY_UGC: 'REFERENCE_GUIDED_GENERATION',
+  STYLE_UGC: 'REAL_PHOTO_EDIT_IDENTITY_PRESERVATION',
+  HOME_LIFESTYLE_UGC: 'REFERENCE_GUIDED_GENERATION',
+});
+
 const CLARA_IDENTITY_RULES = Object.freeze([
   'Use Clara Reference as the mandatory identity anchor.',
   'Preserve mature facial anatomy, eyes, nose, jawline, smile and natural teeth.',
@@ -35,6 +41,9 @@ const SCENE_RULES = Object.freeze({
   ],
   STYLE_UGC: [
     'Candid personal-style UGC in a believable home/dressing setting.',
+    'STYLE must start from a real Clara photo as the base image; do not generate a new person from scratch.',
+    'Preserve Clara head/face, body proportions, pose and recognizable anatomy from the base photo whenever possible.',
+    'Edit primarily the garment/product and only the minimum surrounding pixels required for a natural fit.',
     'Show Clara naturally wearing, holding or styling the product.',
     'Avoid fashion-editorial posing unless explicitly requested.',
   ],
@@ -57,6 +66,8 @@ function buildClaraUGCSpec({ scene, product = {}, notes = '' } = {}) {
     engine: 'CLARA_UGC',
     version: '1.0',
     mode: 'MANUAL_TEST_ONLY',
+    generationStrategy: GENERATION_STRATEGY[normalizedScene],
+    requiresRealBasePhoto: normalizedScene === SCENES.STYLE_UGC,
     publish: false,
     scheduler: false,
     priority: PRIORITY,
@@ -94,6 +105,8 @@ function buildClaraUGCPrompt(input = {}) {
     ...spec.identity.rules.map(x => '- ' + x),
     'PRODUCT RULES:',
     ...spec.product.rules.map(x => '- ' + x),
+    'GENERATION STRATEGY: ' + spec.generationStrategy + '.',
+    spec.requiresRealBasePhoto ? 'REAL BASE PHOTO REQUIRED: preserve Clara identity/body and edit primarily the product or garment.' : '',
     'SCENE:',
     ...spec.sceneRules.map(x => '- ' + x),
     spec.product.title ? 'Product: ' + spec.product.title : '',
@@ -108,6 +121,7 @@ module.exports = {
   PRIORITY,
   CLARA_IDENTITY_RULES,
   SCENE_RULES,
+  GENERATION_STRATEGY,
   normalizeScene,
   buildClaraUGCSpec,
   buildClaraUGCPrompt,
