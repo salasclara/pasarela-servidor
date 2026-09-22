@@ -21,5 +21,14 @@ for (const scene of Object.values(SCENES)) {
   assert.ok(buildClaraUGCPrompt({ scene }).includes('IDENTITY > PRODUCT > SCENE > DECORATION'));
 }
 
+const beauty = buildClaraUGCSpec({ scene: 'BEAUTY_UGC' });
+assert.strictEqual(beauty.generationStrategy, 'REFERENCE_GUIDED_GENERATION');
+assert.strictEqual(beauty.requiresRealBasePhoto, false);
+
+const style = buildClaraUGCSpec({ scene: 'STYLE_UGC' });
+assert.strictEqual(style.generationStrategy, 'REAL_PHOTO_EDIT_IDENTITY_PRESERVATION');
+assert.strictEqual(style.requiresRealBasePhoto, true);
+assert.ok(buildClaraUGCPrompt({ scene: 'STYLE_UGC' }).includes('REAL BASE PHOTO REQUIRED'));
+
 assert.throws(() => buildClaraUGCSpec({ scene: 'INVALID' }), /Invalid CLARA UGC scene/);
 console.log('CLARA UGC v1 validation OK');
