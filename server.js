@@ -38,6 +38,7 @@ const { createFancyAnalyticsSummaryHandler } = require('./src/services/FancyAnal
 const handleFancyAnalyticsSummary = createFancyAnalyticsSummaryHandler(pool);
 const { createFancyAnalyticsDashboardHandler } = require('./src/services/FancyAnalyticsDashboard');
 const handleFancyAnalyticsDashboard = createFancyAnalyticsDashboardHandler();
+const { buildClaraUGCSpec, buildClaraUGCPrompt } = require('./src/services/ClaraUGCEngine');
 const { createFancyPublicationObserver } = require('./src/services/FancyPublicationObserver');
 const fancyPublicationObserver = createFancyPublicationObserver(pool);
 
@@ -4305,6 +4306,34 @@ INSTRUCCIONES:
       }));
     } catch (error) {
       res.end(JSON.stringify({ ok: false, connected: false, error: error.message, publishesContent: false }));
+    }
+    return;
+  }
+
+  // CLARA UGC v1 — TEST AISLADO. Solo devuelve spec/prompt; no genera ni publica.
+  if (req.method === 'GET' && req.url.startsWith('/test-clara-ugc')) {
+    try {
+      const requestUrl = new URL(req.url, 'http://localhost');
+      const scene = requestUrl.searchParams.get('scene') || 'BEAUTY_UGC';
+      const product = {
+        title: requestUrl.searchParams.get('product') || 'Producto de prueba Fancy',
+        category: requestUrl.searchParams.get('category') || 'BEAUTY',
+        asin: requestUrl.searchParams.get('asin') || '',
+        imageUrl: ''
+      };
+      const input = { scene, product };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ok: true,
+        isolated: true,
+        publishesContent: false,
+        schedulerConnected: false,
+        spec: buildClaraUGCSpec(input),
+        prompt: buildClaraUGCPrompt(input)
+      }, null, 2));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: err.message }));
     }
     return;
   }
