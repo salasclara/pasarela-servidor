@@ -4309,6 +4309,45 @@ INSTRUCCIONES:
     return;
   }
 
+  // FANCY ROTATION STATE V1 — inicialización/consulta controlada; NO publica.
+  if (req.method === 'POST' && req.url === '/fancy-rotation-state-v1') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    (async () => {
+      try {
+        const body = await new Promise((resolve, reject) => {
+          let raw = '';
+          req.on('data', chunk => { raw += chunk; if (raw.length > 10000) reject(new Error('Body demasiado grande')); });
+          req.on('end', () => {
+            try { resolve(raw ? JSON.parse(raw) : {}); } catch (_) { reject(new Error('JSON inválido')); }
+          });
+          req.on('error', reject);
+        });
+        if (body.confirm !== 'SET_FANCY_ROTATION_AFTER_PRODUCT_1') {
+          res.end(JSON.stringify({ ok: false, published: false, error: 'Confirmación requerida' }));
+          return;
+        }
+        const products = require('./src/data/fancy-approved-products-v1.json');
+        const { getNextProduct } = require('./src/services/FancyRotationV1');
+        const { saveFancyRotationState, getFancyRotationState } = require('./src/services/FancyRotationStateV1');
+        const first = getNextProduct(products, { index: 0, cycle: 0 });
+        if (!first.product || Number(first.product.id) !== 1) throw new Error('La rotación esperada no comienza en producto #1');
+        await saveFancyRotationState(pool, first.nextState, 1);
+        const state = await getFancyRotationState(pool);
+        const next = getNextProduct(products, state);
+        res.end(JSON.stringify({
+          ok: true,
+          published: false,
+          state,
+          nextProduct: next.product ? { id: next.product.id, name: next.product.name, category: next.product.category } : null
+        }));
+      } catch (e) {
+        console.error('[Fancy Rotation State V1] ERROR:', e.message);
+        res.end(JSON.stringify({ ok: false, published: false, error: e.message }));
+      }
+    })();
+    return;
+  }
+
   // TEST FANCY — dispara publicarCoverParaPagina SOLO para Fancy by Roxette
 
   // TEST AISLADO STOREFRONT — solo JSON, no publica y no modifica estado.
