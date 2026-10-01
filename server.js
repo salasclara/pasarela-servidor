@@ -5443,6 +5443,33 @@ setInterval(async () => {
 
 console.log('[AutoPublish] Scheduler activado — publica a las 9am, 3pm y 9pm (Dallas Central Time)');
 
+// FANCY PRODUCT FIND: 1 publicación diaria a las 12:00 PM Central.
+// Solo se activa con FANCY_APPROVED_ROTATION_ENABLED=true.
+const FANCY_PRODUCT_FIND_HOUR = 12;
+let _ultimaFechaFancyProductFind = null;
+function fechaActualCentral() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+setInterval(async () => {
+  if (String(process.env.FANCY_APPROVED_ROTATION_ENABLED || '').toLowerCase() !== 'true') return;
+  const hora = horaActualCentral();
+  const min = new Date().getUTCMinutes();
+  const fechaCentral = fechaActualCentral();
+  if (hora !== FANCY_PRODUCT_FIND_HOUR || min >= 10 || _ultimaFechaFancyProductFind === fechaCentral) return;
+  _ultimaFechaFancyProductFind = fechaCentral;
+  try {
+    const products = require('./src/data/fancy-approved-products-v1.json');
+    const { publishNextApprovedFancyProduct } = require('./src/services/FancyApprovedRotationRunnerV1');
+    const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
+    if (!fancyPage || !fancyPage.token || !fancyPage.id) throw new Error('Fancy Facebook config incompleta');
+    const result = await publishNextApprovedFancyProduct({ pool, products, pageId: fancyPage.id, pageToken: fancyPage.token, repoRoot: __dirname });
+    console.log('[Fancy Product Find] publicado:', result.productId, result.productName, result.facebookPostId);
+  } catch (e) {
+    console.error('[Fancy Product Find] error:', e.message);
+  }
+}, 60 * 1000);
+console.log('[Fancy Product Find] 12:00 PM Central | enabled:', String(process.env.FANCY_APPROVED_ROTATION_ENABLED || '').toLowerCase() === 'true');
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`[Servidor] Corriendo en puerto ${PORT}`);
