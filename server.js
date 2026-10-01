@@ -4309,6 +4309,44 @@ INSTRUCCIONES:
     return;
   }
 
+  // FANCY APPROVED ROTATION V1 — publica SOLO el próximo producto persistido.
+  // El cursor avanza únicamente si Facebook confirma éxito.
+  if (req.method === 'POST' && req.url === '/fancy-approved-publish-next-v1') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    (async () => {
+      try {
+        const body = await new Promise((resolve, reject) => {
+          let raw = '';
+          req.on('data', chunk => { raw += chunk; if (raw.length > 10000) reject(new Error('Body demasiado grande')); });
+          req.on('end', () => {
+            try { resolve(raw ? JSON.parse(raw) : {}); } catch (_) { reject(new Error('JSON inválido')); }
+          });
+          req.on('error', reject);
+        });
+        if (body.confirm !== 'PUBLISH_NEXT_APPROVED_FANCY_PRODUCT') {
+          res.end(JSON.stringify({ ok: false, published: false, error: 'Confirmación requerida' }));
+          return;
+        }
+        const products = require('./src/data/fancy-approved-products-v1.json');
+        const { publishNextApprovedFancyProduct } = require('./src/services/FancyApprovedRotationRunnerV1');
+        const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
+        if (!fancyPage || !fancyPage.token || !fancyPage.id) throw new Error('Fancy Facebook config incompleta');
+        const result = await publishNextApprovedFancyProduct({
+          pool,
+          products,
+          pageId: fancyPage.id,
+          pageToken: fancyPage.token,
+          repoRoot: __dirname
+        });
+        res.end(JSON.stringify({ ...result, published: true }));
+      } catch (e) {
+        console.error('[Fancy Approved Publish Next V1] ERROR:', e.message);
+        res.end(JSON.stringify({ ok: false, published: false, error: e.message }));
+      }
+    })();
+    return;
+  }
+
   // FANCY ROTATION STATE V1 — inicialización/consulta controlada; NO publica.
   if (req.method === 'POST' && req.url === '/fancy-rotation-state-v1') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
