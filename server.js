@@ -4265,6 +4265,50 @@ INSTRUCCIONES:
     return;
   }
 
+  // FANCY APPROVED PRODUCT V1 — publicación manual y dirigida.
+  // POST solamente; no scheduler, no IA, no rotación automática.
+  // Requiere confirmación explícita para evitar disparos accidentales desde navegador.
+  if (req.method === 'POST' && req.url === '/fancy-approved-publish-v1') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    (async () => {
+      try {
+        const body = await new Promise((resolve, reject) => {
+          let raw = '';
+          req.on('data', c => { raw += c; if (raw.length > 10000) reject(new Error('Body demasiado grande')); });
+          req.on('end', () => {
+            try { resolve(raw ? JSON.parse(raw) : {}); } catch (e) { reject(new Error('JSON inválido')); }
+          });
+          req.on('error', reject);
+        });
+        if (body.confirm !== 'PUBLISH_ONE_APPROVED_FANCY_PRODUCT') {
+          res.end(JSON.stringify({ ok: false, published: false, error: 'Confirmación requerida' }));
+          return;
+        }
+        const productId = Number(body.productId);
+        if (!Number.isInteger(productId) || productId < 1 || productId > 20) {
+          res.end(JSON.stringify({ ok: false, published: false, error: 'productId debe ser 1-20' }));
+          return;
+        }
+        const products = require('./src/data/fancy-approved-products-v1.json');
+        const { publishApprovedFancyProduct } = require('./src/services/FancyApprovedFacebookPublisherV1');
+        const fancyPage = PAGES_EXTRA.find(p => p.tipo === 'fancy');
+        if (!fancyPage || !fancyPage.token || !fancyPage.id) throw new Error('Fancy Facebook config incompleta');
+        const result = await publishApprovedFancyProduct({
+          products,
+          productId,
+          pageId: fancyPage.id,
+          pageToken: fancyPage.token,
+          repoRoot: __dirname
+        });
+        res.end(JSON.stringify({ ...result, published: true }));
+      } catch (e) {
+        console.error('[Fancy Approved Publish V1] ERROR:', e.message);
+        res.end(JSON.stringify({ ok: false, published: false, error: e.message }));
+      }
+    })();
+    return;
+  }
+
   // TEST FANCY — dispara publicarCoverParaPagina SOLO para Fancy by Roxette
 
   // TEST AISLADO STOREFRONT — solo JSON, no publica y no modifica estado.
