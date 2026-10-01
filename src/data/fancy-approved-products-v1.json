@@ -4,35 +4,40 @@
     "category": "BEAUTY",
     "name": "essence Lash Princess Mascara",
     "active": true,
-    "cardPath": "assets/fancy/01-essence-Lash-Princess.png"
+    "cardPath": "assets/fancy/01-essence-Lash-Princess.png",
+    "affiliateUrl": "https://amzn.to/47rZ3IV"
   },
   {
     "id": 2,
     "category": "BEAUTY",
     "name": "Maybelline Sky High Mascara",
     "active": true,
-    "cardPath": "assets/fancy/02-Maybelline-Lash.png"
+    "cardPath": "assets/fancy/02-Maybelline-Lash.png",
+    "affiliateUrl": "https://amzn.to/4hyEvmB"
   },
   {
     "id": 3,
     "category": "BEAUTY",
     "name": "Hero Cosmetics Mighty Patch",
     "active": true,
-    "cardPath": "assets/fancy/03-Hero-Cosmetics-Mighty.png"
+    "cardPath": "assets/fancy/03-Hero-Cosmetics-Mighty.png",
+    "affiliateUrl": "https://amzn.to/4jxHTRi"
   },
   {
     "id": 4,
     "category": "BEAUTY",
     "name": "Neutrogena Makeup Remover Wipes",
     "active": true,
-    "cardPath": "assets/fancy/04-Neutrogena-Makeup.png"
+    "cardPath": "assets/fancy/04-Neutrogena-Makeup.png",
+    "affiliateUrl": "https://amzn.to/4zcVCBT"
   },
   {
     "id": 5,
     "category": "BEAUTY",
     "name": "Garnier Micellar Water",
     "active": true,
-    "cardPath": "assets/fancy/05-Garnier-Micellar.png"
+    "cardPath": "assets/fancy/05-Garnier-Micellar.png",
+    "affiliateUrl": "https://amzn.to/4ACak73"
   },
   {
     "id": 6,
