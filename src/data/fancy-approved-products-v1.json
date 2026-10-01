@@ -1,25 +1,157 @@
 [
-  {"id":1,"category":"BEAUTY","name":"essence Lash Princess Mascara","active":true},
-  {"id":2,"category":"BEAUTY","name":"Maybelline Sky High Mascara","active":true},
-  {"id":3,"category":"BEAUTY","name":"Hero Cosmetics Mighty Patch","active":true},
-  {"id":4,"category":"BEAUTY","name":"Neutrogena Makeup Remover Wipes","active":true},
-  {"id":5,"category":"BEAUTY","name":"Garnier Micellar Water","active":true},
-
-  {"id":6,"category":"HOME","name":"Amazon Echo Show 5","affiliateUrl":"https://amzn.to/4rDJ5EK","active":true},
-  {"id":7,"category":"HOME","name":"upsimples Acrylic Floating Shelves","affiliateUrl":"https://amzn.to/46VcrFe","active":true},
-  {"id":8,"category":"HOME","name":"Bissell Little Green Mini","affiliateUrl":"https://amzn.to/4ys00wQ","active":true},
-  {"id":9,"category":"HOME","name":"Zulay Kitchen Handheld Milk Frother","affiliateUrl":"https://amzn.to/4yiKeUS","active":true},
-  {"id":10,"category":"HOME","name":"Amazon Basics Velvet Hangers - 50 Pack","affiliateUrl":"https://amzn.to/4hV3fa2","active":true},
-
-  {"id":11,"category":"WELLNESS","name":"Majestic Pure Lavender Essential Oil","affiliateUrl":"https://amzn.to/4ho1jXF","active":true},
-  {"id":12,"category":"WELLNESS","name":"ASAKUKI Essential Oil Diffuser","affiliateUrl":"https://amzn.to/4ykiUpe","active":true},
-  {"id":13,"category":"WELLNESS","name":"BESKAR Foot Massage Roller","affiliateUrl":"https://amzn.to/4ytaige","active":true},
-  {"id":14,"category":"WELLNESS","name":"TOLOCO Massage Gun","affiliateUrl":"https://amzn.to/3VjLuZn","active":true},
-  {"id":15,"category":"WELLNESS","name":"Etekcity Smart Scale","affiliateUrl":"https://amzn.to/3TWjivf","active":true},
-
-  {"id":16,"category":"TECH_TRAVEL","name":"Apple AirTag (2nd generation)","affiliateUrl":"https://amzn.to/4xQRKoV","active":true},
-  {"id":17,"category":"TECH_TRAVEL","name":"Soundcore by Anker Q20i","affiliateUrl":"https://amzn.to/4xZOKXA","active":true},
-  {"id":18,"category":"TECH_TRAVEL","name":"QINLIANF Wall Charger / Surge Protector","affiliateUrl":"https://amzn.to/4hw0MBC","active":true},
-  {"id":19,"category":"TECH_TRAVEL","name":"Amazon Smart Plug - 2 Pack","affiliateUrl":"https://amzn.to/4AH8OAv","active":true},
-  {"id":20,"category":"TECH_TRAVEL","name":"Amazon Fire TV Stick 4K Plus","affiliateUrl":"https://amzn.to/4xVeB2I","active":true}
+  {
+    "id": 1,
+    "category": "BEAUTY",
+    "name": "essence Lash Princess Mascara",
+    "active": true,
+    "cardPath": "assets/fancy/01-essence-Lash-Princess.png"
+  },
+  {
+    "id": 2,
+    "category": "BEAUTY",
+    "name": "Maybelline Sky High Mascara",
+    "active": true,
+    "cardPath": "assets/fancy/02-Maybelline-Lash.png"
+  },
+  {
+    "id": 3,
+    "category": "BEAUTY",
+    "name": "Hero Cosmetics Mighty Patch",
+    "active": true,
+    "cardPath": "assets/fancy/03-Hero-Cosmetics-Mighty.png"
+  },
+  {
+    "id": 4,
+    "category": "BEAUTY",
+    "name": "Neutrogena Makeup Remover Wipes",
+    "active": true,
+    "cardPath": "assets/fancy/04-Neutrogena-Makeup.png"
+  },
+  {
+    "id": 5,
+    "category": "BEAUTY",
+    "name": "Garnier Micellar Water",
+    "active": true,
+    "cardPath": "assets/fancy/05-Garnier-Micellar.png"
+  },
+  {
+    "id": 6,
+    "category": "HOME",
+    "name": "Amazon Echo Show 5",
+    "affiliateUrl": "https://amzn.to/4rDJ5EK",
+    "active": true,
+    "cardPath": "assets/fancy/06-Asistente-inteligente-para-un-hogar-acogedor.png"
+  },
+  {
+    "id": 7,
+    "category": "HOME",
+    "name": "upsimples Acrylic Floating Shelves",
+    "affiliateUrl": "https://amzn.to/46VcrFe",
+    "active": true,
+    "cardPath": "assets/fancy/07-Estantes-acrílicos-organiza-con-estilo.png"
+  },
+  {
+    "id": 8,
+    "category": "HOME",
+    "name": "Bissell Little Green Mini",
+    "affiliateUrl": "https://amzn.to/4ys00wQ",
+    "active": true,
+    "cardPath": "assets/fancy/08-Limpieza-profunda-en-casa-con-estilo.png"
+  },
+  {
+    "id": 9,
+    "category": "HOME",
+    "name": "Zulay Kitchen Handheld Milk Frother",
+    "affiliateUrl": "https://amzn.to/4yiKeUS",
+    "active": true,
+    "cardPath": "assets/fancy/09-Espumador-Zulay-Café-de-Cafetería-en-Casa.png"
+  },
+  {
+    "id": 10,
+    "category": "HOME",
+    "name": "Amazon Basics Velvet Hangers - 50 Pack",
+    "affiliateUrl": "https://amzn.to/4hV3fa2",
+    "active": true,
+    "cardPath": "assets/fancy/10-Renueva-tu-clóset-con-estilo.png"
+  },
+  {
+    "id": 11,
+    "category": "WELLNESS",
+    "name": "Majestic Pure Lavender Essential Oil",
+    "affiliateUrl": "https://amzn.to/4ho1jXF",
+    "active": true,
+    "cardPath": "assets/fancy/11-Aceite-de-Lavanda-Bienestar-Natural.png"
+  },
+  {
+    "id": 12,
+    "category": "WELLNESS",
+    "name": "ASAKUKI Essential Oil Diffuser",
+    "affiliateUrl": "https://amzn.to/4ykiUpe",
+    "active": true,
+    "cardPath": "assets/fancy/12-Espacio-de-Bienestar-con-Difusor-ASAKUKI.png"
+  },
+  {
+    "id": 13,
+    "category": "WELLNESS",
+    "name": "BESKAR Foot Massage Roller",
+    "affiliateUrl": "https://amzn.to/4ytaige",
+    "active": true,
+    "cardPath": "assets/fancy/13-Relájate-en-Casa-con-BESKAR.png"
+  },
+  {
+    "id": 14,
+    "category": "WELLNESS",
+    "name": "TOLOCO Massage Gun",
+    "affiliateUrl": "https://amzn.to/3VjLuZn",
+    "active": true,
+    "cardPath": "assets/fancy/14-Masaje-en-Casa-con-TOLOCO®.png"
+  },
+  {
+    "id": 15,
+    "category": "WELLNESS",
+    "name": "Etekcity Smart Scale",
+    "affiliateUrl": "https://amzn.to/3TWjivf",
+    "active": true,
+    "cardPath": "assets/fancy/15-Tu-bienestar-en-casa.png"
+  },
+  {
+    "id": 16,
+    "category": "TECH_TRAVEL",
+    "name": "Apple AirTag (2nd generation)",
+    "affiliateUrl": "https://amzn.to/4xQRKoV",
+    "active": true,
+    "cardPath": "assets/fancy/16-AirTag-para-viajar.png"
+  },
+  {
+    "id": 17,
+    "category": "TECH_TRAVEL",
+    "name": "Soundcore by Anker Q20i",
+    "affiliateUrl": "https://amzn.to/4xZOKXA",
+    "active": true,
+    "cardPath": "assets/fancy/17-Audífonos-Soundcore-para-viajar.png"
+  },
+  {
+    "id": 18,
+    "category": "TECH_TRAVEL",
+    "name": "QINLIANF Wall Charger / Surge Protector",
+    "affiliateUrl": "https://amzn.to/4hw0MBC",
+    "active": true,
+    "cardPath": "assets/fancy/18-Cargador-QINLIANF-Carga-Todo-en-Uno.png"
+  },
+  {
+    "id": 19,
+    "category": "TECH_TRAVEL",
+    "name": "Amazon Smart Plug - 2 Pack",
+    "affiliateUrl": "https://amzn.to/4AH8OAv",
+    "active": true,
+    "cardPath": "assets/fancy/19-Hogar-inteligente-con-Amazon-Smart-Plug.png"
+  },
+  {
+    "id": 20,
+    "category": "TECH_TRAVEL",
+    "name": "Amazon Fire TV Stick 4K Plus",
+    "affiliateUrl": "https://amzn.to/4xVeB2I",
+    "active": true,
+    "cardPath": "assets/fancy/20-Amazon-fire-tv-stick.png"
+  }
 ]
