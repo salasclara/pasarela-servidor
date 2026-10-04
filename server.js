@@ -1950,6 +1950,80 @@ async function generarCoverFancyV3({
 }
 
 
+function getFancySceneContext({ category, visualFamily, editorialType, intention, searchTerm, primaryObject }) {
+  const text = [
+    category || '',
+    visualFamily || '',
+    editorialType || '',
+    intention || '',
+    searchTerm || '',
+    primaryObject || ''
+  ].join(' ').toLowerCase();
+
+  // CONTEXT COHERENCE: the visual scene must make literal sense for the editorial promise.
+  // A Home/organization story must happen inside a home, not on a street.
+  const isHome = /\b(home|hogar|organization|organizacion|organización|storage|almacenamiento|orden|organizer|organizador|closet|cl[oó]set|kitchen|cocina|bathroom|ba[nñ]o|bedroom|dormitorio|decor|decoraci[oó]n|shelf|estante|cleaning|limpieza)\b/.test(text);
+  const isBeauty = /\b(beauty|belleza|makeup|maquillaje|skincare|skin|piel|cosmetic|cosm[eé]tic|mascara|lash|micellar|desmaquill)\b/.test(text);
+  const isWellness = /\b(wellness|bienestar|self[- ]?care|autocuidado|relax|relaj|massage|masaje|fitness|sleep|sue[nñ]o|mindfulness|diffuser|difusor)\b/.test(text);
+  const isTravel = /\b(travel|viaje|airport|aeropuerto|luggage|equipaje|hotel|trip|viajando)\b/.test(text);
+  const isHomeOffice = /\b(home office|oficina en casa|desk|escritorio|work from home|trabajando en casa)\b/.test(text);
+
+  if (isHome && !isTravel) {
+    return `
+CONTEXT COHERENCE — HOME/LIFESTYLE IS MANDATORY:
+The story is about the home, organization, storage, cleaning, decor, or a household solution.
+The scene MUST take place inside a believable, attractive real home.
+Choose the room that matches the action: bedroom/closet for clothing and storage; bathroom for bath/beauty organization; kitchen for kitchen organization; living room/entryway for general home organization.
+If the story says "organize", the woman must visibly be organizing, placing, sorting, arranging, or using the featured item in that home environment.
+The environment must visually prove the headline instead of merely decorating the image.
+ABSOLUTELY FORBIDDEN FOR THIS STORY: street, sidewalk, outdoor shopping area, urban exterior, café, airport, hotel lobby, commercial storefront, or generic city background.
+Do not place the subject outside the home when the editorial message is about organizing or improving a home space.
+`;
+  }
+
+  if (isBeauty) {
+    return `
+CONTEXT COHERENCE — BEAUTY:
+The scene must take place in a believable beauty-related environment: bathroom vanity, dressing table, bedroom vanity, or personal-care area at home.
+If the editorial message describes a beauty action, the woman must visibly perform that action with the featured product.
+Avoid unrelated streets, cafés, shopping zones, or outdoor settings unless the story explicitly requires them.
+`;
+  }
+
+  if (isWellness) {
+    return `
+CONTEXT COHERENCE — WELLNESS:
+The scene must take place in a believable wellness/lifestyle environment that matches the action: bedroom, living room, home wellness corner, bathroom, home gym, or another appropriate personal space.
+The subject must visibly use or interact with the featured product in a way that matches the editorial message.
+Avoid unrelated urban or commercial settings unless travel is explicitly part of the story.
+`;
+  }
+
+  if (isHomeOffice) {
+    return `
+CONTEXT COHERENCE — HOME OFFICE:
+The scene must take place at a believable home-office desk or work area.
+The featured technology/product must be visibly used in that workspace and the action must match the editorial message.
+`;
+  }
+
+  if (isTravel) {
+    return `
+CONTEXT COHERENCE — TRAVEL:
+Use a believable travel environment such as an airport, hotel room, hotel lobby, train station, luggage area, or active travel scene.
+The featured product must be visibly relevant to the travel action.
+Do not use a home environment unless the story is specifically about preparing for travel.
+`;
+  }
+
+  return `
+CONTEXT COHERENCE:
+Choose an environment that literally matches the editorial headline, action, category, and featured product.
+The setting must make the story immediately understandable without reading the caption.
+Never choose a visually attractive location merely because it looks fashionable.
+`;
+}
+
 async function generarEscenaFancyAI({ category, visualFamily, editorialType, intention, searchTerm, recentVisuals, humanStrategy, primaryObject }) {
   try {
     const scenePrompt = `You are the FANCY VISUAL DIRECTOR for "Fancy by Roxette", a premium lifestyle and fashion brand on Facebook.
@@ -1960,7 +2034,8 @@ CATEGORY: ${category}
 INTENTION: ${intention}
 SEARCH TERM: ${searchTerm}
 
-SCENE DIRECTION — STYLE_LIFESTYLE ITERATION 2:
+${getFancySceneContext({ category, visualFamily, editorialType, intention, searchTerm, primaryObject })}
+SCENE DIRECTION — STYLE_LIFESTYLE ITERATION 3 — CONTEXT COHERENCE:
 
 Create a REALISTIC PREMIUM LIFESTYLE PHOTOGRAPH.
 Style reference: authentic social commerce photography with editorial polish. Bright, luminous, warm natural daylight.
@@ -1980,14 +2055,14 @@ The visual protagonist is: ${primaryObject || 'a fashion accessory or lifestyle 
 Generic — no logos, no brand marks. Naturally integrated into her life and look.
 IMPORTANT: this product MUST be clearly visible and recognizable. It is the hero of this image.
 
-ENVIRONMENT — choose one real lifestyle setting:
-- A bright urban café with warm interior light and architectural depth
-- An elegant outdoor terrace with natural greenery
-- A lively modern street with interesting background depth
-- An attractive commercial or shopping zone, open-air
-- A luminous urban exterior with architecture and sky
+ENVIRONMENT:
+Choose the setting from CONTEXT COHERENCE above. The environment is not decorative filler; it is part of the story.
+The location, action, props, wardrobe, camera angle, and background must all agree with the category and editorial promise.
+Never use a street or outdoor commercial setting for a home-organization/home-improvement story.
+Never use a beauty-vanity action in a random urban scene.
+Never show a person performing an action in a location where that action would be implausible.
 
-STRICTLY AVOID: white or beige studio backdrop, monochromaticminimalist background, ecommerce catalog appearance, split-screen layout.
+STRICTLY AVOID: white or beige studio backdrop, monochromatic minimalist background, ecommerce catalog appearance, split-screen layout, contextually illogical locations.
 
 COLOR & ENERGY:
 The image must feel luminous, fresh, optimistic, scroll-stopping.
@@ -2028,7 +2103,8 @@ ABSOLUTE RESTRICTIONS:
 NO text. NO logos. NO watermarks. NO brand names. NO monograms.
 NO split screen. NO canva-style template layout. NO ecommerce catalog look.
 NO beige studio. NO monochromaticbackground. NO disembodied hands only.
-Face MUST be visible and expressive.`;
+Face MUST be visible and expressive.
+SCENE LOGIC CHECK: Before generating, silently verify: (1) Is the location appropriate for the story? (2) Is the subject actually performing the promised action? (3) Is the featured product naturally usable there? If any answer is NO, revise the scene before generating.`;
 
     // ── NO_MODEL: prompt separado, regla de prioridad al inicio ──────────────
     const finalPrompt = (humanStrategy === 'NO_MODEL' || humanStrategy === 'PRODUCT_HERO')
