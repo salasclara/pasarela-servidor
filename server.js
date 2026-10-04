@@ -1962,11 +1962,11 @@ function getFancySceneContext({ category, visualFamily, editorialType, intention
 
   // CONTEXT COHERENCE: the visual scene must make literal sense for the editorial promise.
   // A Home/organization story must happen inside a home, not on a street.
-  const isHome = /\\b(home|hogar|organization|organizacion|organización|storage|almacenamiento|orden|organizer|organizador|closet|cl[oó]set|kitchen|cocina|bathroom|ba[nñ]o|bedroom|dormitorio|decor|decoraci[oó]n|shelf|estante|cleaning|limpieza)\\b/.test(text);
-  const isBeauty = /\\b(beauty|belleza|makeup|maquillaje|skincare|skin|piel|cosmetic|cosm[eé]tic|mascara|lash|micellar|desmaquill)\\b/.test(text);
-  const isWellness = /\\b(wellness|bienestar|self[- ]?care|autocuidado|relax|relaj|massage|masaje|fitness|sleep|sue[nñ]o|mindfulness|diffuser|difusor)\\b/.test(text);
-  const isTravel = /\\b(travel|viaje|airport|aeropuerto|luggage|equipaje|hotel|trip|viajando)\\b/.test(text);
-  const isHomeOffice = /\\b(home office|oficina en casa|desk|escritorio|work from home|trabajando en casa)\\b/.test(text);
+  const isHome = /\b(home|hogar|organization|organizacion|organización|storage|almacenamiento|orden|organizer|organizador|closet|cl[oó]set|kitchen|cocina|bathroom|ba[nñ]o|bedroom|dormitorio|decor|decoraci[oó]n|shelf|estante|cleaning|limpieza)\b/.test(text);
+  const isBeauty = /\b(beauty|belleza|makeup|maquillaje|skincare|skin|piel|cosmetic|cosm[eé]tic|mascara|lash|micellar|desmaquill)\b/.test(text);
+  const isWellness = /\b(wellness|bienestar|self[- ]?care|autocuidado|relax|relaj|massage|masaje|fitness|sleep|sue[nñ]o|mindfulness|diffuser|difusor)\b/.test(text);
+  const isTravel = /\b(travel|viaje|airport|aeropuerto|luggage|equipaje|hotel|trip|viajando)\b/.test(text);
+  const isHomeOffice = /\b(home office|oficina en casa|desk|escritorio|work from home|trabajando en casa)\b/.test(text);
 
   if (isHome && !isTravel) {
     return `
