@@ -47,6 +47,8 @@ const fancyPublicationObserver = createFancyPublicationObserver(pool);
 pool.query("ALTER TABLE noticias ADD COLUMN IF NOT EXISTS imagen TEXT DEFAULT ''")
   .then(() => console.log('[DB] Columna imagen verificada OK'))
   .catch(e => console.error('[DB] Migracion imagen error:', e.message));
+// Fuente RSS de cada artículo: permite no volver a publicar la misma noticia.
+pool.query("ALTER TABLE noticias ADD COLUMN IF NOT EXISTS fuente TEXT DEFAULT ''").catch(e => console.error('[DB] fuente:', e.message));
 
 // Catálogo Maestro de Fancy — almacenamiento independiente del scheduler.
 // Conserva referencias y fechas de actualización; nunca descarga ni almacena
@@ -5417,10 +5419,19 @@ async function autoPublicarPasarela() {
       console.log('[AutoPublish-Pasarela] Sin noticias editoriales válidas hoy — omitiendo');
       return { ok: false, error: 'NO_NOTICIA_EDITORIAL' };
     }
-    const conImagen = _noticiasFiltradas.filter(n => n.imagen && n.imagen.startsWith('http'));
+    // Evitar duplicados: descartar noticias RSS ya usadas en los últimos 30 días.
+    const _usadas = await pool.query(
+      "SELECT fuente FROM noticias WHERE fuente <> '' AND created_at > NOW() - INTERVAL '30 days'"
+    ).then(r => new Set(r.rows.map(x => x.fuente))).catch(() => new Set());
+    const _noticiasNuevas = _noticiasFiltradas.filter(n => !_usadas.has(n.link || n.titulo));
+    if (_noticiasNuevas.length === 0) {
+      console.log('[AutoPublish-Pasarela] Todas las noticias editoriales ya se usaron — omitiendo');
+      return { ok: false, error: 'SIN_NOTICIAS_NUEVAS' };
+    }
+    const conImagen = _noticiasNuevas.filter(n => n.imagen && n.imagen.startsWith('http'));
     const noticia = conImagen.length > 0
       ? conImagen[Math.floor(Math.random() * conImagen.length)]
-      : _noticiasFiltradas[Math.floor(Math.random() * _noticiasFiltradas.length)];
+      : _noticiasNuevas[Math.floor(Math.random() * _noticiasNuevas.length)];
 
     // 2. Generar artículo editorial con Claude — incluye TITULAR en español para el cover
     const promptEditorial = 'Escribe un artículo editorial sobre este tema de moda/estilo: ' + noticia.titulo + '. Para PASARELA STUDIO INTERNACIONAL, escuela de modelaje y elegancia latina en Dallas, TX. Voz sofisticada, empoderada, latina. 280-350 palabras. NUNCA cites fuentes externas.\n\nFormato EXACTO de respuesta:\nTITULAR: [título editorial en ESPAÑOL, máx 8 palabras, impactante]\n\n[artículo completo en español]';
@@ -5449,8 +5460,14 @@ async function autoPublicarPasarela() {
       .join('\n\n');
     // CAMBIO 2 — usar tituloEditorial en DB (título del blog = título del cover)
     const slug = generarSlug(tituloEditorial);
-    await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
-      [tituloEditorial, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '']);
+    // Evitar duplicados: si ya existe un artículo con el mismo título, no publicar de nuevo.
+    const _existe = await pool.query('SELECT 1 FROM noticias WHERE slug = $1 LIMIT 1', [slug]);
+    if (_existe.rowCount > 0) {
+      console.log('[AutoPublish-Pasarela] Artículo duplicado (slug ya existe) — omitiendo:', slug);
+      return { ok: false, titulo: tituloEditorial, facebook_id: null, error: 'DUPLICADO' };
+    }
+    await pool.query('INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen, fuente) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING',
+      [tituloEditorial, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '', noticia.link || noticia.titulo]);
 
     // 4. Generar cover con plantilla aprobada
     const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
