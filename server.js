@@ -3987,6 +3987,14 @@ const server = http.createServer(async (req, res) => {
           return;
         }
         const slug = generarSlug(titulo);
+        // Evitar duplicados: si el artículo ya existe, devolverlo sin volver a publicarlo en Facebook.
+        const _previo = await pool.query('SELECT id FROM noticias WHERE slug = $1 LIMIT 1', [slug]);
+        if (_previo.rowCount > 0) {
+          console.log('[publicar-blog] Duplicado omitido:', slug);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ url: `https://pasarelastudiointer.com/noticias/${slug}`, id: _previo.rows[0].id, slug, duplicado: true }));
+          return;
+        }
         const result = await pool.query(
           'INSERT INTO noticias (titulo, contenido, tono, slug, publicado, imagen) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
           [titulo, contenido, tono || 'editorial', slug, true, imagen || '']
