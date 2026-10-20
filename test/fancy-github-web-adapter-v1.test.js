@@ -1,0 +1,24 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {renderArticle,createGitHubWebAdapter}=require('../src/services/FancyGitHubWebAdapterV1');
+const {approveDraft,publishApprovedArticle}=require('../src/services/FancyWebPublisherV1');
+const draft={category:'HOME',slug:'piloto-web-editorial',title:'Una guía <segura>',summary:'Texto de prueba',intro:'Contenido introductorio',sections:[{heading:'Primera sección',body:'Contenido sin producto ni precio.'}]};
+(async()=>{
+ const article=approveDraft(draft,{productsVerified:true,imagesRightsReviewed:true,affiliateDisclosureReviewed:true,reviewed_by:'editora',approved_at:'2026-10-20T12:00:00Z'});
+ const rendered=renderArticle(article);
+ assert.equal(rendered.path,'home/piloto-web-editorial/index.html');
+ assert(rendered.html.includes('&lt;segura&gt;'));
+ assert(!rendered.html.includes('<segura>'));
+ assert(rendered.html.includes('noindex,nofollow'));
+ assert(rendered.html.includes('../..\/afiliados/'.replace('\\/','/')));
+ const adapter=createGitHubWebAdapter({dryRun:true,fetchImpl:async()=>{throw Error('Dry run must not access network')}});
+ const simulation=await adapter.publish(article,rendered.url);
+ assert(simulation.dryRun);
+ assert.equal(await adapter.verifyPublicUrl(rendered.url),false);
+ await assert.rejects(()=>publishApprovedArticle(article,adapter),/not confirmed/);
+ let calls=0;
+ const conflictAdapter=createGitHubWebAdapter({token:'test-only',dryRun:false,fetchImpl:async()=>{calls++;return {status:200,ok:true}}});
+ await assert.rejects(()=>conflictAdapter.publish(article,rendered.url),/refusing overwrite/);
+ assert.equal(calls,1);
+ process.stdout.write('Fancy adapter isolation and dry-run tests passed\n');
+})().catch(e=>{console.error(e);process.exitCode=1});
