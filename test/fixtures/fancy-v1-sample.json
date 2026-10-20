@@ -1,0 +1,20 @@
+{
+  "category": "HOME",
+  "slug": "piloto-automatico-fancy-v1",
+  "title": "Primera prueba automatizada de Fancy V1",
+  "summary": "Página de comprobación técnica sin recomendaciones comerciales.",
+  "intro": "Este contenido es una prueba editorial para verificar la publicación de una página nueva mediante el motor de Fancy.",
+  "sections": [
+    {
+      "heading": "Objetivo de la prueba",
+      "body": "Comprobar que la revisión editorial, la escritura en GitHub y la verificación de la página desplegada funcionan en orden."
+    },
+    {
+      "heading": "Alcance",
+      "body": "La prueba no incluye enlaces de afiliados, productos ni distribución automática a redes sociales."
+    }
+  ],
+  "productsVerified": true,
+  "imagesRightsReviewed": true,
+  "affiliateDisclosureReviewed": true
+}
