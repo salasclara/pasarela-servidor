@@ -43,3 +43,14 @@ No activar un cron, endpoint público o distribución automática hasta una prue
 - Limitación: la plantilla actual es editorial sin fichas comerciales; la publicación de reseñas con productos requiere extender el esquema y validar cada enlace, el contenido y el aviso de afiliado.
 - Limitación: actualización y revisiones de páginas existentes, estado durable de publicación y cola social todavía pendientes.
 - No hay cambios en `server.js`, tareas Railway, PostgreSQL ni redes sociales.
+
+
+## Avance 3 — ejecución piloto bajo aprobación
+- La usuaria comprobó visualmente la ruta de prueba creada por GitHub: `https://www.fancybyroxette.com/home/piloto-editorial-fancy-v1/` (GitHub → Vercel).
+- `scripts/fancy-web-pilot-v1.js` y `test/fixtures/fancy-v1-sample.json`: ejecución manual de un artículo **nuevo** (`piloto-automatico-fancy-v1`) en modo simulación por defecto.
+- Requiere `FANCY_APPROVED_BY` y tres verificaciones editoriales. En simulación: `FANCY_APPROVED_BY=editor node scripts/fancy-web-pilot-v1.js`.
+- Solo para ejecución controlada aprobada: `FANCY_ENABLE_LIVE_PUBLISH=yes` y `FANCY_WEB_GITHUB_TOKEN` con permisos mínimos para escribir en `salasclara/fancy-by-roxette-web`. Nunca escribir el token en archivos o conversaciones. Una cuenta sin acceso de escritura a ese repo no funcionará.
+- El token **no está configurado por este cambio** y no se intentó publicación real con el adaptador.
+- La confirmación del despliegue reintenta hasta 12 verificaciones y compara el hash SHA-256 del HTML exacto; la falla **no** da permiso para redes sociales.
+- La prueba automática del ejecutor usa solo simulación y no expone credenciales.
+- No conectar el comando al scheduler y no publicar duplicados ni sobrescribir páginas. El script sigue dentro de la rama de validación.
