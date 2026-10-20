@@ -20,10 +20,11 @@ const draft={category:'HOME',slug:'piloto-web-editorial',title:'Una guía <segur
  let calls=0;
  const conflictAdapter=createGitHubWebAdapter({token:'test-only',dryRun:false,fetchImpl:async()=>{calls++;return {status:200,ok:true}}});
  await assert.rejects(()=>conflictAdapter.publish(article,rendered.url),/refusing overwrite/);
- assert.equal(calls,1);
+ assert.equal(calls,2);
  const requests=[];
  const liveMock=createGitHubWebAdapter({token:'test-only',dryRun:false,fetchImpl:async(url,options={})=>{
    requests.push({url,method:options.method||'GET'});
+   if(url==='https://api.github.com/repos/salasclara/fancy-by-roxette-web')return {status:200,ok:true};
    if(url.includes('api.github.com') && !options.method)return {status:404};
    if(options.method==='PUT')return {ok:true,status:201};
    if(url===rendered.url)return {ok:true,text:async()=>rendered.html};
@@ -32,7 +33,7 @@ const draft={category:'HOME',slug:'piloto-web-editorial',title:'Una guía <segur
  const result=await liveMock.publish(article,rendered.url);
  assert.equal(result.hash,rendered.hash);
  assert.equal(await liveMock.verifyPublicUrl(rendered.url),true);
- assert.deepEqual(requests.map(x=>x.method),['GET','PUT','GET']);
+ assert.deepEqual(requests.map(x=>x.method),['GET','GET','PUT','GET']);
  assert.equal(await liveMock.waitUntilPublished(rendered.url,{attempts:2,sleep:async()=>{}}),true);
  process.stdout.write('Fancy adapter isolation and dry-run tests passed\n');
 })().catch(e=>{console.error(e);process.exitCode=1});
