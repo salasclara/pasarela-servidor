@@ -12,7 +12,7 @@ const draft={category:'HOME',slug:'piloto-web-editorial',title:'Una guía <segur
  assert(rendered.html.includes('noindex,nofollow'));
  assert(rendered.html.includes('../..\/afiliados/'.replace('\\/','/')));
  const adapter=createGitHubWebAdapter({dryRun:true,fetchImpl:async()=>{throw Error('Dry run must not access network')}});
- await assert.rejects(()=>adapter.publish(draft,rendered.url),/Editorial approval required/);
+ await assert.rejects(()=>adapter.publish(draft,rendered.url),/Complete editorial and commercial approval required/);
  const simulation=await adapter.publish(article,rendered.url);
  assert(simulation.dryRun);
  assert.equal(await adapter.verifyPublicUrl(rendered.url),false);
@@ -33,5 +33,6 @@ const draft={category:'HOME',slug:'piloto-web-editorial',title:'Una guía <segur
  assert.equal(result.hash,rendered.hash);
  assert.equal(await liveMock.verifyPublicUrl(rendered.url),true);
  assert.deepEqual(requests.map(x=>x.method),['GET','PUT','GET']);
+ assert.equal(await liveMock.waitUntilPublished(rendered.url,{attempts:2,sleep:async()=>{}}),true);
  process.stdout.write('Fancy adapter isolation and dry-run tests passed\n');
 })().catch(e=>{console.error(e);process.exitCode=1});
