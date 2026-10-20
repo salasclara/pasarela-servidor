@@ -29,8 +29,9 @@ function createGitHubWebAdapter({token,repo='salasclara/fancy-by-roxette-web',br
   if (!fetchImpl || typeof fetchImpl !== 'function') throw new TypeError('fetch required');
   let expected = null;
   async function publish(article,target){
-    if (!article || article.status !== 'approved' || !article.reviewed_by || !article.approved_at)
-      throw new Error('Editorial approval required before writing to GitHub');
+    if (!article || article.status !== 'approved' || !article.reviewed_by || !article.approved_at ||
+      article.productsVerified !== true || article.imagesRightsReviewed !== true || article.affiliateDisclosureReviewed !== true)
+      throw new Error('Complete editorial and commercial approval required before writing to GitHub');
     const rendered=renderArticle(article);
     if (rendered.url!==target) throw new Error('URL mismatch');
     expected=rendered;
@@ -54,6 +55,15 @@ function createGitHubWebAdapter({token,repo='salasclara/fancy-by-roxette-web',br
     const html=await response.text();
     return crypto.createHash('sha256').update(html).digest('hex')===expected.hash;
   }
-  return {publish,verifyPublicUrl};
+  async function waitUntilPublished(url,{attempts=12,intervalMs=10000,sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))}={}){
+    if (!Number.isInteger(attempts) || attempts < 1 || attempts > 30) throw new Error('Invalid attempts');
+    if (dryRun) return false;
+    for(let i=0;i<attempts;i++){
+      try { if(await verifyPublicUrl(url)) return true; } catch(_error) { /* Deployment can still be pending. */ }
+      if(i<attempts-1) await sleep(intervalMs);
+    }
+    return false;
+  }
+  return {publish,verifyPublicUrl,waitUntilPublished};
 }
 module.exports={renderArticle,createGitHubWebAdapter};
