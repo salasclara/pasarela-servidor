@@ -30,3 +30,16 @@ Reseña de cocina: `https://www.fancybyroxette.com/home/ordenar-cocina-pequena/`
 
 ## Regla de seguridad
 No activar un cron, endpoint público o distribución automática hasta una prueba completa manual con el artículo de cocina. No interrumpir el scheduler multipágina existente.
+
+
+## Avance 2 — Adaptador GitHub/Vercel (20-oct-2026)
+- Archivo: `src/services/FancyGitHubWebAdapterV1.js` (sin importación en server.js).
+- Genera HTML para **nuevos** artículos HOME, reutilizando `styles.css` y vínculos legales.
+- `createGitHubWebAdapter()` tiene `dryRun=true` por defecto. Sin actividad externa ni credenciales activas.
+- Para ejecutar publicaciones reales necesitará un GitHub token de permisos mínimos, guardado exclusivamente en entorno seguro, y una invocación separada tras aprobación. No existe esa invocación todavía.
+- Antes de escribir, rechaza cualquier archivo ya existente; por tanto no modificará `home/ordenar-cocina-pequena/index.html`.
+- Verifica que el HTML servido por el dominio público corresponda exactamente al HTML preparado. Es un bloqueo intencional contra distribuir algo que Vercel aún no ha desplegado.
+- Prueba escrita: `node test/fancy-github-web-adapter-v1.test.js` (ejecución pendiente). La simulación **nunca** satisface `verifyPublicUrl`.
+- Limitación: la plantilla actual es editorial sin fichas comerciales; la publicación de reseñas con productos requiere extender el esquema y validar cada enlace, el contenido y el aviso de afiliado.
+- Limitación: actualización y revisiones de páginas existentes, estado durable de publicación y cola social todavía pendientes.
+- No hay cambios en `server.js`, tareas Railway, PostgreSQL ni redes sociales.
