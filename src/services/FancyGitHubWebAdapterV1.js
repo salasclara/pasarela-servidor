@@ -39,12 +39,16 @@ function createGitHubWebAdapter({token,repo='salasclara/fancy-by-roxette-web',br
     if(!token) throw new Error('GitHub token required');
     const api='https://api.github.com/repos/'+repo+'/contents/'+rendered.path;
     const headers={Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':'FancyWebPublisherV1'};
+    // Verify authenticated access to the private destination repository before interpreting 404 as a missing file.
+    const repositoryCheck=await fetchImpl('https://api.github.com/repos/'+repo,{headers});
+    if(!repositoryCheck.ok) throw new Error('GitHub destination access failed: HTTP '+repositoryCheck.status+
+      '. Verify fine-grained token repository selection and permissions.');
     const existing=await fetchImpl(api+'?ref='+encodeURIComponent(branch),{headers});
     if(existing.status!==404) throw new Error('Page already exists or cannot verify absence; refusing overwrite');
     const response=await fetchImpl(api,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},
       body:JSON.stringify({message:'Publish reviewed Fancy article '+article.slug,
         content:Buffer.from(rendered.html,'utf8').toString('base64'),branch})});
-    if(!response.ok) throw new Error('GitHub create failed: HTTP '+response.status);
+    if(!response.ok) throw new Error('GitHub file write failed: HTTP '+response.status+' (verify Contents: read and write on target repository)');
     return {url:target,path:rendered.path,hash:rendered.hash};
   }
   async function verifyPublicUrl(url){
