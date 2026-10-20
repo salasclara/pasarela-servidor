@@ -27,3 +27,7 @@ jobs:
         run: |
           node test/fancy-web-publisher-v1.test.js
           node test/fancy-github-web-adapter-v1.test.js
+      - name: Verify manual publishing runner remains dry-run
+        env:
+          FANCY_APPROVED_BY: ci-validation
+        run: node scripts/fancy-web-pilot-v1.js
