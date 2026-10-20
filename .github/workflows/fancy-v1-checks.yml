@@ -1,0 +1,29 @@
+name: Fancy V1 isolated checks
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fancy-v1-validation
+    paths:
+      - 'src/services/FancyWebPublisherV1.js'
+      - 'src/services/FancyGitHubWebAdapterV1.js'
+      - 'test/fancy-*-v1.test.js'
+      - '.github/workflows/fancy-v1-checks.yml'
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax
+        run: |
+          node --check src/services/FancyWebPublisherV1.js
+          node --check src/services/FancyGitHubWebAdapterV1.js
+      - name: Run offline tests (no tokens / no deployments)
+        run: |
+          node test/fancy-web-publisher-v1.test.js
+          node test/fancy-github-web-adapter-v1.test.js
