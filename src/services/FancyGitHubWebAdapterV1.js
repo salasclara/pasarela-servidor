@@ -48,7 +48,22 @@ function createGitHubWebAdapter({token,repo='salasclara/fancy-by-roxette-web',br
     const response=await fetchImpl(api,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},
       body:JSON.stringify({message:'Publish reviewed Fancy article '+article.slug,
         content:Buffer.from(rendered.html,'utf8').toString('base64'),branch})});
-    if(!response.ok) throw new Error('GitHub file write failed: HTTP '+response.status+' (verify Contents: read and write on target repository)');
+    if(!response.ok) {
+      // GitHub explains 403 responses in its JSON "message"; never print tokens, headers or request bodies.
+      let reason='No detailed response';
+      try {
+        const details=await response.json();
+        if(typeof details.message==='string') {
+          const allowed=['Resource not accessible by personal access token',
+            'Resource not accessible by integration','Must have admin rights to Repository',
+            'Repository access blocked','Branch protection','Protected branch',
+            'You must have write access to this repository'];
+          reason=allowed.find(x=>details.message.includes(x)) || 'GitHub rejected the write (message withheld)';
+        }
+      } catch(_error) {}
+      throw new Error('GitHub file write failed: HTTP '+response.status+'; '+reason+
+        '. Check token Contents write permission and branch rules.');
+    }
     return {url:target,path:rendered.path,hash:rendered.hash};
   }
   async function verifyPublicUrl(url){
