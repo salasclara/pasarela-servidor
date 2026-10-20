@@ -1,0 +1,53 @@
+name: Fancy V1 manual web pilot
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Select dry-run first. Live requires explicit confirmation.'
+        required: true
+        type: choice
+        default: dry-run
+        options:
+          - dry-run
+          - live
+      confirmation:
+        description: 'For live only type PUBLICAR-PILOTO-FANCY-V1'
+        required: false
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: fancy-v1-manual-web-pilot
+  cancel-in-progress: false
+jobs:
+  publish-pilot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate live publication intent
+        env:
+          MODE: ${{ inputs.mode }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [ "$MODE" = "live" ] && [ "$CONFIRMATION" != "PUBLICAR-PILOTO-FANCY-V1" ]; then
+            echo "Live mode requires the exact publication confirmation." >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: fancy-v1-validation
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Fancy web modules
+        run: |
+          node --check src/services/FancyWebPublisherV1.js
+          node --check src/services/FancyGitHubWebAdapterV1.js
+          node test/fancy-web-publisher-v1.test.js
+          node test/fancy-github-web-adapter-v1.test.js
+      - name: Publish or simulate pilot
+        env:
+          FANCY_APPROVED_BY: fancy-editorial-pilot
+          FANCY_ENABLE_LIVE_PUBLISH: ${{ inputs.mode == 'live' && 'yes' || 'no' }}
+          FANCY_WEB_GITHUB_TOKEN: ${{ inputs.mode == 'live' && secrets.FANCY_WEB_GITHUB_TOKEN || '' }}
+        run: node scripts/fancy-web-pilot-v1.js
