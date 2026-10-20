@@ -46,6 +46,7 @@ function makeSocialJobs(article, publishedUrl, channels = ['facebook', 'instagra
   if (article.distributionApproved !== true) throw new Error('Social distribution approval required');
   const expected = buildArticleUrl(article);
   if (publishedUrl !== expected) throw new Error('Published URL does not match canonical URL');
+  if (!Number.isSafeInteger(article.revision) || article.revision < 1) throw new Error('Positive article revision required');
   return [...new Set(channels)].map(channel => {
     if (!['facebook', 'instagram'].includes(channel)) throw new Error('Unsupported channel');
     return { idempotencyKey: article.category + ':' + article.slug + ':' + channel + ':' + article.revision,
