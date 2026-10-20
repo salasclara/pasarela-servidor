@@ -29,6 +29,8 @@ function createGitHubWebAdapter({token,repo='salasclara/fancy-by-roxette-web',br
   if (!fetchImpl || typeof fetchImpl !== 'function') throw new TypeError('fetch required');
   let expected = null;
   async function publish(article,target){
+    if (!article || article.status !== 'approved' || !article.reviewed_by || !article.approved_at)
+      throw new Error('Editorial approval required before writing to GitHub');
     const rendered=renderArticle(article);
     if (rendered.url!==target) throw new Error('URL mismatch');
     expected=rendered;
