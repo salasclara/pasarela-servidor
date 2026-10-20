@@ -12,6 +12,7 @@ const draft={category:'HOME',slug:'piloto-web-editorial',title:'Una guía <segur
  assert(rendered.html.includes('noindex,nofollow'));
  assert(rendered.html.includes('../..\/afiliados/'.replace('\\/','/')));
  const adapter=createGitHubWebAdapter({dryRun:true,fetchImpl:async()=>{throw Error('Dry run must not access network')}});
+ await assert.rejects(()=>adapter.publish(draft,rendered.url),/Editorial approval required/);
  const simulation=await adapter.publish(article,rendered.url);
  assert(simulation.dryRun);
  assert.equal(await adapter.verifyPublicUrl(rendered.url),false);
