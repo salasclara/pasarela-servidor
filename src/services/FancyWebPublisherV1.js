@@ -35,7 +35,7 @@ function approveDraft(draft, approval) {
   const reviewed_by = assertString(approval.reviewed_by, 'reviewed_by', 100);
   const approved_at = assertString(approval.approved_at, 'approved_at', 40);
   if (!Number.isFinite(Date.parse(approved_at))) throw new Error('Invalid approval date');
-  return { ...doc, status: 'approved', reviewed_by, approved_at };
+  return { ...doc, status: 'approved', reviewed_by, approved_at, productsVerified: true, imagesRightsReviewed: true, affiliateDisclosureReviewed: true };
 }
 function buildArticleUrl(article) {
   const doc = normalizeDraft(article);
