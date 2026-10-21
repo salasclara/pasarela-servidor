@@ -4,11 +4,17 @@
 // Returns true when weekday handling is complete, including a deliberate skip.
 const { createAmarEsRecycler } = require('./AmarEsRecycler');
 function createAmarEsWeekdayGate(pool, fetchImpl) {
-  const recycler = createAmarEsRecycler(pool, fetchImpl);
+  // Lazy initialization: no DB migrations or external calls when the feature is off.
+  let recycler;
+  function getRecycler() {
+    if (!recycler) recycler = createAmarEsRecycler(pool, fetchImpl);
+    return recycler;
+  }
   return async function handleAmarEsWeekday(page, now = new Date()) {
     if (page.tipo !== 'amor' || process.env.AMAR_ES_REUSE_ENABLED !== 'true') return false;
     const day = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', weekday: 'short' }).format(now);
     if (day === 'Sat' || day === 'Sun') return false;
+    const recycler = getRecycler();
     await recycler.ready;
     const count = await pool.query('SELECT COUNT(*)::int AS total FROM amar_es_reuse');
     if (count.rows[0].total === 0) {
