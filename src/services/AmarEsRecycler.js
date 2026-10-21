@@ -43,6 +43,8 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
       for (const post of result.data || []) {
         const mediaType = post.attachments?.data?.[0]?.media_type;
         if (!post.full_picture || !post.message || mediaType !== 'photo') continue;
+        // Do not immediately recycle recent originals or posts made by this recycler.
+        if (!post.created_time || Date.now() - new Date(post.created_time).getTime() < 90 * 86400000) continue;
         await pool.query(`
           INSERT INTO amar_es_reuse (source_post_id,message,image_url,original_date)
           VALUES ($1,$2,$3,$4)
@@ -66,7 +68,12 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
       await client.query('BEGIN');
       const selection = await client.query(`
         SELECT source_post_id,message,image_url FROM amar_es_reuse
-        WHERE last_reused_at IS NULL OR last_reused_at < NOW() - INTERVAL '90 days'
+        WHERE (last_reused_at IS NULL OR last_reused_at < NOW() - INTERVAL '90 days')
+          AND (original_date IS NULL OR original_date < NOW() - INTERVAL '90 days')
+          AND NOT EXISTS (
+            SELECT 1 FROM amar_es_reuse
+            WHERE last_reused_at >= (NOW() AT TIME ZONE 'America/Chicago')::date AT TIME ZONE 'America/Chicago'
+          )
         ORDER BY last_reused_at ASC NULLS FIRST, original_date DESC NULLS LAST
         LIMIT 1 FOR UPDATE SKIP LOCKED
       `);
