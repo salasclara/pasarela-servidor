@@ -1,15 +1,15 @@
 # Amar Es recycling — safe integration checklist
 
-Status: **NOT ENABLED**. This branch adds a library and offline tests but does not wire it into `server.js`.
+Status: **WIRED BUT NOT ENABLED**. The branch connects the weekday gate to `server.js`, but the flag defaults to off; no production changes have been merged.
 
 ## Existing deployment behavior
 - Shared scheduler runs at 09:00, 15:00 and 21:00 Dallas time.
 - Existing code limits Amar Es, Maravillas del Reino and Pasarela to the 09:00 cycle.
 - Other page schedules remain unchanged.
 
-## Wiring needed in `server.js`
-1. After creating `pool`, initialize `createAmarEsWeekdayGate(pool)` from `./src/services/AmarEsWeekdayGate`.
-2. At the very start of `publicarCoverParaPagina` (inside its `try`, **before any Claude or image API call**), execute `if (await handleAmarEsWeekday(pageConfig)) return;`.
+## Wiring implemented in `server.js` (on this branch only)
+1. Implemented: after creating `pool`, initialize `createAmarEsWeekdayGate(pool)` from `./src/services/AmarEsWeekdayGate`.
+2. Implemented: at the very start of `publicarCoverParaPagina` (inside its `try`, **before any Claude or image API call**), execute `if (await handleAmarEsWeekday(pageConfig)) return;`.
 3. Keep `AMAR_ES_REUSE_ENABLED` unset or `false` until all tests pass.
 4. Do not use `/test-amar-es` as a dry run: that endpoint actually publishes.
 
@@ -28,6 +28,6 @@ Status: **NOT ENABLED**. This branch adds a library and offline tests but does n
 ## Safety and limitations
 - Recycling republishes previous images and captions; it does not generate new AI content on weekdays.
 - Existing imported posts may have expiring image URLs. Publishing by URL requires validation.
-- On a Facebook publish failure, the DB reservation is rolled back. A network failure after Facebook accepts the post can still lead to duplicate retries; add an idempotency reconciliation strategy before production.
+- On a Facebook publish failure, the DB reservation is rolled back. A network failure after Facebook accepts the post can still lead to duplicate retries; add an idempotency reconciliation strategy before production. A database daily lock prevents ordinary concurrent duplicate runs, but cannot prove Facebook did not publish after a timeout.
 - The initial import only runs automatically when the table is empty; a refresh mechanism is needed as the library grows.
-- This is not yet production-ready. Do not merge this PR until integration and tests are complete.
+- This is not yet production-ready. The integration exists on the branch; do not merge this PR until tests and Facebook read/publish behavior are verified.
