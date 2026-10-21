@@ -7,6 +7,7 @@ async function run() {
   const source = { source_post_id: 'old-1', message: 'Reflexión de prueba', image_url: 'https://example.org/photo.jpg' };
   const client = {
     async query(sql) {
+      if (sql.includes('pg_advisory_xact_lock')) { events.push('daily-lock'); return { rows: [] }; }
       if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') { events.push(sql); return { rows: [] }; }
       if (sql.includes('SELECT source_post_id')) return { rows: [source] };
       if (sql.includes('UPDATE amar_es_reuse')) { events.push('reserved'); return { rows: [] }; }
@@ -26,14 +27,14 @@ async function run() {
   const published = await ok.publishReused(page);
   assert.equal(published.published, true);
   assert.equal(published.id, 'new-post');
-  assert.deepEqual(events, ['BEGIN', 'reserved', 'COMMIT', 'released']);
+  assert.deepEqual(events, ['BEGIN', 'daily-lock', 'reserved', 'COMMIT', 'released']);
 
   events.length = 0;
   const failed = createAmarEsRecycler(pool, async () => ({
     ok: false, status: 403, json: async () => ({ error: { message: 'Permission denied' } })
   }));
   await assert.rejects(failed.publishReused(page), /Permission denied/);
-  assert.deepEqual(events, ['BEGIN', 'reserved', 'ROLLBACK', 'released']);
+  assert.deepEqual(events, ['BEGIN', 'daily-lock', 'reserved', 'ROLLBACK', 'released']);
   console.log('Amar Es recycler: success and failure transaction checks passed');
 }
 run().catch(err => { console.error(err); process.exitCode = 1; });
