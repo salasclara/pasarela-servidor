@@ -35,6 +35,10 @@ async function run() {
   }));
   await assert.rejects(failed.publishReused(page), /Permission denied/);
   assert.deepEqual(events, ['BEGIN', 'daily-lock', 'reserved', 'ROLLBACK', 'released']);
-  console.log('Amar Es recycler: success and failure transaction checks passed');
+  events.length = 0;
+  const ambiguous = createAmarEsRecycler(pool, async () => { throw new Error('Socket timeout'); });
+  await assert.rejects(ambiguous.publishReused(page), error => error.publishOutcomeUnknown === true);
+  assert.deepEqual(events, ['BEGIN', 'daily-lock', 'reserved', 'COMMIT', 'released']);
+  console.log('Amar Es recycler: success, rejection, and ambiguous timeout checks passed');
 }
 run().catch(err => { console.error(err); process.exitCode = 1; });
