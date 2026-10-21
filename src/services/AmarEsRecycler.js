@@ -66,6 +66,8 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
     let selected;
     try {
       await client.query('BEGIN');
+      // Serialize Amar Es runs across processes so the one-per-day guard is atomic.
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('amar_es_reuse_daily'))");
       const selection = await client.query(`
         SELECT source_post_id,message,image_url FROM amar_es_reuse
         WHERE (last_reused_at IS NULL OR last_reused_at < NOW() - INTERVAL '90 days')
