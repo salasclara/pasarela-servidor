@@ -17,8 +17,8 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
 
   async function graph(path, token, options = {}) {
     const url = new URL('https://graph.facebook.com/v19.0/' + path);
-    url.searchParams.set('access_token', token);
     if (!options.method) {
+      url.searchParams.set('access_token', token);
       for (const [key, value] of Object.entries(options.params || {})) url.searchParams.set(key, value);
     }
     const response = await fetchImpl(url.toString(), options.method ? {
@@ -42,7 +42,7 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
       const result = await graph(page.id + '/posts', page.token, { params });
       for (const post of result.data || []) {
         const mediaType = post.attachments?.data?.[0]?.media_type;
-        if (!post.full_picture || !post.message || (mediaType && mediaType !== 'photo' && mediaType !== 'album')) continue;
+        if (!post.full_picture || !post.message || mediaType !== 'photo') continue;
         await pool.query(`
           INSERT INTO amar_es_reuse (source_post_id,message,image_url,original_date)
           VALUES ($1,$2,$3,$4)
