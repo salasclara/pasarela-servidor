@@ -5354,10 +5354,12 @@ INSTRUCCIONES:
   res.end();
 });
 // ── AUTO-PUBLICADOR PÁGINAS EXTRA — cada 6 horas ──────────────────────────
-async function autoPublicarPaginasExtra() {
+async function autoPublicarPaginasExtra(horaProgramada = 9) {
   const _titulo = 'Reflexión del día — ' + new Date().toLocaleDateString('es-MX', {weekday:'long', month:'long', day:'numeric'});
   console.log('[AutoPublish] Iniciando ciclo multi-página:', _titulo);
   for (const _pg of PAGES_EXTRA) {
+    // Amar Es y Maravillas del Reino: solo a las 9 a. m.
+    if (horaProgramada !== 9 && (_pg.tipo === 'amor' || /maravillas del reino/i.test(_pg.nombre))) continue;
     if (!_pg.token) { console.log('[AutoPublish] Sin token:', _pg.nombre); continue; }
     try {
       await publicarCoverParaPagina(_pg, _titulo);
@@ -5536,9 +5538,12 @@ setInterval(async () => {
   if (HORAS_PUBLICACION.includes(hora) && min < 10 && hora !== _ultimaHoraPublicada) {
     _ultimaHoraPublicada = hora;
     console.log(`[AutoPublish] ⏰ Hora programada: ${hora}:00 Central — iniciando ciclo`);
-    await autoPublicarPasarela();
-    await new Promise(r => setTimeout(r, 15000)); // 15s entre Pasarela y páginas extra
-    await autoPublicarPaginasExtra();
+    // Pasarela: solo a las 9 a. m.; los demás ciclos siguen para otras páginas.
+    if (hora === 9) {
+      await autoPublicarPasarela();
+      await new Promise(r => setTimeout(r, 15000));
+    }
+    await autoPublicarPaginasExtra(hora);
   }
 }, 60 * 1000); // revisa cada minuto
 
