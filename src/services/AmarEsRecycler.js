@@ -18,14 +18,13 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
   async function graph(path, token, options = {}) {
     const url = new URL('https://graph.facebook.com/v19.0/' + path);
     if (!options.method) {
-      url.searchParams.set('access_token', token);
       for (const [key, value] of Object.entries(options.params || {})) url.searchParams.set(key, value);
     }
     const response = await fetchImpl(url.toString(), options.method ? {
       method: options.method,
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ ...options.body, access_token: token }).toString()
-    } : undefined);
+    } : { headers: { Authorization: 'Bearer ' + token } });
     const data = await response.json();
     if (!response.ok || data.error) throw new Error(data.error?.message || 'Facebook HTTP ' + response.status);
     return data;
