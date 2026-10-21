@@ -26,7 +26,11 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
       body: new URLSearchParams({ ...options.body, access_token: token }).toString()
     } : { headers: { Authorization: 'Bearer ' + token } });
     const data = await response.json();
-    if (!response.ok || data.error) throw new Error(data.error?.message || 'Facebook HTTP ' + response.status);
+    if (!response.ok || data.error) {
+      const error = new Error(data.error?.message || 'Facebook HTTP ' + response.status);
+      error.facebookRejected = true;
+      throw error;
+    }
     return data;
   }
 
@@ -65,6 +69,8 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
     // cannot choose the same item. The reservation is reverted on publish failure.
     const client = await pool.connect();
     let selected;
+    let publishStarted = false;
+    let committed = false;
     try {
       await client.query('BEGIN');
       // Serialize Amar Es runs across processes so the one-per-day guard is atomic.
@@ -88,14 +94,27 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
       `, [selected.source_post_id]);
       // Publish inside the transaction to ensure failed attempts do not consume the post.
       // The DB row lock also protects against simultaneous schedulers.
+      publishStarted = true;
       const result = await graph(page.id + '/photos', page.token, {
         method: 'POST',
         body: { url: selected.image_url, caption: selected.message, published: 'true' }
       });
       await client.query('COMMIT');
+      committed = true;
       return { published: true, id: result.id, source_post_id: selected.source_post_id };
     } catch (error) {
-      try { await client.query('ROLLBACK'); } catch (_) {}
+      if (publishStarted && !error.facebookRejected && !committed) {
+        // A timeout or lost response does not prove Facebook rejected the photo.
+        // Preserve the day's reservation to avoid an automatic duplicate retry.
+        try {
+          await client.query('COMMIT');
+          error.publishOutcomeUnknown = true;
+        } catch (_) {
+          try { await client.query('ROLLBACK'); } catch (_) {}
+        }
+      } else if (!committed) {
+        try { await client.query('ROLLBACK'); } catch (_) {}
+      }
       throw error;
     } finally {
       client.release();
