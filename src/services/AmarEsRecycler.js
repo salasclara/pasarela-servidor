@@ -35,6 +35,7 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
     // Read a bounded number of the page's recent photo posts. Do not import videos.
     let after;
     let imported = 0;
+    const seenCursors = new Set();
     for (let batch = 0; batch < 5; batch++) {
       const params = { fields: 'id,message,full_picture,created_time,attachments{media_type}', limit: '100' };
       if (after) params.after = after;
@@ -52,7 +53,8 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
         imported++;
       }
       after = result.paging?.cursors?.after;
-      if (!result.paging?.next || !after) break;
+      if (!result.paging?.next || !after || seenCursors.has(after)) break;
+      seenCursors.add(after);
     }
     return imported;
   }
