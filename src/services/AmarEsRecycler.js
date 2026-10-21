@@ -72,7 +72,7 @@ function createAmarEsRecycler(pool, fetchImpl = global.fetch) {
           AND (original_date IS NULL OR original_date < NOW() - INTERVAL '90 days')
           AND NOT EXISTS (
             SELECT 1 FROM amar_es_reuse
-            WHERE last_reused_at >= (NOW() AT TIME ZONE 'America/Chicago')::date AT TIME ZONE 'America/Chicago'
+            WHERE last_reused_at >= date_trunc('day', NOW() AT TIME ZONE 'America/Chicago') AT TIME ZONE 'America/Chicago'
           )
         ORDER BY last_reused_at ASC NULLS FIRST, original_date DESC NULLS LAST
         LIMIT 1 FOR UPDATE SKIP LOCKED
