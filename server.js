@@ -30,6 +30,10 @@ const pool = new Pool({
   ssl: false,
 });
 
+// Amar Es recycling is opt-in and isolated from other pages.
+const { createAmarEsWeekdayGate } = require('./src/services/AmarEsWeekdayGate');
+const handleAmarEsWeekday = createAmarEsWeekdayGate(pool);
+
 // Fancy Analytics — usa el mismo pool PASARELA_PG.
 // El GET del endpoint controlado solo verifica la tabla; no inserta observaciones.
 const { createFancyAnalyticsTestHandler } = require('./src/services/FancyAnalyticsTestEndpoint');
@@ -3522,6 +3526,8 @@ async function publicarCoverParaPagina(pageConfig, titulo, opciones = {}) {
     return;
   }
   try {
+    // Weekday reuse runs before any text or image generation. Disabled unless explicitly enabled.
+    if (await handleAmarEsWeekday(pageConfig)) return;
     // Generar caption con la voz del nicho
     const esFe         = pageConfig.tipo === 'fe';
     const esAmor       = pageConfig.tipo === 'amor';
