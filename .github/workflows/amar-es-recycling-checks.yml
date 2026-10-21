@@ -19,5 +19,7 @@ jobs:
         run: node src/tests/amarEsRecycler.test.js
       - name: Test weekday gating
         run: node src/tests/amarEsWeekdayGate.test.js
+      - name: Test photo import without publishing
+        run: node src/tests/amarEsImport.test.js
       - name: Test publish rollback
         run: node src/tests/amarEsRecyclerTransactions.test.js
