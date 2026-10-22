@@ -7,6 +7,7 @@ on:
     paths:
       - 'src/services/FancyWebPublisherV1.js'
       - 'src/services/FancyGitHubWebAdapterV1.js'
+      - 'src/services/FancyFacebookDistributorV1.js'
       - 'test/fancy-*-v1.test.js'
       - '.github/workflows/fancy-v1-checks.yml'
 permissions:
@@ -23,10 +24,12 @@ jobs:
         run: |
           node --check src/services/FancyWebPublisherV1.js
           node --check src/services/FancyGitHubWebAdapterV1.js
+          node --check src/services/FancyFacebookDistributorV1.js
       - name: Run offline tests (no tokens / no deployments)
         run: |
           node test/fancy-web-publisher-v1.test.js
           node test/fancy-github-web-adapter-v1.test.js
+          node test/fancy-facebook-distributor-v1.test.js
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation
