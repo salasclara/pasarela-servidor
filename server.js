@@ -2171,7 +2171,7 @@ NO split screen. NO canva-style template. NO ecommerce white background.
 NO PERSON. NO FACE. NO HANDS. NO HUMAN BODY PARTS OF ANY KIND.`
       : scenePrompt;
     const body = JSON.stringify({
-      model: 'gpt-image-1',
+      model: (process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2.5-sunburst'),
       prompt: finalPrompt,
       n: 1,
       size: '1024x1024',
@@ -2763,7 +2763,7 @@ async function generarCoverAmarEs(branding, gancho, reflexion, dallePrompt) {
   try {
     // Prompt premium: chibi, paleta cálida, sin texto, sin marcas de agua
     const aiPrompt = 'Premium cinematic chibi anime illustration, polished digital painting quality. Scene: ' + dallePrompt + '. Style: soft detailed hair with natural flow, delicate refined chibi face, big expressive eyes, round cute proportions, warm golden hour cinematic lighting, soft volumetric light rays, subtle ambient bokeh background with shallow depth of field, soft atmospheric glow, rich environmental detail with elegant romantic atmosphere, warm amber and cream and peach and brown color palette, emotionally expressive high-end editorial illustration, clean professional finish, gentle satin-like rendering. Background must be detailed and atmospheric — soft natural environment, interior with warm window light, petals, or warm bokeh lights. NO flat cartoon background. NO generic pink background. NO excessive hearts. NO sticker style. NO clipart. NO watercolor. NO photorealism. NO 3D render. NO text. NO letters. NO watermark.';
-    const body = JSON.stringify({ model: 'gpt-image-1', prompt: aiPrompt, n: 1, size: '1024x1024', quality: 'medium' });
+    const body = JSON.stringify({ model: (process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2.5-sunburst'), prompt: aiPrompt, n: 1, size: '1024x1024', quality: 'medium' });
     const r = await fetch('https://api.openai.com/v1/images/generations', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY }, body });
     const j = await r.json();
     if (j.data && j.data[0] && j.data[0].b64_json) {
@@ -4331,7 +4331,7 @@ INSTRUCCIONES:
       console.log('[test-imagen] OPENAI_API_KEY SET:', !!process.env.OPENAI_API_KEY);
       console.log('[test-imagen] Prompt length:', promptFinal.length);
       try {
-        const body = JSON.stringify({ model: 'gpt-image-1', prompt: promptFinal, n: 1, size: '1024x1024', quality: 'medium' });
+        const body = JSON.stringify({ model: (process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2.5-sunburst'), prompt: promptFinal, n: 1, size: '1024x1024', quality: 'medium' });
         const r = await fetch('https://api.openai.com/v1/images/generations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY },
