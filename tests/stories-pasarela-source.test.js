@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { obtenerArticuloPasarela } = require('../src/services/StoriesPasarelaSource');
+const { obtenerArticuloPasarela, prepararStoryPasarela } = require('../src/services/StoriesPasarelaSource');
 
 test('recupera un artículo ya publicado sin modificar noticias', async () => {
   const calls = [];
@@ -28,4 +28,17 @@ test('no permite un slug arbitrario o consulta de escritura', async () => {
 test('sin artículo publicado devuelve null', async () => {
   const pool = { query: async () => ({rows:[]}) };
   assert.equal(await obtenerArticuloPasarela(pool, {slug:'inexistente'}), null);
+});
+
+test('prepara Story solamente con imagen y texto aprobados', () => {
+  const articulo = { idContenido:'moda-en-dallas', titulo:'Moda en Dallas', url:'https://pasarelastudiointer.com/noticias/moda-en-dallas', imagenUrl:'https://example.com/tercero.jpg' };
+  const imagenBuffer = Buffer.alloc(6000, 1);
+  assert.throws(() => prepararStoryPasarela(articulo, { imagenBuffer, textoVerificado:true }), /aprobación/);
+  assert.throws(() => prepararStoryPasarela(articulo, { imagenBuffer, imagenAprobada:true }), /aprobación/);
+  assert.throws(() => prepararStoryPasarela(articulo, { imagenBuffer:Buffer.alloc(20), imagenAprobada:true, textoVerificado:true }), /autorizado/);
+  const contenido = prepararStoryPasarela(articulo, { imagenBuffer, imagenAprobada:true, textoVerificado:true });
+  assert.equal(contenido.origen, articulo.url);
+  assert.equal(contenido.verificado, true);
+  assert.equal(contenido.derechosImagen, true);
+  assert.equal(contenido.imagenBuffer, imagenBuffer);
 });
