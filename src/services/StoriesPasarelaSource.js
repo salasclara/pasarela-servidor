@@ -13,7 +13,7 @@ async function obtenerArticuloPasarela(pool, { slug } = {}) {
   const result = await pool.query(
     `SELECT titulo, slug, imagen, fuente, contenido
        FROM noticias
-      WHERE slug = $1 AND publicado = true
+      WHERE slug = $1
       LIMIT 1`,
     [slug]
   );
