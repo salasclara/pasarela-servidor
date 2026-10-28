@@ -18,7 +18,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Instalar dependencia gráfica de Stories
-        run: npm install --no-save --ignore-scripts @napi-rs/canvas@^0.1.53
       - name: Pruebas de Stories sin conexión a Meta
         run: node --test tests/stories-engine.test.js tests/stories-registry.test.js tests/stories-pasarela-source.test.js tests/stories-pipeline.test.js
