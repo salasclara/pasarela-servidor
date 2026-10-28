@@ -8,12 +8,15 @@
 const { crearClaveStory, horaCentral } = require('./StoriesScheduler');
 const { reservarStory, marcarPublicada, marcarIncierta } = require('./StoriesRegistry');
 const { ejecutarStory } = require('./StoriesEngine');
+const { configuracionStories } = require('./StoriesBrands');
 
 async function procesarStoryAprobada({ pool, marca, contenido, idContenido, fecha = new Date(), env = process.env, publicar = false, publicarFn }) {
   if (!pool || typeof pool.query !== 'function') throw new Error('Falta registro PostgreSQL');
   if (!contenido || contenido.verificado !== true || contenido.derechosImagen !== true) {
     return { ok: false, omitido: true, razon: 'SIN_APROBACION_EDITORIAL' };
   }
+  const cfg = configuracionStories(marca, env);
+  if (!cfg.enabled || !cfg.ready) return { ok: false, omitido: true, razon: !cfg.enabled ? 'DESACTIVADO' : 'CREDENCIALES_INCOMPLETAS' };
   if (!publicar) {
     return ejecutarStory({ marca, contenido, env, publicar: false, publicarFn });
   }
@@ -27,6 +30,7 @@ async function procesarStoryAprobada({ pool, marca, contenido, idContenido, fech
       await marcarIncierta(pool, clave, resultado.razon || 'No publicada');
       return resultado;
     }
+    if (!resultado.storyId) throw new Error('Meta no confirmó el identificador de la Historia');
     await marcarPublicada(pool, clave, resultado.storyId);
     return { ...resultado, clave };
   } catch (error) {
