@@ -8,7 +8,7 @@
  * La publicación cruzada a Instagram NO se asume.
  */
 
-const { createCanvas, loadImage } = require('canvas');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 
 function recortarTexto(texto, max = 105) {
   const t = String(texto || '').replace(/\s+/g, ' ').trim();
