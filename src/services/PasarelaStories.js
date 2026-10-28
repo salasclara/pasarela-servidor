@@ -67,22 +67,23 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA �
   return canvas.toBuffer('image/jpeg', 88);
 }
 
-async function publicarHistoriaFacebook({ pageId, pageToken, imageBuffer, graphVersion = 'v26.0' }) {
+async function publicarHistoriaFacebook({ pageId, pageToken, imageBuffer, graphVersion = 'v26.0', fetchFn = fetch }) {
   if (!/^\d+$/.test(String(pageId || '')) || !pageToken || !Buffer.isBuffer(imageBuffer)) {
     throw new Error('Faltan pageId, pageToken o imageBuffer');
   }
   if (imageBuffer.length > 4 * 1024 * 1024) throw new Error('Historia superior a 4 MB');
+  if (!/^v\\d+\\.\\d+$/.test(graphVersion)) throw new Error('Versión Graph API inválida');
   const base = 'https://graph.facebook.com/' + graphVersion + '/' + pageId;
   const form = new FormData();
   form.append('published', 'false');
   form.append('source', new Blob([imageBuffer], { type: 'image/jpeg' }), 'pasarela-story.jpg');
-  const uploaded = await fetch(base + '/photos', {
+  const uploaded = await fetchFn(base + '/photos', {
     method: 'POST', headers: { Authorization: 'Bearer ' + pageToken }, body: form
   });
   const photo = await uploaded.json();
   if (!uploaded.ok || !photo.id) throw new Error('Error al cargar foto: ' + (photo.error?.message || uploaded.status));
   const params = new URLSearchParams({ photo_id: String(photo.id) });
-  const posted = await fetch(base + '/photo_stories', {
+  const posted = await fetchFn(base + '/photo_stories', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + pageToken, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: params.toString()
