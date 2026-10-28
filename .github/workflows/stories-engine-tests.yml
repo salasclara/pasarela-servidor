@@ -20,3 +20,25 @@ jobs:
           node-version: '22'
       - name: Pruebas de Stories sin conexión a Meta
         run: node --test tests/stories-engine.test.js tests/stories-registry.test.js tests/stories-pasarela-source.test.js tests/stories-pipeline.test.js
+
+  render-preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar canvas aislado sin dependencias del servidor
+        run: npm install --prefix /tmp/stories-preview --no-save @napi-rs/canvas@0.1.53
+      - name: Crear JPEG vertical de prueba
+        env:
+          NODE_PATH: /tmp/stories-preview/node_modules
+          STORY_PREVIEW_PATH: /tmp/pasarela-story-preview.jpg
+        run: node --test tests/stories-render.test.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pasarela-story-preview
+          path: /tmp/pasarela-story-preview.jpg
+          if-no-files-found: error
