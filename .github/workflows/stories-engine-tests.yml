@@ -4,7 +4,7 @@ on:
     paths:
       - 'src/services/Stories*.js'
       - 'src/services/PasarelaStories.js'
-      - 'tests/stories-engine.test.js'
+      - 'tests/*.test.js'
       - 'package.json'
       - '.github/workflows/stories-engine-tests.yml'
   workflow_dispatch:
@@ -19,4 +19,4 @@ jobs:
         with:
           node-version: '22'
       - name: Pruebas de Stories sin conexión a Meta
-        run: node --test tests/stories-engine.test.js
+        run: node --test tests/stories-engine.test.js tests/stories-registry.test.js
