@@ -40,18 +40,18 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA Â
   ctx.fillRect(0, H - 125, W, 125);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = '36px sans-serif';
-  ctx.fillText(recortarTexto(marca, 45).toUpperCase(), W / 2, 78);
+  ctx.font = 'bold 40px Arial, sans-serif';
+  ctx.fillText(recortarTexto(marca, 45).toUpperCase(), W / 2, 78, 980);
   ctx.textAlign = 'left';
   ctx.fillStyle = fondo;
   ctx.fillRect(65, 1330, 215, 55);
   ctx.fillStyle = acento;
-  ctx.font = 'bold 25px sans-serif';
+  ctx.font = 'bold 27px Arial, sans-serif';
   ctx.fillText(recortarTexto(categoria, 13).toUpperCase(), 83, 1367);
   const words = recortarTexto(titulo, 100).split(' ');
   const lines = [];
   let line = '';
-  ctx.font = 'bold 68px sans-serif';
+  ctx.font = 'bold 76px Arial, sans-serif';
   for (const word of words) {
     const next = line ? line + ' ' + word : word;
     if (ctx.measureText(next).width > 940 && line) { lines.push(line); line = word; }
@@ -59,10 +59,10 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA Â
   }
   if (line) lines.push(line);
   ctx.fillStyle = '#FFFFFF';
-  lines.slice(0, 4).forEach((value, index) => ctx.fillText(value, 65, 1470 + index * 82));
+  lines.slice(0, 4).forEach((value, index) => ctx.fillText(value, 65, 1470 + index * 88, 940));
   ctx.textAlign = 'center';
-  ctx.font = '23px sans-serif';
-  ctx.fillText('PASARELA STUDIO INTERNACIONAL  Â·  pasarelastudiointer.com', W / 2, H - 52);
+  ctx.font = 'bold 27px Arial, sans-serif';
+  ctx.fillText('pasarelastudiointer.com', W / 2, H - 52);
   return canvas.toBuffer('image/jpeg', 88);
 }
 
