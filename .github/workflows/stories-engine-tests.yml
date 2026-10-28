@@ -19,4 +19,4 @@ jobs:
         with:
           node-version: '22'
       - name: Pruebas de Stories sin conexión a Meta
-        run: node --test tests/stories-engine.test.js tests/stories-registry.test.js
+        run: node --test tests/stories-engine.test.js tests/stories-registry.test.js tests/stories-pasarela-source.test.js
