@@ -8,7 +8,7 @@
  * La publicación cruzada a Instagram NO se asume.
  */
 
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+// Cargar canvas solo cuando se renderiza una imagen; las validaciones no lo requieren.
 
 function recortarTexto(texto, max = 105) {
   const t = String(texto || '').replace(/\s+/g, ' ').trim();
@@ -19,6 +19,7 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA �
   if (!Buffer.isBuffer(imagenBuffer) || imagenBuffer.length < 5000) {
     throw new Error('Se necesita una imagen válida con derechos de uso');
   }
+  const { createCanvas, loadImage } = require('@napi-rs/canvas');
   const W = 1080, H = 1920;
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
