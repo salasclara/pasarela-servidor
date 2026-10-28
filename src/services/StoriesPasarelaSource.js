@@ -31,4 +31,29 @@ async function obtenerArticuloPasarela(pool, { slug } = {}) {
   };
 }
 
-module.exports = { obtenerArticuloPasarela };
+/**
+ * Une el artículo publicado con una imagen que un editor ya autorizó.
+ * La URL del artículo nunca se descarga automáticamente.
+ * El buffer debe venir de un archivo aprobado por el equipo editorial.
+ */
+function prepararStoryPasarela(articulo, { imagenBuffer, imagenAprobada = false, textoVerificado = false, categoria = 'EDITORIAL' } = {}) {
+  if (!articulo || !articulo.idContenido || !articulo.titulo || !articulo.url) {
+    throw new Error('Se requiere un artículo publicado de Pasarela');
+  }
+  if (imagenAprobada !== true || textoVerificado !== true) {
+    throw new Error('Falta aprobación editorial o de derechos de imagen');
+  }
+  if (!Buffer.isBuffer(imagenBuffer) || imagenBuffer.length < 5000) {
+    throw new Error('Falta archivo de imagen autorizado');
+  }
+  return {
+    titulo: articulo.titulo,
+    categoria,
+    origen: articulo.url,
+    imagenBuffer,
+    verificado: true,
+    derechosImagen: true
+  };
+}
+
+module.exports = { obtenerArticuloPasarela, prepararStoryPasarela };
