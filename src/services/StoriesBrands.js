@@ -11,6 +11,7 @@ const STORIES_BRANDS = Object.freeze({
     enabledEnv: 'STORIES_PASARELA_ENABLED',
     pageTokenEnv: 'FACEBOOK_PAGE_TOKEN',
     pageIdEnv: 'FACEBOOK_PAGE_ID',
+    pageIdDefault: '160291140702239',
     horaCentral: 18,
     fuente: 'articulo_editorial',
     estilo: { titulo: 'PASARELA', fondo: '#7B2D3E', acento: '#E7C47B' }
@@ -18,8 +19,9 @@ const STORIES_BRANDS = Object.freeze({
   amar_es: {
     nombre: 'Amar Es',
     enabledEnv: 'STORIES_AMAR_ES_ENABLED',
-    pageTokenEnv: 'AMAR_ES_PAGE_TOKEN',
+    pageTokenEnv: 'AMAR_ES_TOKEN',
     pageIdEnv: 'AMAR_ES_PAGE_ID',
+    pageIdDefault: '529892146881748',
     horaCentral: null,
     fuente: 'publicacion_amor',
     estilo: { titulo: 'AMAR ES', fondo: '#9B4063', acento: '#FFE0EA' }
@@ -36,8 +38,9 @@ const STORIES_BRANDS = Object.freeze({
   fancy: {
     nombre: 'Fancy by Roxette',
     enabledEnv: 'STORIES_FANCY_ENABLED',
-    pageTokenEnv: 'FANCY_PAGE_TOKEN',
+    pageTokenEnv: 'FANCY_BY_TOKEN',
     pageIdEnv: 'FANCY_PAGE_ID',
+    pageIdDefault: '2645809545432358',
     horaCentral: null,
     fuente: 'resena_web_aprobada',
     estilo: { titulo: 'FANCY BY ROXETTE', fondo: '#23252B', acento: '#E8D3B3' }
@@ -60,9 +63,9 @@ function configuracionStories(brand, env = process.env) {
   return {
     ...cfg,
     enabled,
-    pageId: env[cfg.pageIdEnv] || null,
+    pageId: env[cfg.pageIdEnv] || cfg.pageIdDefault || null,
     pageToken: env[cfg.pageTokenEnv] || null,
-    ready: enabled && Boolean(env[cfg.pageIdEnv]) && Boolean(env[cfg.pageTokenEnv])
+    ready: enabled && Boolean(env[cfg.pageIdEnv] || cfg.pageIdDefault) && Boolean(env[cfg.pageTokenEnv])
   };
 }
 
