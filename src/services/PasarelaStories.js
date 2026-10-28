@@ -72,7 +72,7 @@ async function publicarHistoriaFacebook({ pageId, pageToken, imageBuffer, graphV
     throw new Error('Faltan pageId, pageToken o imageBuffer');
   }
   if (imageBuffer.length > 4 * 1024 * 1024) throw new Error('Historia superior a 4 MB');
-  if (!/^v\\d+\\.\\d+$/.test(graphVersion)) throw new Error('Versión Graph API inválida');
+  if (!/^v\d+\.\d+$/.test(graphVersion)) throw new Error('Versión Graph API inválida');
   const base = 'https://graph.facebook.com/' + graphVersion + '/' + pageId;
   const form = new FormData();
   form.append('published', 'false');
