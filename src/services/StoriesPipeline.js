@@ -9,6 +9,7 @@ const { crearClaveStory, horaCentral } = require('./StoriesScheduler');
 const { reservarStory, marcarPublicada, marcarIncierta } = require('./StoriesRegistry');
 const { ejecutarStory } = require('./StoriesEngine');
 const { configuracionStories } = require('./StoriesBrands');
+const { validarContenidoStory } = require('./StoriesEngine');
 
 async function procesarStoryAprobada({ pool, marca, contenido, idContenido, fecha = new Date(), env = process.env, publicar = false, publicarFn }) {
   if (!pool || typeof pool.query !== 'function') throw new Error('Falta registro PostgreSQL');
@@ -17,6 +18,7 @@ async function procesarStoryAprobada({ pool, marca, contenido, idContenido, fech
   }
   const cfg = configuracionStories(marca, env);
   if (!cfg.enabled || !cfg.ready) return { ok: false, omitido: true, razon: !cfg.enabled ? 'DESACTIVADO' : 'CREDENCIALES_INCOMPLETAS' };
+  validarContenidoStory(contenido);
   if (!publicar) {
     return ejecutarStory({ marca, contenido, env, publicar: false, publicarFn });
   }
