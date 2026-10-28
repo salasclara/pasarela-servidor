@@ -29,12 +29,12 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA Â
   ctx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
 
   // Referencia Pasarela: foto completa, bandas fucsia y titulares blancos.
-  const grad = ctx.createLinearGradient(0, 780, 0, H);
+  const grad = ctx.createLinearGradient(0, 900, 0, H);
   grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.55, 'rgba(0,0,0,0.55)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.90)');
+  grad.addColorStop(0.55, 'rgba(0,0,0,0.45)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.83)');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 850, W, H - 850);
   ctx.fillStyle = fondo;
   ctx.fillRect(0, 0, W, 125);
   ctx.fillRect(0, H - 125, W, 125);
