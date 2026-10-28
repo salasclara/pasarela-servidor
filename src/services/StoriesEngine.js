@@ -32,7 +32,10 @@ async function ejecutarStory({ marca, contenido, env = process.env, publicar = f
   const imagen = await crearHistoriaPasarela({
     imagenBuffer: contenido.imagenBuffer,
     titulo: contenido.titulo,
-    categoria: config.estilo.titulo
+    categoria: contenido.categoria || config.nombre,
+    marca: config.estilo.titulo,
+    fondo: config.estilo.fondo,
+    acento: config.estilo.acento
   });
   if (!publicar) return { ok: true, dryRun: true, bytes: imagen.length, marca };
   const resultado = await publicarFn({ pageId: config.pageId, pageToken: config.pageToken, imageBuffer: imagen });
