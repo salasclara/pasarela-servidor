@@ -14,7 +14,8 @@ test('recupera un artículo ya publicado sin modificar noticias', async () => {
   assert.equal(a.verificado, false);
   assert.equal(a.derechosImagen, false);
   assert.match(a.url, /pasarelastudiointer.com/);
-  assert.match(calls[0].sql, /WHERE slug = \$1/);
+  assert.match(calls[0].sql, /WHERE slug = \$1 AND publicado = true/);
+  assert.doesNotMatch(calls[0].sql, /\bfuente\b/);
   assert.match(calls[0].sql, /^SELECT/);
   assert.deepEqual(calls[0].args, ['moda-en-dallas']);
 });
