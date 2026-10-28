@@ -14,7 +14,7 @@ const STORIES_BRANDS = Object.freeze({
     pageIdDefault: '160291140702239',
     horaCentral: 18,
     fuente: 'articulo_editorial',
-    estilo: { titulo: 'PASARELA', fondo: '#7B2D3E', acento: '#E7C47B' }
+    estilo: { titulo: 'PASARELA STUDIO INTERNACIONAL', fondo: '#FF008A', acento: '#FFFFFF' }
   },
   amar_es: {
     nombre: 'Amar Es',
