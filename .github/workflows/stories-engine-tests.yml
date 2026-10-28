@@ -1,0 +1,22 @@
+name: Stories Engine — pruebas seguras
+on:
+  pull_request:
+    paths:
+      - 'src/services/Stories*.js'
+      - 'src/services/PasarelaStories.js'
+      - 'tests/stories-engine.test.js'
+      - 'package.json'
+      - '.github/workflows/stories-engine-tests.yml'
+  workflow_dispatch:
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pruebas de Stories sin conexión a Meta
+        run: node --test tests/stories-engine.test.js
