@@ -22,3 +22,11 @@
 - `ready` indica configuración local presente, **no** permisos Meta verificados.
 - Los tokens reales nunca deben pegarse en issues, PR, capturas ni logs.
 - Fancy mantiene web → redes; Rocimar mantiene noticia web verificada → redes.
+
+## Fotografía original aprobada (28-oct-2026)
+- La responsable editorial confirmó autorización para usar la fotografía de la modelo en Nueva York.
+- Regla visual: usar el archivo fotográfico original como entrada de Canvas; **no** recrear ni editar rostro, figura, ropa o pose mediante IA. Únicamente recorte de encuadre, bandas fucsias, textos y degradado de legibilidad.
+- Se generó una vista previa local a partir del JPEG original, fuera del repositorio. **No** subir la foto privada al repositorio público ni incluirla en las pruebas de CI.
+- La plantilla de CI sigue usando una ilustración sintética para no distribuir la foto.
+- La aprobación de una foto concreta no implica autorización automática para otras fotos procedentes de RSS.
+- Pendiente antes de publicar: seleccionar artículo real y título fiel al contenido (no confundir la foto de Nueva York con un artículo sobre Dallas), confirmar credenciales y permisos de Meta, realizar una prueba manual controlada, y conectar el scheduler con persistencia de duplicados.
