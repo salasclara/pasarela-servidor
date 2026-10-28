@@ -40,28 +40,42 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA �
   ctx.fillRect(0, H - 125, W, 125);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 40px Arial, sans-serif';
+  ctx.font = 'bold 40px DejaVu Sans';
   ctx.fillText(recortarTexto(marca, 45).toUpperCase(), W / 2, 78, 980);
   ctx.textAlign = 'left';
   ctx.fillStyle = fondo;
   ctx.fillRect(65, 1330, 215, 55);
   ctx.fillStyle = acento;
-  ctx.font = 'bold 27px Arial, sans-serif';
+  ctx.font = 'bold 27px DejaVu Sans';
   ctx.fillText(recortarTexto(categoria, 13).toUpperCase(), 83, 1367);
-  const words = recortarTexto(titulo, 100).split(' ');
-  const lines = [];
-  let line = '';
-  ctx.font = 'bold 76px Arial, sans-serif';
-  for (const word of words) {
-    const next = line ? line + ' ' + word : word;
-    if (ctx.measureText(next).width > 940 && line) { lines.push(line); line = word; }
-    else line = next;
+  // Ajustar el titular a un máximo de cuatro líneas sin recortar palabras.
+  const words = recortarTexto(titulo, 110).split(' ');
+  let lines = [];
+  let fontSize = 76;
+  for (; fontSize >= 52; fontSize -= 4) {
+    ctx.font = 'bold ' + fontSize + 'px DejaVu Sans';
+    lines = [];
+    let line = '';
+    for (const word of words) {
+      const next = line ? line + ' ' + word : word;
+      if (ctx.measureText(next).width > 940 && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = next;
+      }
+    }
+    if (line) lines.push(line);
+    if (lines.length <= 4) break;
   }
-  if (line) lines.push(line);
   ctx.fillStyle = '#FFFFFF';
-  lines.slice(0, 4).forEach((value, index) => ctx.fillText(value, 65, 1470 + index * 88, 940));
+  ctx.font = 'bold ' + fontSize + 'px DejaVu Sans';
+  const lineHeight = fontSize * 1.15;
+  const startY = Math.min(1450, 1730 - (lines.length - 1) * lineHeight);
+  lines.slice(0, 4).forEach((value, index) =>
+    ctx.fillText(value, 65, startY + index * lineHeight, 940));
   ctx.textAlign = 'center';
-  ctx.font = 'bold 27px Arial, sans-serif';
+  ctx.font = 'bold 27px DejaVu Sans';
   ctx.fillText('pasarelastudiointer.com', W / 2, H - 52);
   return canvas.toBuffer('image/jpeg', 88);
 }
