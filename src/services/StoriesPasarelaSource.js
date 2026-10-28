@@ -11,9 +11,9 @@ async function obtenerArticuloPasarela(pool, { slug } = {}) {
     throw new Error('Slug de artículo inválido');
   }
   const result = await pool.query(
-    `SELECT titulo, slug, imagen, fuente, contenido
+    `SELECT titulo, slug, imagen, contenido
        FROM noticias
-      WHERE slug = $1
+      WHERE slug = $1 AND publicado = true
       LIMIT 1`,
     [slug]
   );
@@ -24,7 +24,6 @@ async function obtenerArticuloPasarela(pool, { slug } = {}) {
     titulo: noticia.titulo,
     url: 'https://pasarelastudiointer.com/noticias/' + noticia.slug,
     imagenUrl: noticia.imagen || null,
-    fuente: noticia.fuente || null,
     extracto: String(noticia.contenido || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220),
     // La existencia en la web NO certifica permisos de imagen ni verificación.
     verificado: false,
