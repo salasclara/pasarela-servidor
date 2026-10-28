@@ -15,7 +15,7 @@ function recortarTexto(texto, max = 105) {
   return t.length > max ? t.slice(0, max - 1).replace(/\s+\S*$/, '') + '…' : t;
 }
 
-async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA · ESTILO · CULTURA' }) {
+async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA · ESTILO · CULTURA', marca = 'PASARELA', fondo = '#7B2D3E', acento = '#E7C47B' }) {
   if (!Buffer.isBuffer(imagenBuffer) || imagenBuffer.length < 5000) {
     throw new Error('Se necesita una imagen válida con derechos de uso');
   }
@@ -35,12 +35,12 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA �
   ctx.fillRect(0, 0, W, H);
 
   // Mantener texto fuera de la zona superior/inferior de controles de Stories.
-  ctx.fillStyle = '#7B2D3E';
+  ctx.fillStyle = fondo;
   ctx.fillRect(55, 190, 970, 100);
-  ctx.fillStyle = '#E7C47B';
+  ctx.fillStyle = acento;
   ctx.textAlign = 'center';
-  ctx.font = 'bold 48px sans-serif';
-  ctx.fillText('PASARELA', 540, 255);
+  ctx.font = 'bold 42px sans-serif';
+  ctx.fillText(recortarTexto(marca, 30).toUpperCase(), 540, 255);
   ctx.fillStyle = '#FFF8EF';
   ctx.font = 'bold 27px sans-serif';
   ctx.fillText(recortarTexto(categoria, 45).toUpperCase(), 540, 1350);
@@ -61,7 +61,7 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA �
   const shown = lines.slice(0, 4);
   shown.forEach((value, index) => ctx.fillText(value, 540, 1460 + index * 85));
 
-  ctx.fillStyle = '#E7C47B';
+  ctx.fillStyle = acento;
   ctx.fillRect(365, 1810, 350, 3);
   return canvas.toBuffer('image/jpeg', 88);
 }
