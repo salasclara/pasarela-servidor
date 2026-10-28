@@ -63,7 +63,7 @@ async function crearHistoriaPasarela({ imagenBuffer, titulo, categoria = 'MODA Â
 
   ctx.fillStyle = '#E7C47B';
   ctx.fillRect(365, 1810, 350, 3);
-  return canvas.toBuffer('image/jpeg', { quality: 0.88 });
+  return canvas.toBuffer('image/jpeg', 88);
 }
 
 async function publicarHistoriaFacebook({ pageId, pageToken, imageBuffer, graphVersion = 'v26.0' }) {
