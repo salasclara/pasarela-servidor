@@ -108,4 +108,61 @@ async function publicarHistoriaFacebook({ pageId, pageToken, imageBuffer, graphV
   return { photoId: photo.id, storyId: story.post_id };
 }
 
-module.exports = { crearHistoriaPasarela, publicarHistoriaFacebook };
+
+/**
+ * Portada editorial independiente: sin foto de terceros ni retratos generados.
+ * Diseñada para microreseñas de tendencias; no publica por sí sola.
+ */
+async function crearHistoriaEditorialPasarela({
+  titulo, subtitulo = '', categoria = 'TENDENCIAS',
+  tema = 'SCARLET POWER', fondo = '#FF008A'
+}) {
+  if (!String(titulo || '').trim()) throw new Error('Falta titular editorial');
+  const { createCanvas } = require('@napi-rs/canvas');
+  const W = 1080, H = 1920, c = createCanvas(W, H), ctx = c.getContext('2d');
+  ctx.fillStyle = '#09080C'; ctx.fillRect(0, 0, W, H);
+  // Arte abstracto geométrico original: no reproduce imágenes de terceros.
+  const grad = ctx.createLinearGradient(0, 380, W, 1540);
+  grad.addColorStop(0, '#240810'); grad.addColorStop(0.6, '#701126'); grad.addColorStop(1, '#13060C');
+  ctx.fillStyle = grad; ctx.fillRect(0, 340, W, 1250);
+  ctx.save(); ctx.globalAlpha = 0.42; ctx.translate(750, 970); ctx.rotate(-0.38);
+  ctx.fillStyle = '#C51B3D'; ctx.fillRect(-165, -660, 330, 1320);
+  ctx.fillStyle = '#FD5A78'; ctx.fillRect(80, -660, 90, 1320);
+  ctx.restore();
+  ctx.fillStyle = '#09080C'; ctx.fillRect(0, 0, W, 325);
+  ctx.fillStyle = fondo; ctx.font = 'bold 104px DejaVu Sans';
+  ctx.textAlign = 'center'; ctx.fillText('PASARELA', W / 2, 202, 910);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold 27px DejaVu Sans';
+  ctx.fillText('STUDIO INTERNACIONAL', W / 2, 260, 850);
+  ctx.fillStyle = fondo; ctx.fillRect(76, 410, 360, 5);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 33px DejaVu Sans'; ctx.fillText(recortarTexto(categoria, 20).toUpperCase(), 76, 394, 850);
+  // Bloque opaco para lectura, manteniendo zona segura inferior.
+  ctx.fillStyle = 'rgba(0,0,0,0.80)'; ctx.fillRect(0, 1110, W, 600);
+  const words = recortarTexto(titulo, 90).toUpperCase().split(' ');
+  let lines = [], fontSize = 80;
+  for (; fontSize >= 46; fontSize -= 2) {
+    ctx.font = 'bold ' + fontSize + 'px DejaVu Sans';
+    lines = []; let line = '';
+    for (const word of words) {
+      const next = line ? line + ' ' + word : word;
+      if (ctx.measureText(next).width > 900 && line) { lines.push(line); line = word; }
+      else line = next;
+    }
+    if (line) lines.push(line);
+    if (lines.length <= 3 && lines.every(x => ctx.measureText(x).width <= 900)) break;
+  }
+  ctx.fillStyle = '#FFFFFF'; ctx.font = 'bold ' + fontSize + 'px DejaVu Sans';
+  lines.slice(0, 3).forEach((line, i) => ctx.fillText(line, 76, 1210 + i * fontSize * 1.2));
+  const y = 1240 + Math.min(3, lines.length) * fontSize * 1.2;
+  ctx.font = '32px DejaVu Sans'; ctx.fillStyle = '#F0DDE5';
+  const sub = recortarTexto(subtitulo, 85);
+  if (sub) ctx.fillText(sub, 76, Math.min(y, 1600), 910);
+  ctx.fillStyle = fondo; ctx.fillRect(76, 1745, 928, 4);
+  ctx.font = 'bold 31px DejaVu Sans'; ctx.fillText(recortarTexto(tema, 32).toUpperCase(), 76, 1810, 900);
+  ctx.fillStyle = '#FFFFFF'; ctx.font = '27px DejaVu Sans';
+  ctx.fillText('pasarelastudiointer.com', 76, 1860, 900);
+  return c.toBuffer('image/jpeg', 88);
+}
+
+module.exports = { crearHistoriaPasarela, crearHistoriaEditorialPasarela, publicarHistoriaFacebook };
