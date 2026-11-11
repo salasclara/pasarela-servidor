@@ -4,6 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {approveDraft,buildArticleUrl}=require('../src/services/FancyWebPublisherV1');
 const {createGitHubWebAdapter}=require('../src/services/FancyGitHubWebAdapterV1');
+const {createFancyFeedUpdater}=require('../src/services/FancyWebFeedPublisherV1');
 async function main(){
  const file=process.env.FANCY_EDITORIAL_FILE||'test/fixtures/fancy-v1-sample.json';
  const root=path.resolve(__dirname,'..');
@@ -24,6 +25,7 @@ async function main(){
  if(!live){console.log(JSON.stringify({mode:'DRY_RUN',url,path:result.path,htmlSHA256:result.hash,distributed:false}));return;}
  const verified=await adapter.waitUntilPublished(url);
  if(!verified)throw new Error('Created page not yet confirmed on Vercel. Social distribution blocked.');
- console.log(JSON.stringify({mode:'LIVE',url,path:result.path,htmlSHA256:result.hash,verified:true,distributed:false}));
+ const listed=await createFancyFeedUpdater({token:process.env.FANCY_WEB_GITHUB_TOKEN,dryRun:false}).addPublished({...approved,status:'published',publishedUrl:url},{verified:true});
+ console.log(JSON.stringify({mode:'LIVE',url,path:result.path,htmlSHA256:result.hash,verified:true,feedListed:listed.added||listed.alreadyListed,distributed:false}));
 }
 main().catch(err=>{console.error(err.message);process.exitCode=1});
