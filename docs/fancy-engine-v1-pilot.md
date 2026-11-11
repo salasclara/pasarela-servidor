@@ -54,3 +54,14 @@ No activar un cron, endpoint público o distribución automática hasta una prue
 - La confirmación del despliegue reintenta hasta 12 verificaciones y compara el hash SHA-256 del HTML exacto; la falla **no** da permiso para redes sociales.
 - La prueba automática del ejecutor usa solo simulación y no expone credenciales.
 - No conectar el comando al scheduler y no publicar duplicados ni sobrescribir páginas. El script sigue dentro de la rama de validación.
+
+
+## Avance del 11-nov-2026 — cierre de la integración web + preparación Facebook
+- El sitio HOME tenía cuatro artículos publicados pero solo tres en su listado; se añadió `mesas-superficies-limpias` al listado.
+- `site.js` ahora enruta los registros aprobados del `editorial-feed.json` a rutas HTML reales, no a vistas hash sin URL propia. El feed solo admite entradas con `url` canónica y metadatos de revisión.
+- `src/services/FancyWebFeedPublisherV1.js` agrega al feed los artículos HOME que hayan superado revisión y verificación web. Rechaza duplicados y discrepancias de slug.
+- `scripts/fancy-web-pilot-v1.js` solicita el registro en el feed **después** de comprobar el HTML servido por Vercel. Este cambio sigue en la rama de validación y NO está activado en la rama principal. La página piloto publicada anteriormente no se incluye automáticamente retroactivamente.
+- `scripts/fancy-facebook-kitchen-preview-v1.js`: prepara una propuesta de copy y URL para la reseña de cocina sin credenciales, sin publicaciones Meta y sin escribir en PostgreSQL.
+- `test/fancy-web-feed-publisher-v1.test.js` y CI: pruebas sin red ni escrituras externas; comprobar estado de Actions antes de integrar.
+- No se modificaron `server.js`, el scheduler multipágina, variables Railway ni los datos PostgreSQL. Una publicación real a Facebook aún NO fue realizada.
+- Antes de activar distribución real: migración PostgreSQL controlada, autorización específica de cada post, verificación de Meta page token, registro durable de claves únicas y resultado de la API.
