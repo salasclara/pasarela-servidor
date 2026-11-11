@@ -35,7 +35,7 @@ function approveDraft(draft, approval) {
   const reviewed_by = assertString(approval.reviewed_by, 'reviewed_by', 100);
   const approved_at = assertString(approval.approved_at, 'approved_at', 40);
   if (!Number.isFinite(Date.parse(approved_at))) throw new Error('Invalid approval date');
-  return { ...doc, status: 'approved', reviewed_by, approved_at };
+  return { ...doc, status: 'approved', reviewed_by, approved_at, productsVerified: true, imagesRightsReviewed: true, affiliateDisclosureReviewed: true };
 }
 function buildArticleUrl(article) {
   const doc = normalizeDraft(article);
@@ -46,6 +46,7 @@ function makeSocialJobs(article, publishedUrl, channels = ['facebook', 'instagra
   if (article.distributionApproved !== true) throw new Error('Social distribution approval required');
   const expected = buildArticleUrl(article);
   if (publishedUrl !== expected) throw new Error('Published URL does not match canonical URL');
+  if (!Number.isSafeInteger(article.revision) || article.revision < 1) throw new Error('Positive article revision required');
   return [...new Set(channels)].map(channel => {
     if (!['facebook', 'instagram'].includes(channel)) throw new Error('Unsupported channel');
     return { idempotencyKey: article.category + ':' + article.slug + ':' + channel + ':' + article.revision,

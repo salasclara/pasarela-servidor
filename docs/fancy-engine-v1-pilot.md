@@ -43,3 +43,37 @@ No activar un cron, endpoint público o distribución automática hasta una prue
 - Limitación: la plantilla actual es editorial sin fichas comerciales; la publicación de reseñas con productos requiere extender el esquema y validar cada enlace, el contenido y el aviso de afiliado.
 - Limitación: actualización y revisiones de páginas existentes, estado durable de publicación y cola social todavía pendientes.
 - No hay cambios en `server.js`, tareas Railway, PostgreSQL ni redes sociales.
+
+
+## Avance 3 — ejecución piloto bajo aprobación
+- La usuaria comprobó visualmente la ruta de prueba creada por GitHub: `https://www.fancybyroxette.com/home/piloto-editorial-fancy-v1/` (GitHub → Vercel).
+- `scripts/fancy-web-pilot-v1.js` y `test/fixtures/fancy-v1-sample.json`: ejecución manual de un artículo **nuevo** (`piloto-automatico-fancy-v1`) en modo simulación por defecto.
+- Requiere `FANCY_APPROVED_BY` y tres verificaciones editoriales. En simulación: `FANCY_APPROVED_BY=editor node scripts/fancy-web-pilot-v1.js`.
+- Solo para ejecución controlada aprobada: `FANCY_ENABLE_LIVE_PUBLISH=yes` y `FANCY_WEB_GITHUB_TOKEN` con permisos mínimos para escribir en `salasclara/fancy-by-roxette-web`. Nunca escribir el token en archivos o conversaciones. Una cuenta sin acceso de escritura a ese repo no funcionará.
+- El token **no está configurado por este cambio** y no se intentó publicación real con el adaptador.
+- La confirmación del despliegue reintenta hasta 12 verificaciones y compara el hash SHA-256 del HTML exacto; la falla **no** da permiso para redes sociales.
+- La prueba automática del ejecutor usa solo simulación y no expone credenciales.
+- No conectar el comando al scheduler y no publicar duplicados ni sobrescribir páginas. El script sigue dentro de la rama de validación.
+
+
+## Avance del 11-nov-2026 — cierre de la integración web + preparación Facebook
+- El sitio HOME tenía cuatro artículos publicados pero solo tres en su listado; se añadió `mesas-superficies-limpias` al listado.
+- `site.js` ahora enruta los registros aprobados del `editorial-feed.json` a rutas HTML reales, no a vistas hash sin URL propia. El feed solo admite entradas con `url` canónica y metadatos de revisión.
+- `src/services/FancyWebFeedPublisherV1.js` agrega al feed los artículos HOME que hayan superado revisión y verificación web. Rechaza duplicados y discrepancias de slug.
+- `scripts/fancy-web-pilot-v1.js` solicita el registro en el feed **después** de comprobar el HTML servido por Vercel. Este cambio sigue en la rama de validación y NO está activado en la rama principal. La página piloto publicada anteriormente no se incluye automáticamente retroactivamente.
+- `scripts/fancy-facebook-kitchen-preview-v1.js`: prepara una propuesta de copy y URL para la reseña de cocina sin credenciales, sin publicaciones Meta y sin escribir en PostgreSQL.
+- `test/fancy-web-feed-publisher-v1.test.js` y CI: pruebas sin red ni escrituras externas; comprobar estado de Actions antes de integrar.
+- No se modificaron `server.js`, el scheduler multipágina, variables Railway ni los datos PostgreSQL. Una publicación real a Facebook aún NO fue realizada.
+- Antes de activar distribución real: migración PostgreSQL controlada, autorización específica de cada post, verificación de Meta page token, registro durable de claves únicas y resultado de la API.
+
+
+## Avance 11-nov-2026 — ejecución Facebook con aprobación explícita
+- `scripts/fancy-facebook-kitchen-publish-v1.js` prepara una publicación de la reseña de cocina y la envía **únicamente** mediante una operación manual autorizada. Por defecto ejecuta una simulación sin DB ni Meta.
+- Antes del envío real comprueba que la URL pública devuelva el título esperado.
+- Requiere `DATABASE_URL` para que cada artículo/revisión/canal tenga una sola reserva SQL; errores posteriores al envío quedan en `outcome_unknown` para revisión humana, sin reintento automático.
+- La migración explícita es `FANCY_FB_LIVE=yes FANCY_FB_CONFIRM=PUBLICAR-FANCY-COCINA-FACEBOOK-V1 FANCY_DB_MIGRATE=yes DATABASE_URL=... node scripts/fancy-facebook-kitchen-publish-v1.js`. Solo ejecutar con credenciales protegidas en el entorno del servidor, no escribirlas en el historial de terminal ni en GitHub.
+- Para preparar un trabajo sin publicar: ejecutar el mismo comando con `FANCY_DB_MIGRATE` omitido y `FANCY_FB_APPROVE` omitido, más `FANCY_BY_TOKEN` configurado; deja el trabajo `pending_review`.
+- Para una publicación real **debe existir autorización explícita** y comprobarse que Facebook no tiene ya la reseña. La invocación final utiliza `FANCY_FB_APPROVE=yes` además de las condiciones anteriores.
+- No se ha ejecutado ninguna operación real, no se han alterado tokens ni tablas de Railway.
+- `test/fancy-facebook-kitchen-publish-v1.test.js` cubre la ruta segura offline. El resultado de CI se debe comprobar antes de utilizar comandos reales.
+- PR en borrador: https://github.com/salasclara/pasarela-servidor/pull/54 . No fusionar antes de revisión y pruebas.

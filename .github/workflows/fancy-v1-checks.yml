@@ -1,0 +1,87 @@
+name: Fancy V1 isolated checks
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - fancy-v1-validation
+    paths:
+      - 'src/services/FancyWebPublisherV1.js'
+      - 'src/services/FancyGitHubWebAdapterV1.js'
+      - 'src/services/FancyFacebookDistributorV1.js'
+      - 'src/services/FancyDistributionStoreV1.js'
+      - 'src/services/FancyFacebookWorkflowV1.js'
+      - 'src/services/FancyWebFeedPublisherV1.js'
+      - 'scripts/fancy-web-pilot-v1.js'
+      - 'scripts/fancy-facebook-kitchen-preview-v1.js'
+      - 'scripts/fancy-facebook-kitchen-publish-v1.js'
+      - 'test/fancy-*-v1.test.js'
+      - 'test/fancy-postgres-integration-v1.test.js'
+      - '.github/workflows/fancy-v1-checks.yml'
+permissions:
+  contents: read
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax
+        run: |
+          node --check src/services/FancyWebPublisherV1.js
+          node --check src/services/FancyGitHubWebAdapterV1.js
+          node --check src/services/FancyFacebookDistributorV1.js
+          node --check src/services/FancyDistributionStoreV1.js
+          node --check src/services/FancyFacebookWorkflowV1.js
+          node --check src/services/FancyWebFeedPublisherV1.js
+          node --check scripts/fancy-web-pilot-v1.js
+          node --check scripts/fancy-facebook-kitchen-preview-v1.js
+          node --check scripts/fancy-facebook-kitchen-publish-v1.js
+      - name: Run offline tests (no tokens / no deployments)
+        run: |
+          node test/fancy-web-publisher-v1.test.js
+          node test/fancy-github-web-adapter-v1.test.js
+          node test/fancy-facebook-distributor-v1.test.js
+          node test/fancy-distribution-store-v1.test.js
+          node test/fancy-facebook-workflow-v1.test.js
+          node test/fancy-web-feed-publisher-v1.test.js
+          node test/fancy-facebook-kitchen-publish-v1.test.js
+      - name: Verify manual publishing runner remains dry-run
+        env:
+          FANCY_APPROVED_BY: ci-validation
+        run: |
+          node scripts/fancy-web-pilot-v1.js
+          node scripts/fancy-facebook-kitchen-preview-v1.js
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fancy_test
+          POSTGRES_PASSWORD: fancy_test_only
+          POSTGRES_DB: fancy_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fancy_test -d fancy_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing repository dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Real PostgreSQL queue integration test
+        env:
+          FANCY_TEST_DB: 'yes'
+          DATABASE_URL: postgresql://fancy_test:fancy_test_only@localhost:5432/fancy_ci
+        run: node test/fancy-postgres-integration-v1.test.js

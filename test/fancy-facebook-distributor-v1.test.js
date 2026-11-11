@@ -1,0 +1,23 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {prepareFacebookJob,createFacebookLinkAdapter}=require('../src/services/FancyFacebookDistributorV1');
+const source={status:'published',distributionApproved:true,revision:1,category:'HOME',slug:'ordenar-cocina-pequena',title:'Una cocina pequeña también puede sentirse espaciosa',summary:'Ideas sencillas para liberar superficies y ordenar por hábitos.',publishedUrl:'https://www.fancybyroxette.com/home/ordenar-cocina-pequena/'};
+(async()=>{
+ const job=prepareFacebookJob(source);
+ assert(job.message.includes(source.publishedUrl));
+ assert(job.message.includes(source.title));
+ assert.equal(job.pageId,'2645809545432358');
+ assert.throws(()=>prepareFacebookJob({...source,status:'draft'}),/Published/);
+ assert.throws(()=>prepareFacebookJob({...source,publishedUrl:'https://evil.example/home/ordenar-cocina-pequena/'}),/Unapproved/);
+ assert.throws(()=>prepareFacebookJob({...source,slug:'otra-resena'}),/mismatch/);
+ const adapter=createFacebookLinkAdapter({dryRun:true,fetchImpl:()=>{throw Error('Network disabled in dry run')}});
+ await assert.rejects(()=>adapter.publish(job),/approval/);
+ assert.deepEqual(await adapter.publish(job,{approved:true}),{dryRun:true,jobKey:job.idempotencyKey,posted:false});
+ let sent;
+ const mocked=createFacebookLinkAdapter({dryRun:false,token:'fake-test-token',fetchImpl:async(url,init)=>{sent={url,init};return {ok:true,status:200,json:async()=>({id:'2645809545432358_123'})}}});
+ const result=await mocked.publish(job,{approved:true});
+ assert.equal(result.externalPostId,'2645809545432358_123');
+ assert.equal(sent.init.method,'POST');
+ assert(sent.init.body.get('link')===source.publishedUrl);
+ console.log('Fancy web-first Facebook distributor offline tests passed. No live Meta posting.');
+})().catch(e=>{console.error(e);process.exitCode=1});
