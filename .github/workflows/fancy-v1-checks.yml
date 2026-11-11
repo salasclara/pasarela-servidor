@@ -14,6 +14,7 @@ on:
       - 'scripts/fancy-web-pilot-v1.js'
       - 'scripts/fancy-facebook-kitchen-preview-v1.js'
       - 'test/fancy-*-v1.test.js'
+      - 'test/fancy-postgres-integration-v1.test.js'
       - '.github/workflows/fancy-v1-checks.yml'
 permissions:
   contents: read
@@ -49,3 +50,32 @@ jobs:
         run: |
           node scripts/fancy-web-pilot-v1.js
           node scripts/fancy-facebook-kitchen-preview-v1.js
+
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fancy_test
+          POSTGRES_PASSWORD: fancy_test_only
+          POSTGRES_DB: fancy_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fancy_test -d fancy_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing repository dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Real PostgreSQL queue integration test
+        env:
+          FANCY_TEST_DB: 'yes'
+          DATABASE_URL: postgresql://fancy_test:fancy_test_only@localhost:5432/fancy_ci
+        run: node test/fancy-postgres-integration-v1.test.js
