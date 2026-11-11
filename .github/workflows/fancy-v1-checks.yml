@@ -12,6 +12,7 @@ on:
       - 'src/services/FancyFacebookWorkflowV1.js'
       - 'src/services/FancyWebFeedPublisherV1.js'
       - 'scripts/fancy-web-pilot-v1.js'
+      - 'scripts/fancy-facebook-kitchen-preview-v1.js'
       - 'test/fancy-*-v1.test.js'
       - '.github/workflows/fancy-v1-checks.yml'
 permissions:
@@ -33,6 +34,7 @@ jobs:
           node --check src/services/FancyFacebookWorkflowV1.js
           node --check src/services/FancyWebFeedPublisherV1.js
           node --check scripts/fancy-web-pilot-v1.js
+          node --check scripts/fancy-facebook-kitchen-preview-v1.js
       - name: Run offline tests (no tokens / no deployments)
         run: |
           node test/fancy-web-publisher-v1.test.js
@@ -44,4 +46,6 @@ jobs:
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation
-        run: node scripts/fancy-web-pilot-v1.js
+        run: |
+          node scripts/fancy-web-pilot-v1.js
+          node scripts/fancy-facebook-kitchen-preview-v1.js
