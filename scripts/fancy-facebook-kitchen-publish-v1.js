@@ -1,7 +1,6 @@
 'use strict';
 // Manual, explicit distribution of a single already-published Fancy HOME article.
 // No cron, no server.js import, no automatic migration, no implicit Meta publishing.
-const {Pool}=require('pg');
 const {prepareFacebookJob,createFacebookLinkAdapter}=require('../src/services/FancyFacebookDistributorV1');
 const {createFancyDistributionStore}=require('../src/services/FancyDistributionStoreV1');
 const {createFancyFacebookWorkflow}=require('../src/services/FancyFacebookWorkflowV1');
@@ -20,7 +19,7 @@ async function verifyPage(fetchImpl=globalThis.fetch) {
   if(!html.includes('<title>'+ARTICLE.title+' | Fancy By Roxette</title>'))
     throw Error('Published page did not match reviewed kitchen title');
 }
-async function run({env=process.env,fetchImpl=globalThis.fetch,PoolImpl=Pool}={}) {
+async function run({env=process.env,fetchImpl=globalThis.fetch,PoolImpl}={}) {
   const job=prepareFacebookJob(ARTICLE);
   const live=env.FANCY_FB_LIVE==='yes';
   if(!live) {
@@ -32,7 +31,8 @@ async function run({env=process.env,fetchImpl=globalThis.fetch,PoolImpl=Pool}={}
   if(env.FANCY_DB_MIGRATE!=='yes'&&!env.FANCY_BY_TOKEN)throw Error('FANCY_BY_TOKEN required for Fancy Facebook Page only');
   // Verify source before any persistence or Meta request.
   await verifyPage(fetchImpl);
-  const pool=new PoolImpl({connectionString:env.DATABASE_URL,max:2});
+  const PoolClass=PoolImpl||require('pg').Pool;
+  const pool=new PoolClass({connectionString:env.DATABASE_URL,max:2});
   try {
     const store=createFancyDistributionStore(pool);
     // Migration is a separate deliberate step, not automatic in a posting command.
