@@ -1,0 +1,64 @@
+name: Fancy V1 verification (safe)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fancy-v1-validation
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and offline checks
+        run: |
+          node --check src/services/FancyWebPublisherV1.js
+          node --check src/services/FancyGitHubWebAdapterV1.js
+          node --check src/services/FancyWebFeedPublisherV1.js
+          node --check src/services/FancyFacebookDistributorV1.js
+          node --check src/services/FancyDistributionStoreV1.js
+          node --check src/services/FancyFacebookWorkflowV1.js
+          node --check scripts/fancy-facebook-kitchen-publish-v1.js
+          node test/fancy-web-publisher-v1.test.js
+          node test/fancy-github-web-adapter-v1.test.js
+          node test/fancy-web-feed-publisher-v1.test.js
+          node test/fancy-facebook-distributor-v1.test.js
+          node test/fancy-distribution-store-v1.test.js
+          node test/fancy-facebook-workflow-v1.test.js
+          node test/fancy-facebook-kitchen-publish-v1.test.js
+          node scripts/fancy-facebook-kitchen-preview-v1.js
+  postgres-verification:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: fancy_ci
+          POSTGRES_USER: fancy_test
+          POSTGRES_PASSWORD: fancy_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fancy_test -d fancy_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fancy-v1-validation
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install project dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Test PostgreSQL state transitions (isolated database)
+        env:
+          FANCY_TEST_DB: 'yes'
+          DATABASE_URL: postgresql://fancy_test:fancy_test_only@localhost:5432/fancy_ci
+        run: node test/fancy-postgres-integration-v1.test.js
