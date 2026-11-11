@@ -65,3 +65,15 @@ No activar un cron, endpoint público o distribución automática hasta una prue
 - `test/fancy-web-feed-publisher-v1.test.js` y CI: pruebas sin red ni escrituras externas; comprobar estado de Actions antes de integrar.
 - No se modificaron `server.js`, el scheduler multipágina, variables Railway ni los datos PostgreSQL. Una publicación real a Facebook aún NO fue realizada.
 - Antes de activar distribución real: migración PostgreSQL controlada, autorización específica de cada post, verificación de Meta page token, registro durable de claves únicas y resultado de la API.
+
+
+## Avance 11-nov-2026 — ejecución Facebook con aprobación explícita
+- `scripts/fancy-facebook-kitchen-publish-v1.js` prepara una publicación de la reseña de cocina y la envía **únicamente** mediante una operación manual autorizada. Por defecto ejecuta una simulación sin DB ni Meta.
+- Antes del envío real comprueba que la URL pública devuelva el título esperado.
+- Requiere `DATABASE_URL` para que cada artículo/revisión/canal tenga una sola reserva SQL; errores posteriores al envío quedan en `outcome_unknown` para revisión humana, sin reintento automático.
+- La migración explícita es `FANCY_FB_LIVE=yes FANCY_FB_CONFIRM=PUBLICAR-FANCY-COCINA-FACEBOOK-V1 FANCY_DB_MIGRATE=yes DATABASE_URL=... node scripts/fancy-facebook-kitchen-publish-v1.js`. Solo ejecutar con credenciales protegidas en el entorno del servidor, no escribirlas en el historial de terminal ni en GitHub.
+- Para preparar un trabajo sin publicar: ejecutar el mismo comando con `FANCY_DB_MIGRATE` omitido y `FANCY_FB_APPROVE` omitido, más `FANCY_BY_TOKEN` configurado; deja el trabajo `pending_review`.
+- Para una publicación real **debe existir autorización explícita** y comprobarse que Facebook no tiene ya la reseña. La invocación final utiliza `FANCY_FB_APPROVE=yes` además de las condiciones anteriores.
+- No se ha ejecutado ninguna operación real, no se han alterado tokens ni tablas de Railway.
+- `test/fancy-facebook-kitchen-publish-v1.test.js` cubre la ruta segura offline. El resultado de CI se debe comprobar antes de utilizar comandos reales.
+- PR en borrador: https://github.com/salasclara/pasarela-servidor/pull/54 . No fusionar antes de revisión y pruebas.
