@@ -29,7 +29,7 @@ async function run({env=process.env,fetchImpl=globalThis.fetch,PoolImpl=Pool}={}
   }
   if(env.FANCY_FB_CONFIRM!==CONFIRM)throw Error('Exact operator approval required: '+CONFIRM);
   if(!env.DATABASE_URL)throw Error('DATABASE_URL required for durable idempotency');
-  if(!env.FANCY_BY_TOKEN)throw Error('FANCY_BY_TOKEN required for Fancy Facebook Page only');
+  if(env.FANCY_DB_MIGRATE!=='yes'&&!env.FANCY_BY_TOKEN)throw Error('FANCY_BY_TOKEN required for Fancy Facebook Page only');
   // Verify source before any persistence or Meta request.
   await verifyPage(fetchImpl);
   const pool=new PoolImpl({connectionString:env.DATABASE_URL,max:2});
