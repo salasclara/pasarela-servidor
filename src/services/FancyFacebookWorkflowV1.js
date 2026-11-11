@@ -17,7 +17,11 @@ function createFancyFacebookWorkflow({store,adapter}={}){
     const claimed=await store.reserve(job.idempotencyKey);
     if(!claimed)return {sent:false,reason:'not-approved-or-already-claimed'};
     try{
-      const result=await adapter.publish(job,{approved:true});
+      // Always send the immutable queued payload, never a potentially changed caller copy.
+      const queued=claimed.payload;
+      if(!queued||queued.idempotencyKey!==job.idempotencyKey||queued.platform!=='facebook')
+        throw new Error('Reserved payload is invalid');
+      const result=await adapter.publish(queued,{approved:true});
       if(!result.posted||!result.externalPostId){
         await store.markUnknown(job.idempotencyKey,'No live external post ID; manual review required');
         return {sent:false,reason:'no-confirmed-post'};
