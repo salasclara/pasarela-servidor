@@ -5,6 +5,7 @@ const assert=require('node:assert/strict');
 const {Pool}=require('pg');
 const {createFancyDistributionStore}=require('../src/services/FancyDistributionStoreV1');
 const {prepareFacebookJob}=require('../src/services/FancyFacebookDistributorV1');
+const {createFancyFacebookWorkflow}=require('../src/services/FancyFacebookWorkflowV1');
 (async()=>{
  if(process.env.FANCY_TEST_DB!=='yes'||!process.env.DATABASE_URL)
    throw Error('Dedicated FANCY_TEST_DB=yes and DATABASE_URL are required');
@@ -31,6 +32,27 @@ const {prepareFacebookJob}=require('../src/services/FancyFacebookDistributorV1')
    assert((await store.markPublished(job.idempotencyKey,'fancy_page_post_123'))?.id);
    assert.equal((await store.get(job.idempotencyKey)).state,'published');
    assert.equal(await store.reserve(job.idempotencyKey),null,'Do not republish');
+   // End-to-end approval and posting tests use a fake Meta adapter but real PostgreSQL state.
+   const article2={...article,revision:2};
+   const fakeJob=prepareFacebookJob(article2);
+   let fakePosts=0;
+   const workflow=createFancyFacebookWorkflow({store,adapter:{
+     publish:async queued=>{
+       assert.equal(queued.url,article.publishedUrl,'Only queued approved URL may be sent');
+       fakePosts++;
+       return {posted:true,externalPostId:'fake-meta-post-'+fakePosts};
+     }
+   }});
+   await workflow.stage(article2);
+   await assert.rejects(()=>workflow.send(fakeJob),/authorization/);
+   await workflow.approve(fakeJob.idempotencyKey);
+   const firstSend=await workflow.send({...fakeJob,url:'https://malicious.invalid'},{explicitAuthorization:true});
+   assert.equal(firstSend.sent,true);
+   assert.equal(firstSend.externalPostId,'fake-meta-post-1');
+   const secondSend=await workflow.send(fakeJob,{explicitAuthorization:true});
+   assert.equal(secondSend.sent,false);
+   assert.equal(fakePosts,1,'No duplicate Meta calls');
+   assert.equal((await store.get(fakeJob.idempotencyKey)).state,'published');
    await client.query('ROLLBACK'); // No persistent data in test DB.
    console.log('Real PostgreSQL schema, dedupe, approval and reservation test PASSED');
  }catch(error){
