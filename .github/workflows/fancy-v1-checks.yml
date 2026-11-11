@@ -1,6 +1,9 @@
 name: Fancy V1 isolated checks
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - fancy-v1-validation
