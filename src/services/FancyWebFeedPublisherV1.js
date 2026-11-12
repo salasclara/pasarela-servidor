@@ -27,7 +27,11 @@ function createFancyFeedUpdater({token,repo='salasclara/fancy-by-roxette-web',br
      if(existing.status==='published'&&existing.title===a.title)return {added:false,alreadyListed:true,slug:a.slug};
      throw new Error('Article slug already exists in editorial feed; manual review required');
    }
-   const entry={...a,status:'published',url:article.publishedUrl,reviewed_by:article.reviewed_by,approved_at:article.approved_at};
+   const socialApproved=article.distributionApproved===true;
+   if(socialApproved&&(!Number.isSafeInteger(article.revision)||article.revision<1))
+     throw new Error('Social approval requires positive revision');
+   const entry={...a,status:'published',url:article.publishedUrl,reviewed_by:article.reviewed_by,approved_at:article.approved_at,
+     revision:socialApproved?article.revision:null,distributionApproved:socialApproved};
    const next={...feed,articles:[entry,...feed.articles]};
    const saved=await fetchImpl(api,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},
      body:JSON.stringify({message:'List reviewed Fancy HOME article '+a.slug,branch,sha:file.sha,
