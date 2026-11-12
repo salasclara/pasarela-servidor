@@ -40,3 +40,12 @@ Estos comandos no se han vinculado a ningún programador ni activado en Railway.
 - `scripts/fancy-facebook-token-check-v1.js` verifica únicamente la identidad de página del token, sin revelar credenciales ni publicar. Comando futuro de diagnóstico (solo después de integrar PR): `node scripts/fancy-facebook-token-check-v1.js`.
 - Graph API Explorer puede generar tokens de corta duración: una identidad correcta no prueba expiración, renovabilidad ni permisos permanentes. Debe comprobarse una credencial apta para producción antes de cualquier cron.
 - La automatización en esta rama todavía **NO dispone de cron**, no ha hecho publicación externa adicional y no edita el calendario del servidor.
+
+## Programador aislado, protegido y apagado por defecto
+
+- `server.js` solo carga `FancyWebSocialScheduleV1` si `FANCY_WEB_SOCIAL_SCHEDULER_ENABLED=yes`. **Esta variable NO fue creada ni activada en Railway**; sin ella no cambia el funcionamiento existente.
+- Programación preparada: 10:15–10:19 a.m. hora `America/Chicago`, una ejecución al día por proceso, independiente de las rutinas actuales de 9:00/15:00/21:00 y la rotación Fancy de las 12:00. Un reinicio puede volver a iniciar la ventana; PostgreSQL controla duplicados.
+- Con solo `FANCY_WEB_SOCIAL_SCHEDULER_ENABLED=yes`, el sistema valida el token y solo registra entradas `pending_review`; no envía a Facebook.
+- El envío requiere **además** `FANCY_WEB_SOCIAL_SEND_ENABLED=yes` y `FANCY_BRIDGE_CONFIRM=PUBLICAR-ARTICULOS-APROBADOS-FANCY-V1`. Sin los tres interruptores, no hay publicación programada.
+- Antes de habilitar cualquiera, comprobar la vigencia del token de página, completar revisión de derechos/enlaces, segundo artículo real de prueba, permisos y políticas comerciales; no configurar esos interruptores como solución de prueba.
+- La prueba aislada de programación verifica horario de verano/invierno, controles desactivados, verificación de identidad, y cierre de conexiones.
