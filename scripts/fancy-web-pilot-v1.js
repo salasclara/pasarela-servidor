@@ -25,7 +25,11 @@ async function main(){
  if(!live){console.log(JSON.stringify({mode:'DRY_RUN',url,path:result.path,htmlSHA256:result.hash,distributed:false}));return;}
  const verified=await adapter.waitUntilPublished(url);
  if(!verified)throw new Error('Created page not yet confirmed on Vercel. Social distribution blocked.');
- const listed=await createFancyFeedUpdater({token:process.env.FANCY_WEB_GITHUB_TOKEN,dryRun:false}).addPublished({...approved,status:'published',publishedUrl:url},{verified:true});
+ const socialApproved=process.env.FANCY_SOCIAL_APPROVE==='yes';
+ if(socialApproved&&process.env.FANCY_SOCIAL_APPROVAL_CONFIRM!=='APROBAR-REDES-FANCY-V1')
+   throw new Error('Explicit social approval confirmation required');
+ const listed=await createFancyFeedUpdater({token:process.env.FANCY_WEB_GITHUB_TOKEN,dryRun:false}).addPublished({...approved,status:'published',publishedUrl:url,
+   distributionApproved:socialApproved,revision:socialApproved?1:null},{verified:true});
  console.log(JSON.stringify({mode:'LIVE',url,path:result.path,htmlSHA256:result.hash,verified:true,feedListed:listed.added||listed.alreadyListed,distributed:false}));
 }
 main().catch(err=>{console.error(err.message);process.exitCode=1});
