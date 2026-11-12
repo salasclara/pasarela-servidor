@@ -9,7 +9,8 @@ const draft={category:'HOME',slug:'piloto-web-editorial',title:'Una guía <segur
  assert.equal(rendered.path,'home/piloto-web-editorial/index.html');
  assert(rendered.html.includes('&lt;segura&gt;'));
  assert(!rendered.html.includes('<segura>'));
- assert(rendered.html.includes('noindex,nofollow'));
+ assert(rendered.html.includes('name="robots" content="index,follow"'));
+ assert(!rendered.html.includes('noindex,nofollow'));
  assert(rendered.html.includes('../..\/afiliados/'.replace('\\/','/')));
  const adapter=createGitHubWebAdapter({dryRun:true,fetchImpl:async()=>{throw Error('Dry run must not access network')}});
  await assert.rejects(()=>adapter.publish(draft,rendered.url),/Complete editorial and commercial approval required/);
