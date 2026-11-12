@@ -19,15 +19,15 @@ async function main(){
    affiliateDisclosureReviewed:draft.affiliateDisclosureReviewed,
    reviewed_by:reviewer,approved_at:new Date().toISOString()});
  const url=buildArticleUrl(approved);
+ const socialApproved=process.env.FANCY_SOCIAL_APPROVE==='yes';
+ if(socialApproved&&process.env.FANCY_SOCIAL_APPROVAL_CONFIRM!=='APROBAR-REDES-FANCY-V1')
+   throw new Error('Explicit social approval confirmation required');
  const live=process.env.FANCY_ENABLE_LIVE_PUBLISH==='yes';
  const adapter=createGitHubWebAdapter({token:process.env.FANCY_WEB_GITHUB_TOKEN,dryRun:!live});
  const result=await adapter.publish(approved,url);
  if(!live){console.log(JSON.stringify({mode:'DRY_RUN',url,path:result.path,htmlSHA256:result.hash,distributed:false}));return;}
  const verified=await adapter.waitUntilPublished(url);
  if(!verified)throw new Error('Created page not yet confirmed on Vercel. Social distribution blocked.');
- const socialApproved=process.env.FANCY_SOCIAL_APPROVE==='yes';
- if(socialApproved&&process.env.FANCY_SOCIAL_APPROVAL_CONFIRM!=='APROBAR-REDES-FANCY-V1')
-   throw new Error('Explicit social approval confirmation required');
  const listed=await createFancyFeedUpdater({token:process.env.FANCY_WEB_GITHUB_TOKEN,dryRun:false}).addPublished({...approved,status:'published',publishedUrl:url,
    distributionApproved:socialApproved,revision:socialApproved?1:null},{verified:true});
  console.log(JSON.stringify({mode:'LIVE',url,path:result.path,htmlSHA256:result.hash,verified:true,feedListed:listed.added||listed.alreadyListed,distributed:false}));

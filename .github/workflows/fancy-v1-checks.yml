@@ -8,6 +8,7 @@ on:
     branches:
       - fancy-v1-validation
       - fancy-v1-web-social-bridge
+      - fancy-v1-second-home-review
     paths:
       - 'src/services/FancyWebPublisherV1.js'
       - 'src/services/FancyGitHubWebAdapterV1.js'
@@ -25,6 +26,7 @@ on:
       - 'scripts/fancy-facebook-token-check-v1.js'
       - 'test/fancy-*-v1.test.js'
       - 'test/fancy-postgres-integration-v1.test.js'
+      - 'test/fixtures/fancy-home-cajones-review-v1.json'
       - '.github/workflows/fancy-v1-checks.yml'
 permissions:
   contents: read
@@ -64,6 +66,7 @@ jobs:
           node test/fancy-web-social-bridge-v1.test.js
           node test/fancy-facebook-token-check-v1.test.js
           node test/fancy-web-social-schedule-v1.test.js
+          node test/fancy-second-home-review-v1.test.js
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation
