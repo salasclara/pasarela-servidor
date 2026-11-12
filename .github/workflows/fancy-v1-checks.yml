@@ -10,6 +10,7 @@ on:
       - fancy-v1-web-social-bridge
       - fancy-v1-second-home-review
       - fancy-v1-editorial-draft-generator
+      - fancy-v1-instagram-safety
     paths:
       - 'src/services/FancyWebPublisherV1.js'
       - 'src/services/FancyGitHubWebAdapterV1.js'
@@ -21,6 +22,7 @@ on:
       - 'src/services/FancyWebSocialScheduleV1.js'
       - 'src/services/FancyEditorialDraftGeneratorV1.js'
       - 'src/services/FancyDraftReviewStoreV1.js'
+      - 'src/services/FancyInstagramTestEndpoint.js'
       - 'server.js'
       - 'scripts/fancy-web-pilot-v1.js'
       - 'scripts/fancy-facebook-kitchen-preview-v1.js'
@@ -54,6 +56,7 @@ jobs:
           node --check src/services/FancyWebSocialScheduleV1.js
           node --check src/services/FancyEditorialDraftGeneratorV1.js
           node --check src/services/FancyDraftReviewStoreV1.js
+          node --check src/services/FancyInstagramTestEndpoint.js
           node --check server.js
           node --check scripts/fancy-web-pilot-v1.js
           node --check scripts/fancy-facebook-kitchen-preview-v1.js
@@ -75,6 +78,7 @@ jobs:
           node test/fancy-web-social-schedule-v1.test.js
           node test/fancy-second-home-review-v1.test.js
           node test/fancy-editorial-draft-generator-v1.test.js
+          node test/fancy-instagram-endpoint-safety-v1.test.js
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation

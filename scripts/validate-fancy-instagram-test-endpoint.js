@@ -26,9 +26,8 @@ function mockRes() {
   assert.strictEqual(ready.status, 200);
   const data = JSON.parse(ready.body);
   assert.strictEqual(data.ok, true);
-  assert.strictEqual(data.ready, true);
   assert.strictEqual(data.stage, 'READY');
-  assert.strictEqual(data.instagramUserId, '17841472188694897');
+  assert.strictEqual(data.instagramUserId, undefined);
   assert.strictEqual(data.requiresImage, true);
   assert.strictEqual(data.publishesAutomatically, false);
   assert.strictEqual(data.schedulerConnected, false);
