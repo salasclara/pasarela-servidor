@@ -16,6 +16,8 @@ on:
       - 'src/services/FancyFacebookWorkflowV1.js'
       - 'src/services/FancyWebFeedPublisherV1.js'
       - 'src/services/FancyWebSocialBridgeV1.js'
+      - 'src/services/FancyWebSocialScheduleV1.js'
+      - 'server.js'
       - 'scripts/fancy-web-pilot-v1.js'
       - 'scripts/fancy-facebook-kitchen-preview-v1.js'
       - 'scripts/fancy-facebook-kitchen-publish-v1.js'
@@ -43,6 +45,8 @@ jobs:
           node --check src/services/FancyFacebookWorkflowV1.js
           node --check src/services/FancyWebFeedPublisherV1.js
           node --check src/services/FancyWebSocialBridgeV1.js
+          node --check src/services/FancyWebSocialScheduleV1.js
+          node --check server.js
           node --check scripts/fancy-web-pilot-v1.js
           node --check scripts/fancy-facebook-kitchen-preview-v1.js
           node --check scripts/fancy-facebook-kitchen-publish-v1.js
@@ -59,6 +63,7 @@ jobs:
           node test/fancy-facebook-kitchen-publish-v1.test.js
           node test/fancy-web-social-bridge-v1.test.js
           node test/fancy-facebook-token-check-v1.test.js
+          node test/fancy-web-social-schedule-v1.test.js
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation
