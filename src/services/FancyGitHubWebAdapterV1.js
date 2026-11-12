@@ -11,7 +11,7 @@ function renderArticle(article) {
   const url = buildArticleUrl(a);
   const content = a.sections.map(s=>'<section><h2>'+esc(s.heading)+'</h2><p>'+esc(s.body)+'</p></section>').join('');
   const html = '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
-    '<meta name="robots" content="noindex,nofollow"><link rel="canonical" href="'+url+'">'+
+    '<meta name="robots" content="index,follow"><link rel="canonical" href="'+url+'">'+
     '<meta name="description" content="'+esc(a.summary)+'"><meta property="og:type" content="article">'+
     '<meta property="og:title" content="'+esc(a.title)+' | Fancy By Roxette"><meta property="og:description" content="'+esc(a.summary)+'">'+
     '<meta property="og:url" content="'+url+'"><meta name="twitter:card" content="summary">'+
