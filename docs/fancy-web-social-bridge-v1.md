@@ -33,3 +33,10 @@ Estos comandos no se han vinculado a ningún programador ni activado en Railway.
 - Verificar Instagram mediante flujo específico de medios y permisos; Facebook link posts no se trasladan automáticamente a Instagram.
 - Probar idempotencia ante redescargas, errores y reinicios en Railway.
 - Solo entonces conectar el ejecutor aislado al scheduler existente con interruptor desactivado por defecto; no modificar cron multipágina hasta completar pruebas.
+
+## Prueba integral aislada (sin publicaciones reales)
+
+- `test/fancy-web-social-bridge-postgres-v1.test.js` prepara un artículo HOME nuevo en un feed web simulado, verifica HTML/canonical, usa una transacción de PostgreSQL temporal y un publicador Meta simulado. Comprueba preparación, envío autorizado ficticio y ausencia de duplicados; termina con ROLLBACK.
+- `scripts/fancy-facebook-token-check-v1.js` verifica únicamente la identidad de página del token, sin revelar credenciales ni publicar. Comando futuro de diagnóstico (solo después de integrar PR): `node scripts/fancy-facebook-token-check-v1.js`.
+- Graph API Explorer puede generar tokens de corta duración: una identidad correcta no prueba expiración, renovabilidad ni permisos permanentes. Debe comprobarse una credencial apta para producción antes de cualquier cron.
+- La automatización en esta rama todavía **NO dispone de cron**, no ha hecho publicación externa adicional y no edita el calendario del servidor.
