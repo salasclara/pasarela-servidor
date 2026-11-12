@@ -1,0 +1,40 @@
+{
+  "status": "draft",
+  "generatedBy": "asistente-editorial",
+  "requiresEditorialReview": true,
+  "distributionApproved": false,
+  "revision": null,
+  "topic": "Cómo organizar una despensa por zonas sin gastar de más",
+  "draft": {
+    "category": "HOME",
+    "slug": "ordenar-despensa-por-zonas",
+    "title": "Una despensa ordenada empieza por lo que ya tienes",
+    "summary": "Una forma sencilla de organizar alimentos por zonas, aprovechar mejor el espacio y descubrir qué accesorios realmente necesitas.",
+    "intro": "Una despensa funcional no requiere una transformación completa ni una lista de compras. Antes de incorporar recipientes nuevos, conviene revisar lo que ya guardamos, conocer nuestros hábitos y establecer pequeños grupos que hagan más fácil cocinar todos los días.",
+    "sections": [
+      {
+        "heading": "Observa antes de moverlo todo",
+        "body": "Elige un estante o una zona pequeña para empezar. Reúne los productos que se encuentran allí, revisa sus fechas y condiciones de almacenamiento, y limpia la superficie antes de devolverlos. Trabajar por partes evita convertir el orden en una tarea agotadora."
+      },
+      {
+        "heading": "Crea zonas que respondan a tu rutina",
+        "body": "Agrupa ingredientes según la manera en que los utilizas: desayunos, productos básicos para cocinar, meriendas o reservas. Coloca a una altura accesible lo que usas con frecuencia y guarda los artículos pesados en estantes estables, sin sobrecargar los soportes."
+      },
+      {
+        "heading": "Aprovecha tus propios recipientes",
+        "body": "No es necesario comprar contenedores nuevos para ver resultados. Puedes comenzar con cestas o cajas limpias que ya tengas, siempre que sean adecuadas para el lugar donde las utilizarás. Conserva la información de los envases originales cuando sea importante para identificar contenido, fecha o instrucciones."
+      },
+      {
+        "heading": "Mantén visible lo que necesitas consumir primero",
+        "body": "Organiza los alimentos de manera que puedas ver las fechas y acceder con facilidad a los productos que llevan más tiempo almacenados. Evita colocar artículos nuevos delante de los anteriores si eso te hace olvidar lo que ya tienes."
+      },
+      {
+        "heading": "Evalúa antes de comprar organizadores",
+        "body": "Prueba la nueva distribución durante algunos días. Observa qué zona se desordena de nuevo y si realmente falta una bandeja, cesta o separador. Si necesitas un accesorio, mide el espacio disponible y elige una solución que facilite el uso diario, no solo la apariencia."
+      }
+    ],
+    "productsVerified": false,
+    "imagesRightsReviewed": false,
+    "affiliateDisclosureReviewed": false
+  }
+}
