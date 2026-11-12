@@ -90,4 +90,6 @@ jobs:
         env:
           FANCY_TEST_DB: 'yes'
           DATABASE_URL: postgresql://fancy_test:fancy_test_only@localhost:5432/fancy_ci
-        run: node test/fancy-postgres-integration-v1.test.js
+        run: |
+          node test/fancy-postgres-integration-v1.test.js
+          node test/fancy-web-social-bridge-postgres-v1.test.js
