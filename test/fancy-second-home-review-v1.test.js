@@ -19,6 +19,7 @@ const {prepareFacebookJob}=require('../src/services/FancyFacebookDistributorV1')
  assert.equal(rendered.path,'home/organizar-cajones-cocina-sin-comprar/index.html');
  assert.match(rendered.html,/Cómo organizar los cajones de la cocina sin comprar nada primero/);
  assert.match(rendered.html,/rel="canonical"/);
+ assert.match(rendered.html,/name="robots" content="index,follow"/);
  assert.ok(rendered.html.includes('Este artículo no contiene enlaces de compra'));
  assert.ok(!rendered.html.includes('amazon.com'));
  let calls=0;
