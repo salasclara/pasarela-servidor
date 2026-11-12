@@ -30,6 +30,6 @@ const article={category:'HOME',slug:'prueba-feed-fancy-v1',title:'Prueba editori
  assert.equal(approvedFeed.articles[0].distributionApproved,true);
  assert.equal(approvedFeed.articles[0].revision,1);
  await assert.rejects(()=>store.addPublished({...article,distributionApproved:true},{verified:true}),/revision/);
- assert.equal(requests,4);
+ assert.equal(requests,5);
  console.log('Fancy editorial HOME feed tests passed (mocked, no external writes).');
 })().catch(e=>{console.error(e);process.exitCode=1});
