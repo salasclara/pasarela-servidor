@@ -20,6 +20,7 @@ on:
       - 'scripts/fancy-facebook-kitchen-preview-v1.js'
       - 'scripts/fancy-facebook-kitchen-publish-v1.js'
       - 'scripts/fancy-web-social-bridge-v1.js'
+      - 'scripts/fancy-facebook-token-check-v1.js'
       - 'test/fancy-*-v1.test.js'
       - 'test/fancy-postgres-integration-v1.test.js'
       - '.github/workflows/fancy-v1-checks.yml'
@@ -46,6 +47,7 @@ jobs:
           node --check scripts/fancy-facebook-kitchen-preview-v1.js
           node --check scripts/fancy-facebook-kitchen-publish-v1.js
           node --check scripts/fancy-web-social-bridge-v1.js
+          node --check scripts/fancy-facebook-token-check-v1.js
       - name: Run offline tests (no tokens / no deployments)
         run: |
           node test/fancy-web-publisher-v1.test.js
@@ -56,6 +58,7 @@ jobs:
           node test/fancy-web-feed-publisher-v1.test.js
           node test/fancy-facebook-kitchen-publish-v1.test.js
           node test/fancy-web-social-bridge-v1.test.js
+          node test/fancy-facebook-token-check-v1.test.js
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation
