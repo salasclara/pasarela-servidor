@@ -5576,6 +5576,19 @@ setInterval(async () => {
 }, 60 * 1000);
 console.log('[Fancy Product Find] 12:00 PM Central | enabled:', String(process.env.FANCY_APPROVED_ROTATION_ENABLED || '').toLowerCase() === 'true');
 
+// Fancy editorial web-first distribution: isolated opt-in, OFF by default.
+// Never changes existing Pasarela / other-page schedulers.
+// Stage-only unless a separate send switch and exact operator confirmation exist.
+if (process.env.FANCY_WEB_SOCIAL_SCHEDULER_ENABLED === 'yes') {
+  try {
+    const { startScheduler } = require('./src/services/FancyWebSocialScheduleV1');
+    startScheduler();
+    console.log('[Fancy Web-Social] isolated scheduler enabled (posting requires separate approval)');
+  } catch (e) {
+    console.error('[Fancy Web-Social] isolated scheduler startup error:', e.message);
+  }
+}
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`[Servidor] Corriendo en puerto ${PORT}`);
