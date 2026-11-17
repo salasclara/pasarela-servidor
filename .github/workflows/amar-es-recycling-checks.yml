@@ -1,0 +1,25 @@
+name: Amar Es recycling checks
+on:
+  pull_request:
+    paths:
+      - 'src/services/AmarEsRecycler.js'
+      - 'src/services/AmarEsWeekdayGate.js'
+      - 'src/tests/amarEs*.test.js'
+      - '.github/workflows/amar-es-recycling-checks.yml'
+  workflow_dispatch:
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test empty library
+        run: node src/tests/amarEsRecycler.test.js
+      - name: Test weekday gating
+        run: node src/tests/amarEsWeekdayGate.test.js
+      - name: Test photo import without publishing
+        run: node src/tests/amarEsImport.test.js
+      - name: Test publish rollback
+        run: node src/tests/amarEsRecyclerTransactions.test.js
