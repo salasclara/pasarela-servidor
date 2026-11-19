@@ -61,6 +61,8 @@ jobs:
           node --check src/services/FancyWebSlotSelectionPreviewV1.js
           node --check src/services/FancyWebSlotExecutionPreviewV1.js
           node --check src/services/FancySlotReservationPreviewV1.js
+          node --check src/services/FancyWebFirstScheduleRouterPreviewV1.js
+          node --check src/services/FancyReservedWebSlotPreviewV1.js
           node --check server.js
           node --check scripts/fancy-web-pilot-v1.js
           node --check scripts/fancy-facebook-kitchen-preview-v1.js
@@ -86,6 +88,7 @@ jobs:
           node test/fancy-instagram-checkpoint-preview.test.js
           node test/fancy-web-slot-selection-preview.test.js
           node test/fancy-slot-reservation-preview.test.js
+          node test/fancy-web-first-router-preview.test.js
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation
