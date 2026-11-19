@@ -44,6 +44,15 @@ function createFancyDistributionStore(pool){
       WHERE idempotency_key=$1 AND state='sending' RETURNING id,state`,[key,externalPostId]);
     return rows[0]||null;
   }
+  async function saveContainer(key,creationId){
+    if(typeof creationId!=='string'||!creationId.trim())throw Error('Instagram container ID required');
+    const {rows}=await pool.query(`UPDATE ${TABLE}
+      SET payload=jsonb_set(payload,'{instagramCreationId}',to_jsonb($2::text),true),updated_at=now()
+      WHERE idempotency_key=$1 AND platform='instagram' AND state='sending'
+      AND (payload->>'instagramCreationId' IS NULL OR payload->>'instagramCreationId'=$2)
+      RETURNING id,state`,[key,creationId]);
+    return rows[0]||null;
+  }
   async function markUnknown(key,error){
     // A network timeout after POST may still have created a post. Never auto-retry.
     const message=String(error?.message||error||'Outcome unconfirmed').slice(0,500);
@@ -52,10 +61,13 @@ function createFancyDistributionStore(pool){
     return rows[0]||null;
   }
   async function get(key){
-    const {rows}=await pool.query(`SELECT idempotency_key,platform,article_url,state,external_post_id,last_error
+    const {rows}=await pool.query(`SELECT idempotency_key,platform,article_url,state,external_post_id,last_error,
+      payload->>'instagramCreationId' AS instagram_creation_id
       FROM ${TABLE} WHERE idempotency_key=$1`,[key]);
     return rows[0]||null;
   }
-  return {migrate,enqueue,approve,reserve,markPublished,markUnknown,get};
+  return {migrate,enqueue,approve,reserve,saveContainer,markPublished,markUnknown,get};
 }
 module.exports={createFancyDistributionStore,DDL};
+
+
