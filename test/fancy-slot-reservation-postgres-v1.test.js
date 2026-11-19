@@ -4,6 +4,7 @@ const assert=require('node:assert/strict');
 const {Client}=require('pg');
 const {fork}=require('node:child_process');
 const {createSlotReservationStore}=require('../src/services/FancySlotReservationPreviewV1');
+const {runReservedWebSlot}=require('../src/services/FancyReservedWebSlotPreviewV1');
 const CI_URL='postgresql://fancy_test:fancy_test_only@localhost:5432/fancy_ci';
 function verify(){if(process.env.FANCY_TEST_DB!=='yes'||process.env.DATABASE_URL!==CI_URL)throw Error('Disposable CI database required');}
 function message(child){return new Promise((resolve,reject)=>{child.once('message',resolve);child.once('error',reject);});}
@@ -27,6 +28,13 @@ async function main(){
   assert.equal(await store.finish(winner.key,'00000000-0000-0000-0000-000000000000','completed'),null);
   assert.equal((await store.finish(winner.key,winner.ownerToken,'outcome_unknown')).state,'outcome_unknown');
   assert.equal((await store.reserve(new Date('2026-11-18T15:07:00Z'))).claimed,false);
+  let executions=0;const execute=async()=>{executions++;return {state:'published'};};
+  const options={enabled:true,explicitAuthorization:true,date:new Date('2026-11-18T21:05:00Z'),slotStore:store,execute};
+  assert.equal((await runReservedWebSlot(options)).state,'published');
+  assert.equal((await runReservedWebSlot(options)).state,'slot_already_claimed');assert.equal(executions,1);
+  const failOptions={...options,date:new Date('2026-11-19T03:05:00Z'),execute:async()=>{throw Error('timeout');}};
+  assert.equal((await runReservedWebSlot(failOptions)).state,'outcome_unknown');
+  assert.equal((await store.get('fancy:2026-11-18:21')).state,'outcome_unknown');
   console.log('PostgreSQL real: reserva por horario y reinicios verificados');
  }finally{try{await db.query('DROP SCHEMA IF EXISTS '+schema+' CASCADE');}finally{await db.end();}}
 }
