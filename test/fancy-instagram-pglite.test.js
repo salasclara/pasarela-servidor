@@ -19,6 +19,18 @@ async function main(){
   assert.equal((await flow.send(job.idempotencyKey,{explicitAuthorization:true})).sent,false);
   assert.deepEqual(events,['create','ready','publish']);
   assert.equal(await store.saveContainer(job.idempotencyKey,'container-2'),null);
+  const job2={...job,idempotencyKey:'ig-concurrency-test'};
+  await store.enqueue(job2);await store.approve(job2.idempotencyKey);
+  let createCount=0,publishCount=0;
+  const concurrentAdapter={async create(){createCount++;return {ok:true,creationId:'container-2'};},async waitReady(){return true;},async publish(){publishCount++;return {ok:true,mediaId:'media-2'};}};
+  const concurrentFlow=createCheckpointWorkflow({store,adapter:concurrentAdapter});
+  const outcomes=await Promise.all([concurrentFlow.send(job2.idempotencyKey,{explicitAuthorization:true}),concurrentFlow.send(job2.idempotencyKey,{explicitAuthorization:true})]);
+  assert.equal(outcomes.filter(x=>x.sent===true).length,1);assert.equal(createCount,1);assert.equal(publishCount,1);
+  const completed=await store.get(job2.idempotencyKey);assert.equal(completed.state,'published');assert.equal(completed.external_post_id,'media-2');
+  const job3={...job,idempotencyKey:'ig-interrupted-test'};
+  await store.enqueue(job3);await store.approve(job3.idempotencyKey);assert.ok(await store.reserve(job3.idempotencyKey));
+  assert.equal((await concurrentFlow.send(job3.idempotencyKey,{explicitAuthorization:true})).sent,false);
+  assert.equal((await store.get(job3.idempotencyKey)).state,'sending');assert.equal(publishCount,1);
   console.log('PostgreSQL aislado: contenedor y protecciÃ³n de duplicados verificados');
  }finally{await db.close();}
 }
