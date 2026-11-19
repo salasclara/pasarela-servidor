@@ -57,6 +57,7 @@ jobs:
           node --check src/services/FancyEditorialDraftGeneratorV1.js
           node --check src/services/FancyDraftReviewStoreV1.js
           node --check src/services/FancyInstagramTestEndpoint.js
+          node --check src/services/FancyInstagramCheckpointPreviewV1.js
           node --check server.js
           node --check scripts/fancy-web-pilot-v1.js
           node --check scripts/fancy-facebook-kitchen-preview-v1.js
@@ -79,6 +80,7 @@ jobs:
           node test/fancy-second-home-review-v1.test.js
           node test/fancy-editorial-draft-generator-v1.test.js
           node test/fancy-instagram-endpoint-safety-v1.test.js
+          node test/fancy-instagram-checkpoint-preview.test.js
       - name: Verify manual publishing runner remains dry-run
         env:
           FANCY_APPROVED_BY: ci-validation
@@ -116,3 +118,4 @@ jobs:
         run: |
           node test/fancy-postgres-integration-v1.test.js
           node test/fancy-web-social-bridge-postgres-v1.test.js
+          node test/fancy-instagram-postgres-concurrency-v1.test.js
