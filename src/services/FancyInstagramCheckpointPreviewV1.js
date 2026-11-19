@@ -2,6 +2,7 @@
 // Simulation-ready checkpoint orchestration. No scheduler or Meta calls on import.
 // Adapters must independently verify container readiness before publishing.
 const {createImageContainer,publishContainer,validateInstagramConfig}=require('./FancyInstagramPublisher');
+const {verifyReviewedImage}=require('./FancyReviewedImagePreviewV1');
 function createCheckpointWorkflow({store,adapter}={}){
  if(!store||!['reserve','saveContainer','markPublished','markUnknown'].every(k=>typeof store[k]==='function')||
     !adapter||!['create','waitReady','publish'].every(k=>typeof adapter[k]==='function'))
@@ -37,7 +38,7 @@ function createMetaAdapter({enabled=false,fetchImpl=globalThis.fetch,sleep=ms=>n
    throw TypeError('Invalid Instagram adapter configuration');
  function check(){if(!enabled)throw Error('Instagram adapter disabled');const c=validateInstagramConfig();if(!c.ok)throw Error('Instagram config missing');return c.config;}
  return {
-  async create(job){check();return createImageContainer({imageUrl:job.imageUrl,caption:job.message,fetchImpl});},
+  async create(job){check();await verifyReviewedImage({url:job.imageUrl,sha256:job.mediaReview?.sha256,fetchImpl});return createImageContainer({imageUrl:job.imageUrl,caption:job.message,fetchImpl});},
   async waitReady(creationId){
    const c=check();if(!/^\d+$/.test(creationId))throw Error('Invalid container ID');
    for(let i=0;i<attempts;i++){

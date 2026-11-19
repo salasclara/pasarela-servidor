@@ -66,7 +66,11 @@ function createFancyDistributionStore(pool){
       FROM ${TABLE} WHERE idempotency_key=$1`,[key]);
     return rows[0]||null;
   }
-  return {migrate,enqueue,approve,reserve,saveContainer,markPublished,markUnknown,get};
+  async function getApprovedPayload(key){
+    const {rows}=await pool.query(`SELECT payload FROM ${TABLE} WHERE idempotency_key=$1 AND platform='instagram' AND state='approved'`,[key]);
+    return rows[0]?.payload||null;
+  }
+  return {migrate,enqueue,approve,reserve,saveContainer,markPublished,markUnknown,get,getApprovedPayload};
 }
 module.exports={createFancyDistributionStore,DDL};
 

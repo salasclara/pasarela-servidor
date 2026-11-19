@@ -1,5 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
 const {createCheckpointWorkflow,createMetaAdapter}=require('../src/services/FancyInstagramCheckpointPreviewV1');
 function fixture({failCheckpoint=false,failPublish=false}={}){
  const log=[];let state='approved';let container=null;
@@ -19,9 +20,10 @@ async function main(){
  f=fixture({failPublish:true});assert.equal((await f.flow.send('k',{explicitAuthorization:true})).reason,'outcome_unknown');
  assert.equal(f.getContainer(),'c1');assert.equal((await f.flow.send('k',{explicitAuthorization:true})).sent,false);
  process.env.FANCY_INSTAGRAM_USER_ID='123';process.env.FANCY_BY_TOKEN='test-token';let requests=[];
- const fetchImpl=async(url,opts)=>{requests.push({url,opts});return {ok:true,json:async()=>requests.length===1?{id:'42'}:requests.length===2?{status_code:'FINISHED'}:{id:'99'}};};
+ const bytes=Buffer.from('ffd8ffe000010203','hex'),imageUrl='https://www.fancybyroxette.com/images/home/example.jpg';
+ const fetchImpl=async(url,opts)=>{if(url===imageUrl)return new Response(bytes,{headers:{'content-type':'image/jpeg'}});requests.push({url,opts});return {ok:true,json:async()=>requests.length===1?{id:'42'}:requests.length===2?{status_code:'FINISHED'}:{id:'99'}};};
  const meta=createMetaAdapter({enabled:true,fetchImpl,sleep:async()=>{}});
- assert.equal((await meta.create({imageUrl:'https://example.test/a.jpg',message:'texto'})).creationId,'42');
+ assert.equal((await meta.create({imageUrl,mediaReview:{sha256:crypto.createHash('sha256').update(bytes).digest('hex')},message:'texto'})).creationId,'42');
  assert.equal(await meta.waitReady('42'),true);assert.equal((await meta.publish('42')).mediaId,'99');
  assert.equal(requests.length,3);assert.equal(requests[1].opts.headers.Authorization,'Bearer test-token');
  assert.ok(!requests[1].url.includes('test-token'));

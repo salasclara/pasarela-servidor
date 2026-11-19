@@ -63,6 +63,7 @@ jobs:
           node --check src/services/FancySlotReservationPreviewV1.js
           node --check src/services/FancyWebFirstScheduleRouterPreviewV1.js
           node --check src/services/FancyWebSocialStagingPreviewV1.js
+          node --check src/services/FancyReviewedImagePreviewV1.js
           node --check src/services/FancyReservedWebSlotPreviewV1.js
           node --check server.js
           node --check scripts/fancy-web-pilot-v1.js
