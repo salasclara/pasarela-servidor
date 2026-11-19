@@ -13,6 +13,7 @@ async function main(){
  await assert.rejects(stageReviewedWebArticle({...input,entry:{...entry,distributionApproved:false}}),/approved/);
  await assert.rejects(stageReviewedWebArticle({...input,media:{...media,rightsReviewed:false}}),/review/);
  await assert.rejects(stageReviewedWebArticle({...input,media:{...media,url:'https://other.example/a.jpg'}}),/hosted/);
+ await assert.rejects(stageReviewedWebArticle({...input,media:{...media,url:'https://user@www.fancybyroxette.com/images/home/a.jpg'}}),/hosted/);
  await assert.rejects(stageReviewedWebArticle({...input,fetchImpl:async()=>({ok:true,text:async()=>'<title>wrong</title>'})}),/not verified/);
  console.log('PreparaciÃ³n web: revisiÃ³n y ausencia de duplicados verificadas');
 }
