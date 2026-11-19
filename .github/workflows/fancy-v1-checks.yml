@@ -59,6 +59,7 @@ jobs:
           node --check src/services/FancyInstagramTestEndpoint.js
           node --check src/services/FancyInstagramCheckpointPreviewV1.js
           node --check src/services/FancyWebSlotSelectionPreviewV1.js
+          node --check src/services/FancyWebSlotExecutionPreviewV1.js
           node --check server.js
           node --check scripts/fancy-web-pilot-v1.js
           node --check scripts/fancy-facebook-kitchen-preview-v1.js
@@ -121,3 +122,4 @@ jobs:
           node test/fancy-postgres-integration-v1.test.js
           node test/fancy-web-social-bridge-postgres-v1.test.js
           node test/fancy-instagram-postgres-concurrency-v1.test.js
+          node test/fancy-web-slot-execution-preview.test.js
