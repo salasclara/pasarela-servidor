@@ -5407,6 +5407,43 @@ async function publicarFotoBuffer(buffer, caption) {
   });
 }
 
+async function generarCaptionFacebookPasarela(titulo, articulo) {
+  const prompt = 'Redacta el texto breve para una publicación de Facebook de PASARELA STUDIO INTERNACIONAL a partir del titular y el artículo. Devuelve EXACTAMENTE tres líneas, cada una con su prefijo: GANCHO: [frase breve, atractiva y afirmativa; no hagas una pregunta aquí] / CONTEXTO: [una frase breve y fiel al artículo] / PREGUNTA: [una pregunta natural que invite a comentar y termine en ?]. Tono elegante, cercano y latino. Sin emojis, hashtags, enlaces, numeración ni texto adicional. Mantén el conjunto por debajo de 300 caracteres.\n\nTITULAR: ' + titulo + '\n\nARTÍCULO: ' + articulo;
+  const payload = JSON.stringify({
+    model: 'claude-sonnet-4-6', max_tokens: 180,
+    system: 'Eres la editora de PASARELA STUDIO INTERNACIONAL. Escribes textos sociales breves, claros y fieles al material proporcionado.',
+    messages: [{ role: 'user', content: prompt }]
+  });
+  const respuesta = await new Promise((resolve, reject) => {
+    const opts = { hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'Content-Length': Buffer.byteLength(payload) } };
+    const r = https.request(opts, res => {
+      let d = '';
+      res.on('data', chunk => { d += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(d);
+          if (json.error) return reject(new Error(json.error.message || 'Error al generar el texto de Facebook'));
+          resolve(json.content?.[0]?.text || '');
+        } catch (e) { reject(e); }
+      });
+    });
+    r.on('error', reject);
+    r.write(payload);
+    r.end();
+  });
+  const campos = {};
+  for (const linea of respuesta.split(/\r?\n/)) {
+    const match = linea.trim().match(/^(GANCHO|CONTEXTO|PREGUNTA)\s*:\s*(.+)$/i);
+    if (match) campos[match[1].toUpperCase()] = match[2].trim();
+  }
+  if (!campos.GANCHO || !campos.CONTEXTO || !campos.PREGUNTA || !/\?$/.test(campos.PREGUNTA)) {
+    throw new Error('Claude no devolvió el formato Facebook de tres líneas');
+  }
+  const texto = [campos.GANCHO, campos.CONTEXTO, campos.PREGUNTA].join('\n');
+  if (texto.length > 300) throw new Error('El caption de Facebook excede 300 caracteres');
+  return texto;
+}
+
 async function autoPublicarPasarela() {
   if (!FB_PAGE_TOKEN) { console.log('[AutoPublish-Pasarela] Sin FB_PAGE_TOKEN — omitiendo'); return; }
   console.log('[AutoPublish-Pasarela] Iniciando publicación editorial...');
@@ -5468,6 +5505,8 @@ async function autoPublicarPasarela() {
       .map(p => p.replace(/^TITULAR:\s*/i, '').replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/^[-_]{3,}$/, '').trim())
       .filter(p => p.length > 0)
       .join('\n\n');
+    const caption = await generarCaptionFacebookPasarela(tituloEditorial, _contenidoLimpio);
+    console.log('[AutoPublish-Pasarela] Caption Facebook:', caption.replace(/\n/g, ' | '));
     // CAMBIO 2 — usar tituloEditorial en DB (título del blog = título del cover)
     const slug = generarSlug(tituloEditorial);
     // Evitar duplicados: si ya existe un artículo con el mismo título, no publicar de nuevo.
@@ -5480,7 +5519,6 @@ async function autoPublicarPasarela() {
       [tituloEditorial, _contenidoLimpio, 'editorial', slug, true, noticia.imagen || '', noticia.link || noticia.titulo]);
 
     // 4. Generar cover con plantilla aprobada
-    const urlBlog = 'https://pasarelastudiointer.com/noticias/' + slug;
     const fechaStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
     let coverBuffer = null;
     // Diseño magazine editorial — descarga buffer y usa generarCoverBlogArticulo
@@ -5506,8 +5544,7 @@ async function autoPublicarPasarela() {
     // CAMBIO 2 — Cover recibe tituloEditorial en español (no el RSS crudo)
     coverBuffer = await generarCoverPasarelaMaster({ imageBuf: _imgBuf, titulo: tituloEditorial, fecha: fechaStr });
 
-    // 5. Caption = mismo contenido limpio que va al blog
-    const caption = _contenidoLimpio + '\n\nLeer más → ' + urlBlog + '\n\n#PasarelaStudio #ModaLatina #DallasFashion';
+    // 5. Publicar caption breve de tres líneas; la nota completa queda en el blog.
     const fbRes = await publicarFotoBuffer(coverBuffer, caption);
     console.log('[AutoPublish-Pasarela] ✅ Publicado:', tituloEditorial, '| FB ID:', fbRes?.id || fbRes);
     return { ok: true, titulo: tituloEditorial, facebook_id: fbRes?.id || null, error: null };
@@ -5538,11 +5575,9 @@ setInterval(async () => {
   if (HORAS_PUBLICACION.includes(hora) && min < 10 && hora !== _ultimaHoraPublicada) {
     _ultimaHoraPublicada = hora;
     console.log(`[AutoPublish] ⏰ Hora programada: ${hora}:00 Central — iniciando ciclo`);
-    // Pasarela: solo a las 9 a. m.; los demás ciclos siguen para otras páginas.
-    if (hora === 9) {
-      await autoPublicarPasarela();
-      await new Promise(r => setTimeout(r, 15000));
-    }
+    // Pasarela: un ciclo editorial en cada franja horaria activa (9 a. m., 3 p. m. y 9 p. m.).
+    await autoPublicarPasarela();
+    await new Promise(r => setTimeout(r, 15000));
     await autoPublicarPaginasExtra(hora);
   }
 }, 60 * 1000); // revisa cada minuto
