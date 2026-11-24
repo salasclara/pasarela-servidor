@@ -5360,6 +5360,16 @@ async function autoPublicarPaginasExtra(horaProgramada = 9) {
   for (const _pg of PAGES_EXTRA) {
     // Amar Es y Maravillas del Reino: solo a las 9 a. m.
     if (horaProgramada !== 9 && (_pg.tipo === 'amor' || /maravillas del reino/i.test(_pg.nombre))) continue;
+    // Opt-in web-first mode replaces Fancy only; other pages keep their existing flow.
+    // Fail closed: never fall back to legacy Fancy when the new mode is enabled.
+    if (_pg.tipo === 'fancy' && process.env.FANCY_WEB_FIRST_MODE === 'yes') {
+      try {
+        const { routeFancySlot } = require('./src/services/FancyWebFirstScheduleRouterPreviewV1');
+        const result = await routeFancySlot({ pool, scheduledHour: horaProgramada });
+        console.log('[Fancy Web-First] Slot:', result.state);
+      } catch (_error) { console.error('[Fancy Web-First] Slot skipped; review configuration and state'); }
+      continue;
+    }
     if (!_pg.token) { console.log('[AutoPublish] Sin token:', _pg.nombre); continue; }
     try {
       await publicarCoverParaPagina(_pg, _titulo);
